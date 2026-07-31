@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>현장 보호구 관리 - ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
+        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+
+        .container { max-width: 1500px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; }
+
+        .doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px; }
+        .doc-table th, .doc-table td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; font-size: 15px; vertical-align: middle; }
+        .doc-table th { background: #f8f5fc; color: #4a0082; font-weight: bold; }
+        
+        .btn-action { padding: 8px 14px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-right: 6px; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.9; }
+        .btn-view { background: #4a0082; color: white; }
+        .btn-edit { background: #ff9800; color: white; }
+        .btn-delete { background: #e53935; color: white; }
+
+        /* 보호구 관련 전용 스타일 */
+        .ppe-guide-btn-box { background: linear-gradient(135deg, #f0e6f6, #ffffff); border: 2px solid #4a0082; border-radius: 12px; padding: 18px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(74,0,130,0.1); }
+        .ppe-guide-btn-box:hover { background: #f0e6f6; }
+
+        .ppe-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 3000; }
+        .ppe-modal-box { background: #fff; padding: 32px; border-radius: 16px; width: 800px; max-width: 90%; max-height: 85vh; overflow-y: auto; }
+        
+        .ppe-guide-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+        .ppe-card { background: #faf8fc; border-radius: 12px; padding: 18px; border-left: 5px solid #b0268d; border: 1px solid #eae2f0; border-left-width: 5px; }
+        .ppe-card h4 { color: #4a0082; font-size: 16px; margin-bottom: 8px; }
+        .ppe-card p { font-size: 14px; color: #444; line-height: 1.5; }
+
+        .user-auth-box { background: #f0e6f6; border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 2px solid #b0268d; }
+        .user-auth-inputs { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+        .user-auth-inputs input { padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
+        .ppe-form-box { background: #faf8fc; border-radius: 12px; padding: 24px; margin-bottom: 30px; border: 1px solid #eae2f0; }
+        .ppe-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+        .ppe-form-grid input, .ppe-form-grid select { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+
+        /* 서명 캔버스 관련 */
+        .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 3000; }
+        .signature-box { background: #fff; padding: 24px; border-radius: 16px; text-align: center; width: 420px; }
+        canvas { border: 2px dashed #b0268d; border-radius: 8px; cursor: crosshair; background: #fff; margin: 15px 0; touch-action: none; }
+        
+        /* 월별 대장 인쇄용 스타일 */
+        @media print {
+            header, .back-btn, .ppe-guide-btn-box, .user-auth-box, .ppe-form-box, .btn-action, .no-print { display: none !important; }
+            body { background: #fff; padding: 0; margin: 0; font-size: 12pt; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; border: none; }
+            .doc-table { border: 1px solid #000; margin-top: 15px; }
+            .doc-table th, .doc-table td { border: 1px solid #000 !important; padding: 8px; text-align: center; }
+            .doc-table th { background-color: #f0f0f0 !important; color: #000 !important; }
+            .sign-img-print { display: block !important; max-height: 35px; margin: 0 auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="no-print">
+        <div class="brand-title">ESOL <span>환경안전보건 플랫폼</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container">
+        <div class="page-title no-print">
+            <h2>🥽 보호구 관리 및 지급대장</h2>
+        </div>
+
+        <div class="ppe-guide-btn-box no-print" onclick="openPpeGuideModal()">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">📌</span>
+                <div>
+                    <h4 style="color:#4a0082; font-size:16px;">1. 공정별 / 작업별 필수 착용 보호구 지침 확인하기</h4>
+                    <p style="font-size:13px; color:#666; margin-top:2px;">클릭하시면 공정별 필수 착용 보호구 지침 안내 팝업이 떠오릅니다.</p>
+                </div>
+            </div>
+            <button class="btn-action btn-view" style="padding:10px 18px; margin:0;">🔍 지침 열람하기 ➔</button>
+        </div>
+
+        <div class="user-auth-box no-print">
+            <div id="authStatusText">
+                <h4 style="color:#4a0082; font-size:16px;">🔑 사용자 로그인 (관리자가 등록한 이름/비밀번호 입력)</h4>
+                <p style="font-size:12px; color:#666; margin-top:2px;">아이디는 <strong>성명</strong>, 비밀번호는 지정된 번호(예: YYMMDD-X)를 입력하세요.</p>
+            </div>
+            <div class="user-auth-inputs" id="authInputGroup">
+                <input type="text" id="loginName" placeholder="성명 (ID)" style="width:150px;">
+                <input type="password" id="loginPw" placeholder="비밀번호" style="width:200px;">
+                <button class="btn-action btn-view" onclick="userLogin()" style="margin:0; padding:10px 18px;">로그인</button>
+            </div>
+            <div id="logoutBtnArea" style="display:none; margin-top:10px;">
+                <button class="btn-action btn-delete" onclick="userLogout()">로그아웃</button>
+            </div>
+        </div>
+
+        <div class="ppe-form-box no-print">
+            <h3 style="color:#4a0082; margin-bottom:12px;">📝 2. 보호구 신청서 작성</h3>
+            <div class="ppe-form-grid">
+                <input type="text" id="ppeDept" placeholder="부서명 (자동입력)" readonly style="background:#eee;">
+                <input type="text" id="ppeName" placeholder="신청자 성명 (자동입력)" readonly style="background:#eee;">
+                <select id="ppeType"></select>
+                <input type="text" id="ppePurpose" placeholder="신청 목적 (예: 노후 교체 / 신규 입사)">
+            </div>
+            <button class="btn-action btn-view" style="width:100%; height:45px; font-size:15px; background:#b0268d;" onclick="submitPpeRequest()">+ 보호구 신청서 제출하기</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="color:#4a0082;" id="ppeTableTitle">📋 3. 보호구 신청 및 수령 서명 현황 (월별 지급대장)</h3>
+            <div class="no-print">
+                <select id="ppeMonthFilter" onchange="renderPpeList()" style="padding:8px; border-radius:6px; border:1px solid #ccc; font-weight:bold;"></select>
+                <button class="btn-action btn-view" onclick="window.print()">🖨️ 월별 지급대장 인쇄/다운로드</button>
+            </div>
+        </div>
+
+        <table class="doc-table">
+            <thead>
+                <tr>
+                    <th style="width:15%;">신청일시</th>
+                    <th style="width:12%;">부서명</th>
+                    <th style="width:15%;">신청자(사번)</th>
+                    <th style="width:15%;">보호구 종류</th>
+                    <th style="width:18%;">신청 목적</th>
+                    <th style="width:10%;">지급 상태</th>
+                    <th style="width:15%;">수령 확인 서명</th>
+                </tr>
+            </thead>
+            <tbody id="ppeListBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 📌 공정별 필수 착용 보호구 지침 팝업 모달 -->
+    <div class="ppe-modal" id="ppeGuideModal">
+        <div class="ppe-modal-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #4a0082; padding-bottom:12px;">
+                <h3 style="color:#4a0082; font-size:18px;">📌 공정별 / 작업별 필수 착용 보호구 지침</h3>
+                <button onclick="closePpeGuideModal()" style="background:none; border:none; font-size:20px; cursor:pointer; font-weight:bold; color:#777;">✕</button>
+            </div>
+            <div class="ppe-guide-grid" id="ppeGuideContainer"></div>
+            <div style="text-align:center; margin-top:24px;">
+                <button class="btn-action btn-view" style="padding:10px 24px;" onclick="closePpeGuideModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✍️ 수령 서명 모달 -->
+    <div class="signature-modal" id="signModal">
+        <div class="signature-box">
+            <h3 style="color:#4a0082;">✍️ 보호구 수령 터치 서명</h3>
+            <p style="font-size:13px; color:#666; margin-top:4px;">아래 상자에 직접 터치/마우스로 서명하세요.</p>
+            <canvas id="signCanvas" width="360" height="180"></canvas>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn-action btn-delete" onclick="clearCanvas()">🔄 지우기</button>
+                <button class="btn-action btn-view" onclick="saveSignature()">💾 서명 완료 및 수령 확정</button>
+                <button class="btn-action" style="background:#aaa; color:#fff;" onclick="closeSignModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultPpeGuides = [
+            { process: '🧪 유해화학물질 취급공정', items: '보안경, 방독마스크, 내화학 장갑, 불침투성 보호복' },
+            { process: '🔥 용접 / 절단 작업', items: '용접면, 방진마스크, 용접용 가죽장갑, 안전화' },
+            { process: '🏗️ 고소작업 / 크레인', items: '안전모(ABEC종), 전체식 안전대(그네식), 안전화' }
+        ];
+
+        const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
+
+        // --- 모달 로직 ---
+        function openPpeGuideModal() {
+            document.getElementById('ppeGuideModal').style.display = 'flex';
+        }
+
+        function closePpeGuideModal() {
+            document.getElementById('ppeGuideModal').style.display = 'none';
+        }
+
+        function renderPpeGuides() {
+            const saved = localStorage.getItem('esol_ppe_guides');
+            const guides = saved ? JSON.parse(saved) : defaultPpeGuides;
+            document.getElementById('ppeGuideContainer').innerHTML = guides.map(g => `
+                <div class="ppe-card">
+                    <h4>${g.process}</h4>
+                    <p><strong>필수 착용 지정 항목:</strong><br>${g.items}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderPpeSelectOptions() {
+            const saved = localStorage.getItem('esol_ppe_options');
+            const options = saved ? JSON.parse(saved) : defaultPpeOptions;
+            let html = '<option value="">보호구 종류 선택</option>';
+            options.forEach(opt => { 
+                html += `<option value="${opt}">${opt}</option>`; 
+            });
+            document.getElementById('ppeType').innerHTML = html;
+        }
+
+        // --- 사용자 인증 로직 ---
+        function getRegisteredUsers() {
+            return JSON.parse(localStorage.getItem('esol_registered_users') || '[]');
+        }
+
+        function getUserSession() {
+            return JSON.parse(localStorage.getItem('esol_user_session') || 'null');
+        }
+
+        function checkUserAuth() {
+            const user = getUserSession();
+            const statusText = document.getElementById('authStatusText');
+            const authGroup = document.getElementById('authInputGroup');
+            const logoutArea = document.getElementById('logoutBtnArea');
+
+            if (user) {
+                statusText.innerHTML = `<h4 style="color:green; font-size:16px;">✅ 인증 완료: ${user.dept} ${user.name} (${user.empNo})님 접속 중</h4>`;
+                authGroup.style.display = 'none';
+                logoutArea.style.display = 'block';
+                document.getElementById('ppeDept').value = user.dept;
+                document.getElementById('ppeName').value = user.name;
+            } else {
+                statusText.innerHTML = `
+                    <h4 style="color:#4a0082; font-size:16px;">🔑 사용자 로그인</h4>
+                    <p style="font-size:12px; color:#666; margin-top:2px;">아이디는 <strong>성명</strong>, 비밀번호를 입력하세요.</p>
+                `;
+                authGroup.style.display = 'flex';
+                logoutArea.style.display = 'none';
+                document.getElementById('ppeDept').value = '';
+                document.getElementById('ppeName').value = '';
+            }
+        }
+
+        function userLogin() {
+            const nameInput = document.getElementById('loginName').value.trim();
+            const pwInput = document.getElementById('loginPw').value.trim();
+
+            if (!nameInput || !pwInput) return alert('입력해 주세요.');
+
+            const users = getRegisteredUsers();
+            const matchedUser = users.find(u => u.name === nameInput && u.pw === pwInput);
+
+            if (!matchedUser) return alert('등록되지 않은 계정이거나 비밀번호가 불일치합니다.');
+
+            localStorage.setItem('esol_user_session', JSON.stringify({ 
+                dept: matchedUser.dept, 
+                name: matchedUser.name, 
+                empNo: matchedUser.empNo 
+            }));
+            
+            document.getElementById('loginName').value = '';
+            document.getElementById('loginPw').value = '';
+            alert(`${matchedUser.name}님 로그인 성공!`);
+            checkUserAuth();
+        }
+
+        function userLogout() {
+            localStorage.removeItem('esol_user_session');
+            alert('로그아웃 되었습니다.');
+            checkUserAuth();
+        }
+
+        // --- 신청 및 지급대장 로직 ---
+        function getPpeData() {
+            return JSON.parse(localStorage.getItem('esol_ppe_requests') || '[]');
+        }
+
+        function savePpeData(data) {
+            localStorage.setItem('esol_ppe_requests', JSON.stringify(data));
+        }
+
+        function initPpeMonthFilter() {
+            const filterEl = document.getElementById('ppeMonthFilter');
+            const now = new Date();
+            let options = '';
+            
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const mStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                options += `<option value="${mStr}">${mStr} 월별 지급대장</option>`;
+            }
+            filterEl.innerHTML = options;
+        }
+
+        function submitPpeRequest() {
+            const user = getUserSession();
+            if (!user) return alert('보호구 신청을 하려면 먼저 로그인하세요.');
+
+            const type = document.getElementById('ppeType').value;
+            const purpose = document.getElementById('ppePurpose').value.trim();
+
+            if (!type || !purpose) return alert('보호구 종류와 신청 목적을 입력하세요.');
+
+            const requests = getPpeData();
+            const now = new Date();
+            const dateStr = now.getFullYear() + '-' + 
+                            String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                            String(now.getDate()).padStart(2, '0') + ' ' + 
+                            String(now.getHours()).padStart(2, '0') + ':' + 
+                            String(now.getMinutes()).padStart(2, '0');
+
+            requests.unshift({
+                id: Date.now(),
+                date: dateStr,
+                month: dateStr.substring(0, 7),
+                dept: user.dept,
+                name: user.name,
+                empNo: user.empNo,
+                type: type,
+                purpose: purpose,
+                status: '지급 대기',
+                signature: null
+            });
+
+            savePpeData(requests);
+            document.getElementById('ppeType').value = '';
+            document.getElementById('ppePurpose').value = '';
+            alert('보호구 신청이 완료되었습니다.');
+            renderPpeList();
+        }
+
+        function renderPpeList() {
+            const requests = getPpeData();
+            const selectedMonth = document.getElementById('ppeMonthFilter').value;
+            const tbody = document.getElementById('ppeListBody');
+            
+            const filtered = requests.filter(r => r.month === selectedMonth);
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999; padding:25px;">해당 월에 신청/지급된 내역이 없습니다.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(r => `
+                <tr>
+                    <td>${r.date}</td>
+                    <td><strong>${r.dept}</strong></td>
+                    <td>${r.name} (${r.empNo || '사번없음'})</td>
+                    <td><span style="color:#b0268d; font-weight:bold;">${r.type}</span></td>
+                    <td>${r.purpose}</td>
+                    <td>${r.status === '지급 완료' ? '<span style="color:green; font-weight:bold;">✅ 지급 완료</span>' : '<span style="color:#ff9800; font-weight:bold;">⏳ 지급 대기중</span>'}</td>
+                    <td>
+                        ${r.signature 
+                            ? `<img src="${r.signature}" class="sign-img-print" style="height:35px; border:1px solid #ccc; border-radius:4px;">` 
+                            : `<button class="btn-action btn-edit no-print" onclick="openSignModal(${r.id})">✍️ 수령 서명하기</button>`}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- 서명 캔버스 로직 ---
+        let currentSignId = null;
+        const canvas = document.getElementById('signCanvas');
+        const ctx = canvas.getContext('2d');
+        let isSigning = false;
+
+        function openSignModal(id) { 
+            currentSignId = id; 
+            document.getElementById('signModal').style.display = 'flex'; 
+            clearCanvas(); 
+        }
+
+        function closeSignModal() { 
+            document.getElementById('signModal').style.display = 'none'; 
+        }
+
+        function clearCanvas() { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        canvas.addEventListener('mousedown', (e) => { 
+            isSigning = true; 
+            const p = getPos(e); 
+            ctx.beginPath(); 
+            ctx.moveTo(p.x, p.y); 
+        });
+
+        canvas.addEventListener('mousemove', (e) => { 
+            if (!isSigning) return; 
+            const p = getPos(e); 
+            ctx.lineTo(p.x, p.y); 
+            ctx.lineWidth = 3; 
+            ctx.strokeStyle = '#000'; 
+            ctx.stroke(); 
+        });
+
+        canvas.addEventListener('mouseup', () => isSigning = false);
+
+        canvas.addEventListener('touchstart', (e) => { 
+            isSigning = true; 
+            const p = getPos(e); 
+            ctx.beginPath(); 
+            ctx.moveTo(p.x, p.y); 
+        });
+
+        canvas.addEventListener('touchmove', (e) => { 
+            if (!isSigning) return; 
+            const p = getPos(e); 
+            ctx.lineTo(p.x, p.y); 
+            ctx.lineWidth = 3; 
+            ctx.strokeStyle = '#000'; 
+            ctx.stroke(); 
+        });
+
+        canvas.addEventListener('touchend', () => isSigning = false);
+
+        function saveSignature() {
+            const dataUrl = canvas.toDataURL();
+            const requests = getPpeData();
+            const target = requests.find(r => r.id === currentSignId);
+            
+            if (target) {
+                target.signature = dataUrl;
+                target.status = '지급 완료';
+                savePpeData(requests);
+                alert('수령 서명이 확정되었습니다!');
+                closeSignModal();
+                renderPpeList();
+            }
+        }
+
+        // 페이지 로드 시 초기화
+        window.onload = () => {
+            renderPpeGuides();
+            renderPpeSelectOptions();
+            checkUserAuth();
+            initPpeMonthFilter();
+            renderPpeList();
+        };
+    </script>
+</body>
+</html>

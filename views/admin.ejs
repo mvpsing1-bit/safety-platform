@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>ESOL 환경안전보건 플랫폼 - 관리자 시스템</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+    <div class="login-overlay" id="loginModal">
+        <div class="login-box">
+            <h2>⚙️ 관리자 인증</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">관리자 전용 비밀번호를 입력하세요.</p>
+            <input type="password" id="adminPw" placeholder="비밀번호 입력 (초기: 1234)" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()">로그인</button>
+        </div>
+    </div>
+
+    <header>
+        <h1>⚙️ ESOL 환경안전보건 플랫폼 관리자 시스템</h1>
+        <a href="/" class="back-btn">🖥️ 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="admin-wrapper">
+        
+        <!-- 👈 좌측 메뉴 사이드바 -->
+        <aside class="sidebar">
+            <div class="nav-group">
+                <div class="nav-title" onclick="toggleNav('nav-system')">
+                    ⚙️ 시스템 및 운영 관리 <span class="arrow">▼</span>
+                </div>
+                <div class="nav-items" id="nav-system">
+                    <button class="nav-item active" onclick="switchPanel('tab1', this)">🛠️ 현황판 메뉴 관리</button>
+                    <button class="nav-item" onclick="switchPanel('tab5', this)">📢 공지사항 관리</button>
+                    <button class="nav-item" onclick="switchPanel('tab4', this)">👤 구성원 계정 관리</button>
+                    <button class="nav-item" onclick="switchPanel('tab2', this)">✏️ 시스템 일반 설정</button>
+                </div>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-title" onclick="toggleNav('nav-safety')">
+                    🛡️ 환경안전보건 실무 <span class="arrow">▼</span>
+                </div>
+                <div class="nav-items" id="nav-safety">
+                    <button class="nav-item" onclick="switchPanel('tab7', this)">🚨 Today's DRI 관리</button>
+                    <button class="nav-item" onclick="switchPanel('tab6', this)">🧪 MSDS 자료 관리</button>
+                    <button class="nav-item" onclick="switchPanel('tab3', this)">🥽 보호구 지급/설정</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 👉 우측 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            
+            <!-- 메뉴 관리 탭 -->
+            <div id="tab1" class="panel active">
+                <h2>🛠️ 메뉴 이름/설명 수정, 순서 변경 및 신규 추가/삭제</h2>
+                <div class="form-group" style="background:#f8f5fc; padding:20px; border-radius:10px;">
+                    <h4 style="margin-bottom:10px; color:#4a0082;">+ 신규 메뉴 추가하기</h4>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <select id="addCategorySelect" style="width:140px; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                            <option value="안전">🛡️ 안전 (Safety)</option>
+                            <option value="보건">🩺 보건 (Health)</option>
+                            <option value="환경">🌱 환경 (Environment)</option>
+                            <option value="교육">🎓 교육 (Education)</option>
+                            <option value="기타">📂 기타 (Others)</option>
+                        </select>
+                        <select id="addMenuIcon" style="width:100px; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;">
+                            <option value="📄">📄 문서</option>
+                            <option value="📜">📜 방침</option>
+                            <option value="⚖️">⚖️ 법령</option>
+                            <option value="👥">👥 조직</option>
+                            <option value="🚨">🚨 비상</option>
+                            <option value="⚠️">⚠️ 위험</option>
+                            <option value="📞">📞 연락</option>
+                            <option value="📊">📊 통계</option>
+                            <option value="🏥">🏥 보건</option>
+                            <option value="🥽">🥽 보호구</option>
+                            <option value="🌿">🌿 환경</option>
+                            <option value="🏭">🏭 배출</option>
+                            <option value="💧">💧 수계</option>
+                            <option value="♻️">♻️ 폐기물</option>
+                            <option value="🎬">🎬 영상</option>
+                            <option value="📚">📚 교육</option>
+                            <option value="📁">📁 폴더</option>
+                            <option value="💡">💡 아이디어</option>
+                            <option value="🧪">🧪 화학물질</option>
+                            <option value="🔥">🔥 화기</option>
+                            <option value="🏗️">🏗️ 공사</option>
+                        </select>
+                        <input type="text" id="addMenuTitle" placeholder="메뉴 이름" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="addMenuDesc" placeholder="설명 문구" style="width:250px; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" onclick="addNewMenu()">+ 메뉴 추가</button>
+                    </div>
+                </div>
+                <h3 style="margin-top:25px; font-size:16px;">📋 현재 현황판 전체 섹션별 메뉴 리스트</h3>
+                <table>
+                    <thead>
+                        <tr><th style="width: 12%;">소속 구획</th><th style="width: 8%; text-align:center;">아이콘</th><th style="width: 20%;">메뉴 이름</th><th style="width: 25%;">메뉴 설명 문구</th><th style="width: 15%;">순서 변경</th><th style="width: 10%;">구획 이동</th><th>관리</th></tr>
+                    </thead>
+                    <tbody id="adminMenuListBody"></tbody>
+                </table>
+            </div>
+
+            <!-- DRI 탭 -->
+            <div id="tab7" class="panel">
+                <h2 style="color:#d32f2f; border-bottom: 2px solid #ffebee;">🚨 Today's DRI (일일 위험작업) 등록 및 관리</h2>
+                <p style="font-size:13px; color:#666; margin-bottom:15px;">등록된 작업은 12개월(1년) 동안 보관되며, 1년이 지난 데이터는 오래된 순서대로 자동 삭제됩니다.</p>
+                <div style="background:#fffbee; border:1px solid #ffcdd2; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#c62828; font-size:16px; margin-bottom:12px;">📝 신규 위험작업(DRI) 등록</h3>
+                    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:10px;">
+                        <div><label style="font-size:12px; font-weight:bold; color:#555;">작업 일자</label><input type="date" id="driDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#555;">담당 부서</label><input type="text" id="driDept" placeholder="예: 생산1팀" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#555;">장소(설비)</label><input type="text" id="driLocation" placeholder="예: 1라인 배기팬" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#555;">작업 시간</label><input type="text" id="driTime" placeholder="예: 09:00 ~ 13:00" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                    </div>
+                    <!-- 💡 textarea 적용 -->
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
+                        <div><label style="font-size:12px; font-weight:bold; color:#555;">작업 내용</label><textarea id="driTask" placeholder="예: 배기팬 모터 교체&#10;필터 청소" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; resize:vertical; height:70px; font-family:inherit;"></textarea></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#d32f2f;">위험 요소</label><textarea id="driRisk" placeholder="예: 추락 위험&#10;협착 위험" style="width:100%; padding:10px; border:1px solid #ffcdd2; border-radius:6px; resize:vertical; height:70px; font-family:inherit; background:#fffbee;"></textarea></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#1976d2;">안전 대책</label><textarea id="driMeasure" placeholder="예: 안전대 체결&#10;LOTO 실시" style="width:100%; padding:10px; border:1px solid #bbdefb; border-radius:6px; resize:vertical; height:70px; font-family:inherit; background:#f0f8ff;"></textarea></div>
+                    </div>
+                    <button class="submit-btn" style="width:100%; padding:12px; font-size:15px; background:#d32f2f;" onclick="submitDri()">+ 위험작업 등록하기</button>
+                </div>
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 전체 DRI 목록 (최근 1년)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">일자</th>
+                            <th style="width: 10%;">부서</th>
+                            <th style="width: 12%;">장소(설비)</th>
+                            <!-- 💡 작업시간 열 추가! -->
+                            <th style="width: 10%;">작업시간</th>
+                            <th style="width: 18%;">작업 내용</th>
+                            <th style="width: 15%;">위험 요소</th>
+                            <th style="width: 15%;">안전 대책</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminDriListBody"></tbody>
+                </table>
+            </div>
+
+            <!-- 공지사항 탭 -->
+            <div id="tab5" class="panel">
+                <h2>📢 공지사항 신규 작성 및 수정/삭제</h2>
+                <div style="background:#f0e6f6; border:1px solid #b0268d; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <select id="adminNoticeTag" style="padding:10px; border-radius:6px; border:1px solid #ccc; font-weight:bold; width:120px;"><option value="필독">필독</option><option value="안내" selected>안내</option><option value="점검">점검</option><option value="기타">기타</option></select>
+                        <input type="text" id="adminNoticeTitle" placeholder="공지사항 제목" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="adminNoticeWriter" placeholder="작성자 (예: 환경안전팀)" style="width:160px; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <textarea id="adminNoticeContent" placeholder="공지사항 상세 본문 내용..." style="width:100%; height:120px; padding:12px; border:1px solid #ccc; border-radius:6px; font-family:inherit; margin-bottom:12px; resize:vertical;"></textarea>
+                    <button class="submit-btn" style="width:100%; padding:12px; font-size:15px;" onclick="adminSubmitNotice()">+ 공지사항 등록하기</button>
+                </div>
+                <table>
+                    <thead><tr><th style="width: 8%;">태그</th><th style="width: 35%;">공지사항 제목</th><th style="width: 15%;">작성자</th><th style="width: 15%;">등록일</th><th>게시글 관리</th></tr></thead>
+                    <tbody id="adminNoticeListBody"></tbody>
+                </table>
+            </div>
+
+            <!-- MSDS 탭 -->
+            <div id="tab6" class="panel">
+                <h2>🧪 MSDS (물질안전보건자료) 관리</h2>
+                <div style="background:#f0e6f6; border:1px solid #b0268d; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="msdsName" placeholder="화학물질명" style="flex:1.5; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="msdsCas" placeholder="CAS No." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="msdsSupplier" placeholder="공급업체" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+                        <input type="text" id="msdsTags" placeholder="유해성 태그 (쉼표 구분)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="file" id="msdsFile" accept=".pdf" style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <button id="msdsSubmitBtn" class="submit-btn" style="width:100%; padding:12px; font-size:15px;" onclick="uploadMsds()">+ MSDS 등록하기</button>
+                </div>
+                <table>
+                    <thead><tr><th style="width: 25%;">물질명</th><th style="width: 15%;">CAS No.</th><th style="width: 15%;">공급업체</th><th style="width: 30%;">유해성 태그</th><th>관리</th></tr></thead>
+                    <tbody id="adminMsdsListBody"></tbody>
+                </table>
+            </div>
+
+            <!-- 계정 관리 탭 -->
+            <div id="tab4" class="panel">
+                <h2>👤 현장 구성원 계정 관리</h2>
+                <div class="form-group" style="background:#f8f5fc; padding:20px; border-radius:10px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="newUserDept" placeholder="부서명 (예: 생산1팀)" style="flex:1; padding:10px;">
+                        <input type="text" id="newUserName" placeholder="성명 / ID (예: 홍길동)" style="flex:1; padding:10px;">
+                        <input type="text" id="newUserEmpNo" placeholder="사번" style="flex:1; padding:10px;">
+                        <input type="text" id="newUserPw" placeholder="지정 비밀번호" style="flex:1; padding:10px;">
+                        <button class="submit-btn" onclick="registerUserAccount()">+ 계정 등록</button>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>부서명</th><th>성명 (ID)</th><th>사번</th><th>설정된 비밀번호</th><th>관리</th></tr></thead>
+                    <tbody id="adminUserListBody"></tbody>
+                </table>
+            </div>
+
+            <!-- 보호구 탭 -->
+            <div id="tab3" class="panel">
+                <h2>🥽 현장 보호구 설정</h2>
+                <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 style="color:#4a0082; font-size:16px;">📌 1. 필수 보호구 지침</h3>
+                        <button class="submit-btn" style="background:#b0268d;" onclick="openPpeGuideModal()">+ 추가하기</button>
+                    </div>
+                    <table>
+                        <thead><tr><th style="width: 30%;">작업 명칭</th><th style="width: 50%;">보호구 목록</th><th style="width: 20%;">관리</th></tr></thead>
+                        <tbody id="adminPpeGuideBody"></tbody>
+                    </table>
+                </div>
+                <div style="background:#f8f5fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📝 2. 보호구 종류 목록</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:500px;">
+                        <input type="text" id="newPpeOptionInput" placeholder="신규 보호구 종류" style="flex:1; padding:8px;">
+                        <button class="submit-btn" onclick="addPpeOption()">+ 추가</button>
+                    </div>
+                    <div id="adminPpeOptionTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                </div>
+                <div>
+                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📋 3. 신청 및 지급 내역</h3>
+                    <table>
+                        <thead><tr><th>신청일시</th><th>부서/이름</th><th>종류</th><th>목적</th><th>지급 상태</th><th>서명</th><th>관리</th></tr></thead>
+                        <tbody id="adminPpeListBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 시스템 설정 탭 -->
+            <div id="tab2" class="panel">
+                <h2>✏️ 시스템 설정</h2>
+                <div style="background:#f8f9fa; border:1px solid #ddd; padding:20px; border-radius:10px; margin-bottom:24px;">
+                    <div class="form-group"><label>플랫폼 대표 제목</label><input type="text" id="siteTitleInput"></div>
+                    <div class="form-group"><label>안내 문구</label><input type="text" id="siteSubTextInput"></div>
+                    <button class="submit-btn" onclick="saveTextSettings()">💾 저장</button>
+                </div>
+                <div style="background:#fff2f2; border:1px solid #ffcdd2; padding:20px; border-radius:10px;">
+                    <h3 style="color:#e53935; font-size:16px; margin-bottom:12px;">🔒 관리자 비밀번호 변경</h3>
+                    <div style="display:flex; gap:10px; max-width:600px;">
+                        <input type="password" id="newAdminPwInput" placeholder="새 비밀번호 입력" style="padding:10px; border:1px solid #ccc; border-radius:6px; flex:1;">
+                        <button class="submit-btn" style="background:#e53935;" onclick="changeAdminPassword()">🔒 비밀번호 변경</button>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- 모달 팝업들 -->
+    <div class="custom-modal-overlay" id="ppeGuideEditModal">
+        <div class="custom-modal-box">
+            <div class="custom-modal-header"><h3 id="ppeGuideModalTitle">📌 지침 편집</h3><button onclick="closePpeGuideModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
+            <input type="hidden" id="editPpeGuideIndex" value="-1">
+            <div class="form-group"><label>공정 명칭</label><input type="text" id="editPpeProcessInput"></div>
+            <div class="form-group"><label>보호구 목록</label><textarea id="editPpeItemsInput" rows="3"></textarea></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;"><button class="submit-btn" style="background:#888;" onclick="closePpeGuideModal()">취소</button><button class="submit-btn" onclick="savePpeGuideModal()">💾 저장</button></div>
+        </div>
+    </div>
+
+    <div class="custom-modal-overlay" id="menuEditModal">
+        <div class="custom-modal-box">
+            <div class="custom-modal-header"><h3 id="menuEditModalTitle">✏️ 메뉴 정보 수정</h3><button onclick="closeMenuEditModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
+            <input type="hidden" id="editMenuCat" value="">
+            <input type="hidden" id="editMenuIndex" value="-1">
+            <div class="form-group">
+                <label>아이콘 선택</label>
+                <select id="editMenuIcon" style="width:100%; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;">
+                    <option value="📄">📄 문서</option>
+                    <option value="📜">📜 방침</option>
+                    <option value="⚖️">⚖️ 법령</option>
+                    <option value="👥">👥 조직</option>
+                    <option value="🚨">🚨 비상</option>
+                    <option value="⚠️">⚠️ 위험</option>
+                    <option value="📞">📞 연락</option>
+                    <option value="📊">📊 통계</option>
+                    <option value="🏥">🏥 보건</option>
+                    <option value="🥽">🥽 보호구</option>
+                    <option value="🌿">🌿 환경</option>
+                    <option value="🏭">🏭 배출</option>
+                    <option value="💧">💧 수계</option>
+                    <option value="♻️">♻️ 폐기물</option>
+                    <option value="🎬">🎬 영상</option>
+                    <option value="📚">📚 교육</option>
+                    <option value="📁">📁 폴더</option>
+                    <option value="💡">💡 아이디어</option>
+                    <option value="🧪">🧪 화학물질</option>
+                    <option value="🔥">🔥 화기</option>
+                    <option value="🏗️">🏗️ 공사</option>
+                </select>
+            </div>
+            <div class="form-group"><label>메뉴 이름</label><input type="text" id="editMenuTitleInput"></div>
+            <div class="form-group"><label>설명 문구</label><input type="text" id="editMenuDescInput"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;"><button class="submit-btn" style="background:#888;" onclick="closeMenuEditModal()">취소</button><button class="submit-btn" onclick="saveMenuEditModal()">💾 저장</button></div>
+        </div>
+    </div>
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today's DRI - ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
+        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+
+        /* 💡 [핵심 변경] max-width를 1100px에서 1500px로 대폭 넓혔습니다! */
+        .container { max-width: 1500px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        
+        .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+        .btn-action { padding: 8px 14px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-right: 6px; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.9; }
+
+        .dri-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; text-align: center; }
+        .dri-table th, .dri-table td { padding: 12px; border: 1px solid #eae2f0; }
+        .dri-table th { background: #fffbee; color: #c62828; font-weight: bold; }
+        .dri-table td { background: #fff; vertical-align: middle; }
+
+        .search-box { display: flex; align-items: center; background: #f8f5fc; border: 2px solid #4a0082; border-radius: 30px; padding: 5px 15px; width: 350px; }
+        .search-box input { border: none; background: transparent; outline: none; padding: 8px; width: 100%; font-size: 14px; }
+        .search-box span { font-size: 18px; color: #4a0082; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-title">ESOL <span>환경안전보건 플랫폼</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container">
+        <div class="page-title">
+            <h2>📂 Today's DRI (일일 위험작업 현황)</h2>
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="driSearchInput" placeholder="날짜, 부서, 작업내용, 장소 검색..." onkeyup="searchDri()">
+            </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <p style="font-size:14px; color:#666; margin-top:8px;">
+                각 날짜의 막대를 클릭하면 해당 일자의 위험작업 리스트가 펼쳐집니다.<br>
+                (최근 12개월 기록만 자동으로 보관되며 엑셀 형태의 메일 양식으로 복사할 수 있습니다.)
+            </p>
+        </div>
+        
+        <div id="driAccordionContainer"></div>
+    </div>
+
+    <script>
+        function searchDri() {
+            const keyword = document.getElementById('driSearchInput').value.trim().toLowerCase();
+            renderDriSection(keyword);
+        }
+
+        function renderDriSection(searchKeyword = '') {
+            let list = JSON.parse(localStorage.getItem('esol_dri_data') || '[]');
+            
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            list = list.filter(d => new Date(d.date) >= oneYearAgo);
+
+            if (searchKeyword) {
+                list = list.filter(d => 
+                    d.date.includes(searchKeyword) || 
+                    d.dept.toLowerCase().includes(searchKeyword) || 
+                    d.task.toLowerCase().includes(searchKeyword) ||
+                    d.location.toLowerCase().includes(searchKeyword)
+                );
+            }
+
+            const grouped = {};
+            list.forEach(d => {
+                if(!grouped[d.date]) grouped[d.date] = [];
+                grouped[d.date].push(d);
+            });
+
+            const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+            const container = document.getElementById('driAccordionContainer');
+
+            if(sortedDates.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#999; padding:30px; background:#faf8fc; border: 1px solid #eae2f0; border-radius:12px;">조건에 일치하는 DRI 기록이 없습니다.</div>';
+                return;
+            }
+
+            container.innerHTML = sortedDates.map((date, index) => {
+                const isExpanded = (index === 0) || (searchKeyword !== ''); 
+                
+                return `
+                <div style="margin-bottom:12px; border:2px solid ${isExpanded ? '#ffcdd2' : '#eae2f0'}; border-radius:12px; overflow:hidden; background:#fff;">
+                    <div style="background:${isExpanded ? '#fffbee' : '#faf8fc'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleDriDate('${date}')">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <h4 style="color:${isExpanded ? '#c62828' : '#4a0082'}; font-size:16px; margin:0;">📅 ${date} 위험작업 내역</h4>
+                            <span style="background:#e0e0e0; color:#555; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">총 ${grouped[date].length}건</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <button class="btn-action" style="background:#d32f2f; color:#fff; margin:0; padding:8px 16px;" onclick="event.stopPropagation(); copyDriEmailByDate('${date}')">📧 메일 양식 복사</button>
+                            <span id="icon-${date}" style="font-size:14px; font-weight:bold; color:#888;">${isExpanded ? '▲ 접기' : '▼ 펴기'}</span>
+                        </div>
+                    </div>
+                    
+                    <div id="table-${date}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eae2f0;">
+                        <table class="dri-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">부서</th>
+                                    <th style="width: 12%;">장소(설비)</th>
+                                    <th style="width: 12%;">작업시간</th>
+                                    <th style="width: 20%;">작업내용</th>
+                                    <th style="width: 18%;">위험요소</th>
+                                    <th style="width: 20%;">안전대책</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${grouped[date].map(d => {
+                                    const riskTags = d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t).map(t => `<div style="background:#ffebee; color:#c62828; padding:4px 8px; border-radius:4px; margin-bottom:4px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:4px;">🚨 ${t}</div>`).join('');
+                                    const measureTags = d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t).map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; margin-bottom:4px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:4px;">🛡️ ${t}</div>`).join('');
+                                    
+                                    return `
+                                    <tr>
+                                        <td style="vertical-align:top;"><strong>${d.dept}</strong></td>
+                                        <td style="vertical-align:top;">${d.location}</td>
+                                        <td style="vertical-align:top;">${d.time}</td>
+                                        <td style="text-align:left; vertical-align:top; line-height:1.6;">${d.task.replace(/\n/g, '<br>')}</td>
+                                        <td style="text-align:left; vertical-align:top;">${riskTags}</td>
+                                        <td style="text-align:left; vertical-align:top;">${measureTags}</td>
+                                    </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function toggleDriDate(date) {
+            const tableDiv = document.getElementById(`table-${date}`);
+            const icon = document.getElementById(`icon-${date}`);
+            if(tableDiv.style.display === 'none') {
+                tableDiv.style.display = 'block';
+                icon.innerText = '▲ 접기';
+            } else {
+                tableDiv.style.display = 'none';
+                icon.innerText = '▼ 펴기';
+            }
+        }
+
+        function copyDriEmailByDate(targetDate) {
+            const list = JSON.parse(localStorage.getItem('esol_dri_data') || '[]');
+            const targetDri = list.filter(d => d.date === targetDate);
+
+            if (targetDri.length === 0) return alert('데이터를 찾을 수 없습니다.');
+
+            const tableRows = targetDri.map(d => {
+                const emailRisks = d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t).map(t => `- ${t}`).join('<br>');
+                const emailMeasures = d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t).map(t => `- ${t}`).join('<br>');
+
+                return `
+                <tr>
+                    <td style="border: 1px solid #bbb; padding: 8px; text-align:center; vertical-align:top;">${d.date}</td>
+                    <td style="border: 1px solid #bbb; padding: 8px; text-align:center; vertical-align:top;"><strong>${d.dept}</strong></td>
+                    <td style="border: 1px solid #bbb; padding: 8px; text-align:center; vertical-align:top;">${d.location}</td>
+                    <td style="border: 1px solid #bbb; padding: 8px; text-align:center; vertical-align:top;">${d.time}</td>
+                    <td style="border: 1px solid #bbb; padding: 8px; vertical-align:top;">${d.task.replace(/\n/g, '<br>')}</td>
+                    <td style="border: 1px solid #bbb; padding: 8px; color:#d32f2f; font-weight:bold; vertical-align:top; font-size:9pt;">${emailRisks}</td>
+                    <td style="border: 1px solid #bbb; padding: 8px; color:#1976d2; font-weight:bold; vertical-align:top; font-size:9pt;">${emailMeasures}</td>
+                </tr>
+                `;
+            }).join('');
+
+            const emailHtml = `
+                <div style="font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 10pt; color: #333;">
+                    <p>안녕하세요.<br>환경안전의 조현상과장 입니다.</p>
+                    <p>각 부서별 DRI(Daily Risk Inspection) 회의 결과, <strong>[${targetDate}]</strong> 위험작업 공유드립니다.<br>
+                    이후 돌발작업 발생 시 환경안전으로 연락 부탁드립니다.</p>
+                    <br>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                        <thead style="background-color: #f4f5f9;">
+                            <tr>
+                                <th style="border: 1px solid #bbb; padding: 8px;">일시</th>
+                                <th style="border: 1px solid #bbb; padding: 8px;">부서</th>
+                                <th style="border: 1px solid #bbb; padding: 8px;">장소(설비)</th>
+                                <th style="border: 1px solid #bbb; padding: 8px;">작업시간</th>
+                                <th style="border: 1px solid #bbb; padding: 8px;">작업내용</th>
+                                <th style="border: 1px solid #bbb; padding: 8px;">위험요소</th>
+                                <th style="border: 1px solid #bbb; padding: 8px;">안전대책</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                    <br>
+                    <p>감사합니다.</p>
+                </div>
+            `;
+
+            const blob = new Blob([emailHtml], { type: 'text/html' });
+            const clipboardItem = new ClipboardItem({ 'text/html': blob });
+            
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                alert(`📧 ${targetDate} 기준의 메일 양식이 클립보드에 완벽하게 복사되었습니다!`);
+            }).catch(err => {
+                alert('복사 권한 오류가 발생했습니다.');
+            });
+        }
+
+        window.onload = () => renderDriSection('');
+    </script>
+</body>
+</html>

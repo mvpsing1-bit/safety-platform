@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="sitePageTitle">ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
+        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+
+        .container { max-width: 1500px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; }
+
+        .doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px; }
+        .doc-table th, .doc-table td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; font-size: 15px; vertical-align: middle; }
+        .doc-table th { background: #f8f5fc; color: #4a0082; font-weight: bold; }
+        
+        .btn-action { padding: 8px 14px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-right: 6px; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.9; }
+        .btn-view { background: #4a0082; color: white; }
+        .btn-delete { background: #e53935; color: white; }
+
+        /* 💡 이미지 정중앙 배치를 위한 뷰어 컨테이너 스타일 */
+        #viewerContentBox { width:100%; height:850px; background:#fff; border-radius:8px; display:flex; justify-content:center; align-items:center; overflow:auto; }
+
+        @media print {
+            header, .back-btn, .btn-action, .no-print { display: none !important; }
+            body { background: #fff; padding: 0; margin: 0; font-size: 12pt; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; border: none; }
+            .doc-table { border: 1px solid #000; margin-top: 15px; }
+            .doc-table th, .doc-table td { border: 1px solid #000 !important; padding: 8px; text-align: center; }
+            .doc-table th { background-color: #f0f0f0 !important; color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="no-print">
+        <div class="brand-title" id="headerTitle">ESOL <span>환경안전보건 플랫폼</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container">
+        <div class="page-title">
+            <h2 id="categoryTitle">📂 카테고리명</h2>
+        </div>
+
+        <div id="generalUploadArea">
+            
+            <div style="background:#faf8fc; border:2px dashed #b0268d; border-radius:12px; padding:24px; margin-bottom:30px;" class="no-print">
+                <h3 style="color:#4a0082; margin-bottom:14px;">📤 신규 PDF / 이미지 자료 업로드</h3>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <input type="text" id="docTitleInput" placeholder="자료명을 입력하세요" style="flex:1; padding:12px; border:1px solid #ccc; border-radius:8px;">
+                    <input type="file" id="docFileInput" accept="application/pdf, image/*" style="padding:8px;">
+                    <button class="btn-action btn-view" style="background:#b0268d; padding:12px 24px;" onclick="uploadDocument()">+ 파일 업로드</button>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom:10px;">📑 등록된 안전보건 자료 목록</h3>
+            <table class="doc-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">자료명 / 문서 제목</th>
+                        <th>등록일</th>
+                        <th style="width: 30%;" class="no-print">열람 및 관리</th>
+                    </tr>
+                </thead>
+                <tbody id="docListBody"></tbody>
+            </table>
+
+            <div class="viewer-container" id="pdfViewerArea" style="display:none; background:#2a2a2e; padding:20px; border-radius:12px; margin-top:20px;">
+                <div style="display:flex; justify-content:space-between; color:#fff; margin-bottom:10px;">
+                    <h3 id="viewingDocTitle" style="color:#fee500;">📄 문서 바로보기</h3>
+                    <button onclick="closeViewer()" style="background:#e53935; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;" class="no-print">✕ 닫기</button>
+                </div>
+                <!-- 💡 파일 형식에 따라 이 박스 안에 iframe(PDF) 또는 img(이미지)가 들어갑니다. -->
+                <div id="viewerContentBox"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const catName = urlParams.get('cat') || '안전보건 자료실';
+        document.getElementById('categoryTitle').innerText = '📂 ' + catName;
+
+        function getStoredData() { 
+            return JSON.parse(localStorage.getItem('esol_safety_docs_v2') || '{}'); 
+        }
+        
+        function saveStoredData(data) { 
+            localStorage.setItem('esol_safety_docs_v2', JSON.stringify(data)); 
+        }
+
+        async function uploadDocument() {
+            const title = document.getElementById('docTitleInput').value.trim();
+            const fileInput = document.getElementById('docFileInput');
+
+            if (!title) return alert('자료명을 입력하세요.');
+            if (!fileInput.files[0]) return alert('파일을 선택하세요.');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.fileUrl) {
+                    const db = getStoredData();
+                    if (!db[catName]) db[catName] = [];
+                    
+                    db[catName].push({ 
+                        id: Date.now(), 
+                        title: title, 
+                        date: new Date().toISOString().split('T')[0], 
+                        fileUrl: data.fileUrl 
+                    });
+                    
+                    saveStoredData(db);
+                    document.getElementById('docTitleInput').value = '';
+                    fileInput.value = '';
+                    alert('등록 완료!');
+                    renderDocList();
+                }
+            } catch (err) { 
+                alert('업로드 실패'); 
+            }
+        }
+
+        function renderDocList() {
+            const db = getStoredData();
+            const list = db[catName] || [];
+            const tbody = document.getElementById('docListBody');
+            
+            if (list.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding:30px;">등록된 자료가 없습니다.</td></tr>`; 
+                return; 
+            }
+            
+            tbody.innerHTML = list.map(doc => `
+                <tr>
+                    <td><strong>${doc.title}</strong></td>
+                    <td>${doc.date}</td>
+                    <td class="no-print">
+                        <button class="btn-action btn-view" onclick="previewPdf('${doc.fileUrl}', '${doc.title}')">📄 즉시 열기</button>
+                        <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id})">🗑️ 삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            if (list.length > 0) {
+                const latestDoc = list[list.length - 1];
+                previewPdf(latestDoc.fileUrl, latestDoc.title);
+            }
+        }
+
+        // 💡 [핵심] 이미지 파일과 PDF 파일을 구분하여 예쁘게 중앙 정렬해주는 로직
+        function previewPdf(fileUrl, docTitle) {
+            document.getElementById('viewingDocTitle').innerText = '📄 ' + docTitle;
+            
+            const viewerBox = document.getElementById('viewerContentBox');
+            
+            // 파일 URL의 끝부분을 검사하여 이미지인지 확인합니다.
+            const isImage = fileUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+            
+            if (isImage) {
+                // 이미지일 경우: 정중앙에 비율을 유지하면서 꽉 차게 배치
+                viewerBox.innerHTML = `<img src="${fileUrl}" style="max-width:100%; max-height:100%; object-fit:contain; padding:10px;">`;
+            } else {
+                // PDF나 다른 형식일 경우: 꽉 찬 문서 뷰어(iframe) 제공
+                viewerBox.innerHTML = `<iframe src="${fileUrl}" style="width:100%; height:100%; border:none;"></iframe>`;
+            }
+
+            document.getElementById('pdfViewerArea').style.display = 'block';
+            
+            setTimeout(() => {
+                window.scrollTo({ top: document.getElementById('pdfViewerArea').offsetTop - 50, behavior: 'smooth' });
+            }, 100);
+        }
+        
+        function closeViewer() { 
+            document.getElementById('pdfViewerArea').style.display = 'none'; 
+            document.getElementById('viewerContentBox').innerHTML = ''; 
+        }
+        
+        function deleteDoc(id) {
+            if (!confirm('삭제하시겠습니까?')) return;
+            const db = getStoredData();
+            if (db[catName]) { 
+                db[catName] = db[catName].filter(x => x.id !== id); 
+                saveStoredData(db); 
+                renderDocList(); 
+                closeViewer(); 
+            }
+        }
+
+        window.onload = renderDocList;
+    </script>
+</body>
+</html>

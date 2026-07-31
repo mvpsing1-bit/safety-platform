@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="sitePageTitle">ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; position: relative; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
+        .brand-title { font-size: 30px; font-weight: 900; color: #4a0082; }
+        .brand-title span { color: #b0268d; }
+
+        .header-btns { display: flex; align-items: center; gap: 12px; }
+        .admin-btn { background: #4a0082; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .admin-btn:hover { opacity: 0.9; }
+        .alarm-btn { background: #fee500; color: #191919; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        .top-notice-section { background: #ffffff; border-radius: 16px; padding: 20px 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 24px; border-top: 4px solid #4a0082; }
+        .top-notice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .top-notice-header h2 { font-size: 18px; color: #4a0082; }
+        .notice-list { list-style: none; }
+        .notice-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+        .notice-item:hover { background: #faf8fc; }
+        .notice-item:last-child { border-bottom: none; }
+
+        .section-title { font-size: 20px; font-weight: bold; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+        .grid-2-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 24px; }
+        .category-group { background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+
+        .sub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        
+        .card { background: #faf8fc; border-radius: 12px; padding: 18px 14px; text-align: center; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px solid #eae2f0; }
+        .card:hover { transform: translateY(-2px); background: #ffffff; box-shadow: 0 4px 12px rgba(74, 0, 130, 0.1); }
+        .card:active { transform: scale(0.97); background: #f0e6f6; }
+        
+        .card .icon { font-size: 32px; margin-bottom: 8px; }
+        .card h3 { font-size: 16px; margin-bottom: 4px; color: #222; font-weight: bold; }
+        .card p { font-size: 12px; color: #777; word-break: keep-all; }
+
+        .card-safety { border-top: 4px solid #4a0082; }
+        .card-health { border-top: 4px solid #b0268d; }
+        .card-env { border-top: 4px solid #2e7d32; }
+        .card-edu { border-top: 4px solid #009688; }
+        .card-etc { border-top: 4px solid #ff9800; }
+
+        .msds-fixed-card {
+            background: linear-gradient(135deg, #f0e6f6, #ffffff);
+            border: 2px solid #b0268d;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(176, 38, 141, 0.15);
+            transition: all 0.2s ease;
+        }
+        .msds-fixed-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(176, 38, 141, 0.25); }
+        .msds-info { display: flex; align-items: center; gap: 14px; }
+        .msds-info .icon { font-size: 30px; }
+        .msds-info h3 { font-size: 17px; color: #b0268d; font-weight: bold; }
+        .msds-info p { font-size: 12px; color: #666; }
+        .msds-badge { background: #b0268d; color: #fff; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; align-self: center; }
+
+        /* 🤖 AI 챗봇 플로팅 버튼 & 팝업 창 스타일 */
+        .ai-fab-btn { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #4a0082, #b0268d); color: #fff; border: none; padding: 16px 24px; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(74,0,130,0.3); z-index: 2500; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+        .ai-fab-btn:hover { transform: scale(1.05); }
+
+        .ai-chat-window { position: fixed; bottom: 95px; right: 30px; width: 420px; height: 600px; max-width: 90vw; max-height: 80vh; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 2500; display: none; flex-direction: column; overflow: hidden; border: 2px solid #4a0082; }
+        .ai-chat-header { background: #4a0082; color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .ai-chat-messages { flex: 1; padding: 16px; overflow-y: auto; background: #f8f9fa; display: flex; flex-direction: column; gap: 12px; }
+        
+        .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.5; word-break: break-word; user-select: text; }
+        .bubble-ai { background: #ffffff; color: #333; border: 1px solid #e0e0e0; align-self: flex-start; border-top-left-radius: 2px; }
+        .bubble-user { background: #b0268d; color: #fff; align-self: flex-end; border-top-right-radius: 2px; }
+
+        .ai-chat-input-area { padding: 12px; background: #fff; border-top: 1px solid #eee; display: flex; gap: 8px; }
+        .ai-chat-input-area input { flex: 1; padding: 10px 14px; border: 1px solid #ccc; border-radius: 20px; font-size: 14px; outline: none; }
+        .ai-chat-input-area button { background: #4a0082; color: #fff; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <div class="brand-title" id="headerTitle">ESOL <span>환경안전보건 플랫폼</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div class="header-btns">
+                <button class="admin-btn" onclick="location.href='/admin'">⚙️ 관리자 페이지</button>
+                <button class="alarm-btn" onclick="alert('카톡 비상 알림 전송')">💬 비상 카톡 알림</button>
+            </div>
+            <div style="text-align: right; color: #666;">
+                <div style="font-size: 20px; font-weight: bold; color: #4a0082;" id="clock"></div>
+                <span style="font-size: 13px;" id="headerSubText">화면을 터치하여 항목을 선택하세요</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="top-notice-section">
+        <div class="top-notice-header">
+            <h2>📢 최근 주요 환경안전보건 공지</h2>
+            <span style="font-size:13px; color:#4a0082; font-weight:bold; cursor:pointer;" onclick="goDetail('공지사항')">전체보기 ➔</span>
+        </div>
+        <ul class="notice-list" id="mainNoticeList"></ul>
+    </div>
+
+    <!-- 카테고리 그리드 -->
+    <div class="grid-2-container">
+        <div class="category-group">
+            <div class="section-title" style="color: #4a0082;">🛡️ 안전 (Safety)</div>
+            <div class="sub-grid" id="grid-safety"></div>
+        </div>
+
+        <div class="category-group">
+            <div class="section-title" style="color: #b0268d;">🩺 보건 (Health)</div>
+            
+            <div class="msds-fixed-card" onclick="location.href='/msds'">
+                <div class="msds-info">
+                    <div class="icon">🧪</div>
+                    <div>
+                        <h3>MSDS 즉시조회</h3>
+                        <p>등록된 화학물질 물질안전보건자료(MSDS) 즉시 열람</p>
+                    </div>
+                </div>
+                <div class="msds-badge">PDF 열람 ➔</div>
+            </div>
+
+            <div class="sub-grid" id="grid-health"></div>
+        </div>
+    </div>
+
+    <div class="grid-2-container">
+        <div class="category-group">
+            <div class="section-title" style="color: #2e7d32;">🌱 환경 (Environment)</div>
+            <div class="sub-grid" id="grid-env"></div>
+        </div>
+
+        <div class="category-group">
+            <div class="section-title" style="color: #009688;">🎓 교육 (Education)</div>
+            <div class="sub-grid" id="grid-edu"></div>
+        </div>
+    </div>
+
+    <div class="category-group" style="margin-bottom: 24px;">
+        <div class="section-title" style="color: #ff9800;">📂 기타 (Others)</div>
+        <div class="sub-grid" id="grid-etc" style="grid-template-columns: repeat(4, 1fr);"></div>
+    </div>
+
+    <!-- 🤖 AI 챗봇 기능 유지 -->
+    <button class="ai-fab-btn" onclick="toggleAiChat()">
+        <span>🤖</span> ESOL AI 지식 챗봇
+    </button>
+
+    <div class="ai-chat-window" id="aiChatWindow">
+        <div class="ai-chat-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🤖</span>
+                <strong style="font-size:16px;">ESOL AI 환경안전 지식 비서</strong>
+            </div>
+            <button onclick="toggleAiChat()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div class="ai-chat-messages" id="chatMessages">
+            <div class="chat-bubble bubble-ai">
+                안녕하세요! 👋 <strong>ESOL AI 환경안전 지식 비서</strong>입니다.<br><br>
+                사내 MSDS 화학물질 유해성, 보호구 착용 지침, 공지사항 및 안전 수칙에 대해 무엇이든 편하게 질문해 주세요!
+            </div>
+        </div>
+        <div class="ai-chat-input-area">
+            <input type="text" id="chatInput" placeholder="질문을 입력해주세요..." onkeypress="if(event.key==='Enter') sendAiQuestion()">
+            <button onclick="sendAiQuestion()">전송</button>
+        </div>
+    </div>
+
+    <script>
+        const defaultMenus = {
+            '안전': [
+                { title: '안전보건 경영방침', desc: '대표이사 경영방침 및 목표', icon: '📜' },
+                { title: '산안법령 요지', desc: '산업안전보건법 핵심 지침', icon: '⚖️' },
+                { title: '안전보건 조직도', desc: '사내 안전관리 추진 체계', icon: '👥' },
+                { title: '비상대응 매뉴얼', desc: '사고 발생 시 행동요령', icon: '🚨' },
+                { title: '위험성평가표', desc: '공정별 위험요인 평가 내역', icon: '⚠️' },
+                { title: '비상연락망', desc: '사내/사외 비상 연락처', icon: '📞' }
+            ],
+            '보건': [
+                { title: '작업환경 측정결과', desc: '유해인자 측정 보고서', icon: '📊' },
+                { title: '근로자 건강관리', desc: '특수/일반 건강검진 안내', icon: '🏥' },
+                { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
+            ],
+            '환경': [
+                { title: '환경경영방침', desc: '사내 환경 방침 및 목표', icon: '🌿' },
+                { title: '온실가스 및 배출량', desc: '탄소 배출 및 에너지 관리', icon: '🏭' },
+                { title: '대기·수질 오염관리', desc: '방지시설 모니터링 및 인허가', icon: '💧' },
+                { title: '폐기물 성상별 관리', desc: '지정/일반 폐기물 처리 절차', icon: '♻️' }
+            ],
+            '교육': [
+                { title: '안전보건 교육영상', desc: '작업 전 시청하는 교육 영상', icon: '🎬' },
+                { title: '안전교육 자료실', desc: '정기/특별 교육 교안 및 자료', icon: '📚' }
+            ],
+            '기타': [
+                { title: '기타 자료실', desc: '각종 서식 및 기타 자료', icon: '📁' },
+                { title: '안전보건 제안/건의', desc: '위험요인 제안 및 아차사고 신고', icon: '💡' }
+            ]
+        };
+
+        const defaultNotices = [
+            { id: 1, tag: '필독', title: '2026년 상반기 작업환경측정 결과 공고의 건', content: '2026년 상반기 전체 작업장에 대한 작업환경측정이 완료되었습니다.', writer: '환경안전팀', date: '2026-07-20' },
+            { id: 2, tag: '안내', title: '신규 화학물질 도입에 따른 MSDS 최신화 게시', content: '신규 가공 라인에 도입된 화학물질 MSDS가 최신화되었습니다.', writer: '보건관리자', date: '2026-07-18' }
+        ];
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function loadSiteTextSettings() {
+            const savedText = localStorage.getItem('esol_site_texts');
+            if (savedText) {
+                const config = JSON.parse(savedText);
+                if (config.title) {
+                    document.getElementById('sitePageTitle').innerText = config.title;
+                    document.getElementById('headerTitle').innerHTML = `ESOL <span>${config.title.replace('ESOL ', '')}</span>`;
+                }
+                if (config.subText) {
+                    document.getElementById('headerSubText').innerText = config.subText;
+                }
+            }
+        }
+
+        function getMenus() {
+            const saved = localStorage.getItem('esol_menu_structure');
+            if (!saved) {
+                localStorage.setItem('esol_menu_structure', JSON.stringify(defaultMenus));
+                return defaultMenus;
+            }
+            return JSON.parse(saved);
+        }
+
+        // 💡 [핵심] 메뉴 클릭 시 독립된 전용 페이지로 깔끔하게 길 안내 (라우팅 분리)
+        function goDetail(catTitle) {
+            if (!catTitle) return;
+            
+            if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) {
+                location.href = '/notice';  // 공지사항 전용 페이지로 이동
+            } else if (catTitle === '보호구 관리') {
+                location.href = '/ppe';     // 보호구 전용 페이지로 이동
+            } else if (catTitle.toUpperCase().includes('DRI') || catTitle.includes("Today's DRI")) {
+                location.href = '/dri';     // DRI 전용 페이지로 이동
+            } else {
+                // 그 외 일반 PDF/자료실 게시판은 기존 detail.ejs 화면 사용
+                location.href = '/view?cat=' + encodeURIComponent(catTitle);
+            }
+        }
+
+        function renderTopNotices() {
+            const saved = localStorage.getItem('esol_notices');
+            const noticeList = saved ? JSON.parse(saved) : defaultNotices;
+            const container = document.getElementById('mainNoticeList');
+            const latestNotices = noticeList.slice(0, 3);
+
+            if (latestNotices.length === 0) {
+                container.innerHTML = `<li style="text-align:center; color:#999; padding:10px;">등록된 공지사항이 없습니다.</li>`;
+                return;
+            }
+
+            container.innerHTML = latestNotices.map(n => `
+                <li class="notice-item" onclick="goDetail('공지사항')">
+                    <span><strong style="color:#b0268d;">[${n.tag || '공지'}]</strong> ${n.title}</span>
+                    <span style="color:#888;">${n.date}</span>
+                </li>
+            `).join('');
+        }
+
+        function renderDashboardMenus() {
+            loadSiteTextSettings();
+            renderTopNotices();
+            const menus = getMenus();
+            const mapping = {
+                '안전': { id: 'grid-safety', class: 'card-safety' },
+                '보건': { id: 'grid-health', class: 'card-health' },
+                '환경': { id: 'grid-env', class: 'card-env' },
+                '교육': { id: 'grid-edu', class: 'card-edu' },
+                '기타': { id: 'grid-etc', class: 'card-etc' }
+            };
+
+            for (const key in mapping) {
+                const targetEl = document.getElementById(mapping[key].id);
+                if (!targetEl) continue;
+                const items = menus[key] || [];
+                targetEl.innerHTML = items.map(item => `
+                    <div class="card ${mapping[key].class}" data-title="${encodeURIComponent(item.title)}" onclick="goDetail(decodeURIComponent(this.getAttribute('data-title')))">
+                        <div class="icon">${item.icon || '📄'}</div>
+                        <h3>${item.title}</h3>
+                        <p>${item.desc || '환경안전보건 항목'}</p>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function toggleAiChat(initialQuestion = '') {
+            const win = document.getElementById('aiChatWindow');
+            if (win.style.display === 'flex' && !initialQuestion) {
+                win.style.display = 'none';
+            } else {
+                win.style.display = 'flex';
+                if (initialQuestion) {
+                    document.getElementById('chatInput').value = initialQuestion;
+                    sendAiQuestion();
+                }
+            }
+        }
+
+        async function sendAiQuestion() {
+            const inputEl = document.getElementById('chatInput');
+            const question = inputEl.value.trim();
+            if (!question) return;
+
+            const messagesContainer = document.getElementById('chatMessages');
+
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble bubble-user';
+            userBubble.innerText = question;
+            messagesContainer.appendChild(userBubble);
+            inputEl.value = '';
+
+            const aiBubble = document.createElement('div');
+            aiBubble.className = 'chat-bubble bubble-ai';
+            aiBubble.innerHTML = '<i>🤖 답변을 작성 중입니다...</i>';
+            messagesContainer.appendChild(aiBubble);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            const ppeGuides = JSON.parse(localStorage.getItem('esol_ppe_guides') || '[]');
+            const notices = JSON.parse(localStorage.getItem('esol_notices') || '[]');
+            const docs = JSON.parse(localStorage.getItem('esol_safety_docs_v2') || '{}');
+            const msdsData = JSON.parse(localStorage.getItem('esol_msds_data') || '[]');
+
+            const contextData = {
+                '보호구착용지침': ppeGuides,
+                '사내공지사항': notices,
+                '일반_등록문서목록': docs,
+                'MSDS_즉시조회_등록물질목록': msdsData
+            };
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, contextData })
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let fullText = '';
+                
+                aiBubble.innerHTML = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    fullText += decoder.decode(value, { stream: true });
+                    aiBubble.innerHTML = fullText.replace(/\n/g, '<br>');
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+            } catch (err) {
+                aiBubble.innerHTML = '⚠️ 서버 통신 오류가 발생했습니다.';
+            }
+        }
+
+        window.onload = renderDashboardMenus;
+    </script>
+</body>
+</html>
