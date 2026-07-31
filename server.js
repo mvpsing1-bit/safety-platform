@@ -34,14 +34,15 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 💡 [라우터 설정] 분리될 각각의 페이지들에 대한 접속 경로를 만들어줍니다.
+// 라우터 설정
 app.get('/', (req, res) => res.render('index'));
 app.get('/admin', (req, res) => res.render('admin'));
-app.get('/view', (req, res) => res.render('detail')); // 일반 자료실 전용
+app.get('/view', (req, res) => res.render('detail'));
 app.get('/msds', (req, res) => res.render('msds'));
-app.get('/dri', (req, res) => res.render('dri'));       // 신규: DRI 전용
-app.get('/ppe', (req, res) => res.render('ppe'));       // 신규: 보호구 전용 (예정)
-app.get('/notice', (req, res) => res.render('notice')); // 신규: 공지사항 전용 (예정)
+app.get('/dri', (req, res) => res.render('dri'));
+app.get('/ppe', (req, res) => res.render('ppe'));
+app.get('/notice', (req, res) => res.render('notice'));
+app.get('/org', (req, res) => res.render('org')); // 안전보건 조직도 전용 페이지
 
 // 파일 업로드 API
 app.post('/api/upload', upload.single('file'), (req, res) => {
@@ -49,7 +50,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.json({ fileUrl: '/uploads/' + req.file.filename, fileName: req.file.originalname });
 });
 
-// 🤖 [초고속 스트리밍 적용 AI 챗봇 백엔드 API]
+// AI 챗봇 백엔드 API
 app.post('/api/chat', async (req, res) => {
     try {
         const { question, contextData } = req.body;

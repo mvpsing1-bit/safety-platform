@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>안전보건 조직도 - ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
+        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+
+        .container { max-width: 1400px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); text-align: center; }
+        .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; text-align: left; }
+
+        /* 🌳 세련된 조직도 트리 구조 */
+        .org-tree { display: flex; flex-direction: column; align-items: center; margin-top: 30px; position: relative; }
+        
+        .org-node { background: #fff; border-radius: 12px; padding: 18px; width: 280px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); position: relative; margin-bottom: 25px; transition: 0.2s; border: 2px solid var(--theme-border, #4a0082); text-align: center; }
+        .org-node:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        
+        .org-node.top-node { width: 340px; background: linear-gradient(135deg, var(--theme-top-bg, #f8f5fc), #fff); border-color: var(--theme-top-border, #b0268d); }
+        
+        .node-role { font-size: 14px; font-weight: bold; color: var(--theme-role-color, #4a0082); margin-bottom: 6px; }
+        .node-name { font-size: 18px; font-weight: 900; color: #222; margin-bottom: 6px; }
+        .node-count { font-size: 12px; background: #e0e0e0; color: #444; padding: 3px 10px; border-radius: 10px; display: inline-block; font-weight: bold; margin-bottom: 6px; }
+        .node-extra { font-size: 13px; color: #555; margin-bottom: 8px; font-weight: bold; }
+        
+        .toggle-desc-btn { background: var(--theme-btn-bg, #f0e6f6); border: 1px solid var(--theme-btn-border, #b0268d); color: var(--theme-btn-color, #b0268d); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: block; width: 100%; transition: 0.2s; }
+        .toggle-desc-btn:hover { background: var(--theme-btn-hover-bg, #b0268d); color: #fff; }
+        
+        .node-desc-box { display: none; margin-top: 10px; border-top: 1px dashed #ddd; padding-top: 8px; text-align: left; font-size: 13px; color: #555; background: #faf8fc; padding: 8px; border-radius: 6px; }
+
+        /* 가지 연결선 구조 */
+        .org-branches { display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; width: 100%; margin-top: 15px; position: relative; }
+        .org-branches::before { content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 2px; height: 15px; background: var(--theme-line, #4a0082); }
+
+        .org-sub-branches { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; width: 100%; margin-top: 15px; position: relative; }
+        .org-sub-branches::before { content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 2px; height: 15px; background: var(--theme-line, #4a0082); }
+
+        @media print {
+            header, .back-btn, .no-print, .toggle-desc-btn { display: none !important; }
+            .node-desc-box { display: block !important; }
+            body { background: #fff; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; border: none; }
+        }
+    </style>
+</head>
+<body id="orgBody">
+
+    <header class="no-print">
+        <div class="brand-title">ESOL <span>환경안전보건 플랫폼</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container">
+        <div class="page-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>👥 사내 안전보건 추진 체계 및 조직도</h2>
+            <button class="back-btn no-print" style="background:#b0268d; border:none; cursor:pointer;" onclick="window.print()">🖨️ 조직도 인쇄/저장</button>
+        </div>
+
+        <p style="font-size:14px; color:#666; margin-bottom:20px; text-align:left;">
+            당사의 안전보건 관리 체계와 직책별 담당자 현황입니다. 관리자 페이지에서 상하 계층 소속과 필드를 실시간으로 반영할 수 있습니다.
+        </p>
+
+        <!-- 조직도 렌더링 컨테이너 -->
+        <div id="orgRenderContainer"></div>
+    </div>
+
+    <script>
+        const defaultOrgData = [
+            { id: 101, role: '대표이사 / 안전보건관리책임자', count: '1명', name: '대표이사', parentId: 'top', extraVal: '', desc: '안전보건 경영방침 수립 및 총괄 관리' },
+            { id: 102, role: '산업안전보건위원회', count: '노사 동수', name: '근로자위원 / 사용자위원', parentId: '101', extraVal: '', desc: '산업안전 주요 사항 심의·의결' },
+            { id: 103, role: '안전관리자', count: '2명', name: '김안전, 박보건', parentId: '101', extraVal: '', desc: '사내 유해위험방지 및 안전점검 지도' },
+            { id: 104, role: '보건관리자', count: '1명', name: '이보건', parentId: '101', extraVal: '', desc: '근로자 건강관리 및 작업환경 지도' },
+            { id: 105, role: '관리감독자', count: '여러 명 (지정)', name: '부서장 / 파트장 등', parentId: '103', extraVal: '', desc: '담당 공정 내 안전검사 및 일일 점검' }
+        ];
+
+        function applyTheme(themeName) {
+            const root = document.documentElement;
+            if (themeName === 'navy') {
+                root.style.setProperty('--theme-border', '#1565c0');
+                root.style.setProperty('--theme-top-bg', '#e3f2fd');
+                root.style.setProperty('--theme-top-border', '#0d47a1');
+                root.style.setProperty('--theme-role-color', '#1565c0');
+                root.style.setProperty('--theme-btn-bg', '#e3f2fd');
+                root.style.setProperty('--theme-btn-border', '#1565c0');
+                root.style.setProperty('--theme-btn-color', '#1565c0');
+                root.style.setProperty('--theme-btn-hover-bg', '#1565c0');
+                root.style.setProperty('--theme-line', '#1565c0');
+            } else if (themeName === 'green') {
+                root.style.setProperty('--theme-border', '#2e7d32');
+                root.style.setProperty('--theme-top-bg', '#e8f5e9');
+                root.style.setProperty('--theme-top-border', '#1b5e20');
+                root.style.setProperty('--theme-role-color', '#2e7d32');
+                root.style.setProperty('--theme-btn-bg', '#e8f5e9');
+                root.style.setProperty('--theme-btn-border', '#2e7d32');
+                root.style.setProperty('--theme-btn-color', '#2e7d32');
+                root.style.setProperty('--theme-btn-hover-bg', '#2e7d32');
+                root.style.setProperty('--theme-line', '#2e7d32');
+            } else if (themeName === 'dark') {
+                root.style.setProperty('--theme-border', '#333333');
+                root.style.setProperty('--theme-top-bg', '#f0f0f0');
+                root.style.setProperty('--theme-top-border', '#111111');
+                root.style.setProperty('--theme-role-color', '#333333');
+                root.style.setProperty('--theme-btn-bg', '#e0e0e0');
+                root.style.setProperty('--theme-btn-border', '#333333');
+                root.style.setProperty('--theme-btn-color', '#333333');
+                root.style.setProperty('--theme-btn-hover-bg', '#333333');
+                root.style.setProperty('--theme-line', '#333333');
+            } else {
+                root.style.setProperty('--theme-border', '#4a0082');
+                root.style.setProperty('--theme-top-bg', '#f8f5fc');
+                root.style.setProperty('--theme-top-border', '#b0268d');
+                root.style.setProperty('--theme-role-color', '#4a0082');
+                root.style.setProperty('--theme-btn-bg', '#f0e6f6');
+                root.style.setProperty('--theme-btn-border', '#b0268d');
+                root.style.setProperty('--theme-btn-color', '#b0268d');
+                root.style.setProperty('--theme-btn-hover-bg', '#b0268d');
+                root.style.setProperty('--theme-line', '#4a0082');
+            }
+        }
+
+        function createNodeHtml(node, extraLabel, allNodes) {
+            const childNodes = allNodes.filter(n => n.parentId == node.id);
+            
+            let html = `
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div class="org-node">
+                        <div class="node-role">${node.role}</div>
+                        <div class="node-name">${node.name}</div>
+                        <div class="node-count">인원: ${node.count}</div>
+                        ${node.extraVal ? `<div class="node-extra">${extraLabel}: ${node.extraVal}</div>` : ''}
+                        <button class="toggle-desc-btn no-print" onclick="toggleOrgDesc(this)">🔽 역할/설명 보기</button>
+                        <div class="node-desc-box">📌 ${node.desc || '설명 없음'}</div>
+                    </div>
+            `;
+
+            if (childNodes.length > 0) {
+                html += `<div class="org-sub-branches">`;
+                childNodes.forEach(child => {
+                    html += createNodeHtml(child, extraLabel, allNodes);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function renderOrg() {
+            const savedData = localStorage.getItem('esol_org_data');
+            const list = savedData ? JSON.parse(savedData) : defaultOrgData;
+            const settings = JSON.parse(localStorage.getItem('esol_org_settings') || '{"theme":"purple","extraLabel":"연락처"}');
+            
+            applyTheme(settings.theme);
+            const container = document.getElementById('orgRenderContainer');
+
+            if (list.length === 0) {
+                container.innerHTML = `<div style="color:#999; padding:40px;">등록된 조직도 정보가 없습니다.</div>`;
+                return;
+            }
+
+            const topNode = list.find(n => n.parentId === 'top') || list[0];
+            const level1Nodes = list.filter(n => n.parentId == topNode.id);
+
+            let html = `
+                <div class="org-tree">
+                    <div class="org-node top-node">
+                        <div class="node-role">${topNode.role}</div>
+                        <div class="node-name">${topNode.name}</div>
+                        <div class="node-count">인원: ${topNode.count}</div>
+                        ${topNode.extraVal ? `<div class="node-extra">${settings.extraLabel}: ${topNode.extraVal}</div>` : ''}
+                        <button class="toggle-desc-btn no-print" onclick="toggleOrgDesc(this)">🔽 역할/설명 보기</button>
+                        <div class="node-desc-box">📌 ${topNode.desc || '설명 없음'}</div>
+                    </div>
+            `;
+
+            if (level1Nodes.length > 0) {
+                html += `<div class="org-branches">`;
+                level1Nodes.forEach(l1Node => {
+                    html += createNodeHtml(l1Node, settings.extraLabel, list);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function toggleOrgDesc(btn) {
+            const box = btn.nextElementSibling;
+            if (box.style.display === 'block') {
+                box.style.display = 'none';
+                btn.innerText = '🔽 역할/설명 보기';
+            } else {
+                box.style.display = 'block';
+                btn.innerText = '🔼 역할/설명 닫기';
+            }
+        }
+
+        window.onload = renderOrg;
+    </script>
+</body>
+</html>

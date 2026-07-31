@@ -247,13 +247,14 @@
             if (!catTitle) return;
             
             if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) {
-                location.href = '/notice';  // 공지사항 전용 페이지로 이동
+                location.href = '/notice';  
             } else if (catTitle === '보호구 관리') {
-                location.href = '/ppe';     // 보호구 전용 페이지로 이동
+                location.href = '/ppe';     
             } else if (catTitle.toUpperCase().includes('DRI') || catTitle.includes("Today's DRI")) {
-                location.href = '/dri';     // DRI 전용 페이지로 이동
+                location.href = '/dri';     
+            } else if (catTitle.includes('조직도') || catTitle.includes('안전보건 조직도')) {
+                location.href = '/org';     // 💡 메인 화면에서 안전보건 조직도 클릭 시 /org 페이지로 이동
             } else {
-                // 그 외 일반 PDF/자료실 게시판은 기존 detail.ejs 화면 사용
                 location.href = '/view?cat=' + encodeURIComponent(catTitle);
             }
         }

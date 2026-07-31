@@ -65,6 +65,14 @@ const defaultPpeGuides = [
 
 const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
 
+const defaultOrgData = [
+    { id: 101, role: '대표이사 / 안전보건관리책임자', count: '1명', name: '대표이사', parentId: 'top', extraVal: '', desc: '안전보건 경영방침 수립 및 총괄 관리' },
+    { id: 102, role: '산업안전보건위원회', count: '노사 동수', name: '근로자위원 / 사용자위원', parentId: '101', extraVal: '', desc: '산업안전 주요 사항 심의·의결' },
+    { id: 103, role: '안전관리자', count: '2명', name: '김안전, 박보건', parentId: '101', extraVal: '', desc: '사내 유해위험방지 및 안전점검 지도' },
+    { id: 104, role: '보건관리자', count: '1명', name: '이보건', parentId: '101', extraVal: '', desc: '근로자 건강관리 및 작업환경 지도' },
+    { id: 105, role: '관리감독자', count: '여러 명 (지정)', name: '부서장 / 파트장 등', parentId: '103', extraVal: '', desc: '담당 공정 내 안전검사 및 일일 점검' }
+];
+
 function getAdminPassword() {
     return localStorage.getItem('esol_admin_password') || '1234';
 }
@@ -81,7 +89,8 @@ function checkPassword() {
         loadAdminPpeSection();
         loadAdminUserList();
         loadAdminMsdsList();
-        loadAdminDriList(1); // 페이지 1부터 로드
+        loadAdminDriList(1);
+        loadAdminOrgList();
     } else {
         alert('비밀번호가 올바르지 않습니다.');
     }
@@ -138,9 +147,8 @@ function submitDri() {
     document.getElementById('driLocation').focus();
 }
 
-// 💡 [아코디언 및 페이지네이션 적용된 관리자 DRI 리스트]
 let adminDriCurrentPage = 1;
-const adminDriPerPage = 5; // 날짜 기준 5개씩 페이징
+const adminDriPerPage = 5;
 
 function loadAdminDriList(page = 1) {
     adminDriCurrentPage = page;
@@ -230,7 +238,6 @@ function loadAdminDriList(page = 1) {
         `;
     }).join('');
 
-    // 페이지네이션 버튼 렌더링
     let pageHtml = '';
     for (let i = 1; i <= totalPages; i++) {
         pageHtml += `
@@ -259,6 +266,159 @@ function deleteDri(id) {
     let list = getDriData();
     list = list.filter(d => d.id !== id);
     saveDriData(list);
+}
+
+// --- 안전보건 조직도 맞춤 설정 및 관리 로직 ---
+function getOrgSettings() {
+    const saved = localStorage.getItem('esol_org_settings');
+    return saved ? JSON.parse(saved) : { theme: 'purple', extraLabel: '연락처' };
+}
+
+function saveOrgSettings() {
+    const theme = document.getElementById('orgThemeSelect').value;
+    const extraLabel = document.getElementById('orgExtraFieldLabel').value.trim();
+    const settings = { theme, extraLabel: extraLabel || '추가정보' };
+    localStorage.setItem('esol_org_settings', JSON.stringify(settings));
+    alert('조직도 양식 및 테마 설정이 저장되었습니다.');
+    loadAdminOrgList();
+}
+
+function getOrgData() {
+    const saved = localStorage.getItem('esol_org_data');
+    return saved ? JSON.parse(saved) : defaultOrgData;
+}
+
+function saveOrgData(data) {
+    localStorage.setItem('esol_org_data', JSON.stringify(data));
+    loadAdminOrgList();
+}
+
+function loadAdminOrgList() {
+    const list = getOrgData();
+    const settings = getOrgSettings();
+    
+    document.getElementById('orgThemeSelect').value = settings.theme;
+    document.getElementById('orgExtraFieldLabel').value = settings.extraLabel;
+    document.getElementById('thExtraLabel').innerText = settings.extraLabel;
+    document.getElementById('orgExtraValInput').placeholder = settings.extraLabel + ' 입력';
+
+    const tbody = document.getElementById('adminOrgListBody');
+    const parentSelect = document.getElementById('orgParentSelect');
+    if (!tbody) return;
+
+    let parentOptions = `<option value="top">상위: 대표이사 직속</option>`;
+    list.forEach(o => {
+        parentOptions += `<option value="${o.id}">${o.role} (${o.name})</option>`;
+    });
+    parentSelect.innerHTML = parentOptions;
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999; padding:25px;">등록된 조직도 항목이 없습니다.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = list.map((o, idx) => `
+        <tr data-id="${o.id}">
+            <td><input type="text" class="org-role-input" value="${o.role}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
+            <td><input type="text" class="org-count-input" value="${o.count}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
+            <td><input type="text" class="org-name-input" value="${o.name}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
+            <td>
+                <select class="org-parent-select" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="top" ${o.parentId === 'top' ? 'selected' : ''}>대표이사 직속</option>
+                    ${list.filter(i => i.id !== o.id).map(i => `<option value="${i.id}" ${o.parentId == i.id ? 'selected' : ''}>${i.role} (${i.name})</option>`).join('')}
+                </select>
+            </td>
+            <td><input type="text" class="org-extra-input" value="${o.extraVal || ''}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="${settings.extraLabel}"></td>
+            <td>
+                <button class="btn-sm btn-edit" onclick="toggleAdminOrgDesc(this)" style="margin-bottom:4px; background:#b0268d;">🔽 설명</button>
+                <div class="org-desc-wrap" style="display:none; margin-top:4px;">
+                    <textarea class="org-desc-input" style="width:100%; height:50px; padding:6px; border:1px solid #ccc; border-radius:4px; font-family:inherit; resize:vertical;">${o.desc || ''}</textarea>
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; gap:3px; justify-content:center;">
+                    <button class="btn-sm btn-move" onclick="moveOrgOrder(${idx}, -1)">▲</button>
+                    <button class="btn-sm btn-move" onclick="moveOrgOrder(${idx}, 1)">▼</button>
+                    <button class="btn-sm btn-del" onclick="deleteOrgItem(${o.id})">삭제</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function moveOrgOrder(index, dir) {
+    let list = getOrgData();
+    const targetIdx = index + dir;
+    if (targetIdx >= 0 && targetIdx < list.length) {
+        const temp = list[index];
+        list[index] = list[targetIdx];
+        list[targetIdx] = temp;
+        // 즉시 저장이 아니라 배열 순서만 바꾼 뒤 리스트 다시 렌더링
+        localStorage.setItem('esol_org_data', JSON.stringify(list));
+        loadAdminOrgList();
+    }
+}
+
+function toggleAdminOrgDesc(btn) {
+    const wrap = btn.nextElementSibling;
+    if (wrap.style.display === 'none') {
+        wrap.style.display = 'block';
+        btn.innerText = '🔼 닫기';
+    } else {
+        wrap.style.display = 'none';
+        btn.innerText = '🔽 설명';
+    }
+}
+
+function saveAllOrgChanges() {
+    const rows = document.querySelectorAll('#adminOrgListBody tr[data-id]');
+    let newList = [];
+
+    rows.forEach(row => {
+        const id = parseInt(row.getAttribute('data-id'), 10);
+        const role = row.querySelector('.org-role-input').value.trim();
+        const count = row.querySelector('.org-count-input').value.trim();
+        const name = row.querySelector('.org-name-input').value.trim();
+        const parentId = row.querySelector('.org-parent-select').value;
+        const extraVal = row.querySelector('.org-extra-input').value.trim();
+        const desc = row.querySelector('.org-desc-input').value.trim();
+
+        if (role && name) {
+            newList.push({ id, role, count, name, parentId, extraVal, desc });
+        }
+    });
+
+    saveOrgData(newList);
+    alert('조직도 변경사항이 일괄 저장되었습니다.');
+}
+
+function addOrgItem() {
+    const role = document.getElementById('orgRoleInput').value.trim();
+    const count = document.getElementById('orgCountInput').value.trim();
+    const name = document.getElementById('orgNameInput').value.trim();
+    const parentId = document.getElementById('orgParentSelect').value;
+    const extraVal = document.getElementById('orgExtraValInput').value.trim();
+    const desc = document.getElementById('orgDescInput').value.trim();
+
+    if (!role || !name) return alert('직책/조직명과 담당자 성명은 필수 입력 항목입니다.');
+
+    let list = getOrgData();
+    list.push({ id: Date.now(), role, count: count || '1명', name, parentId, extraVal, desc });
+    saveOrgData(list);
+
+    document.getElementById('orgRoleInput').value = '';
+    document.getElementById('orgCountInput').value = '';
+    document.getElementById('orgNameInput').value = '';
+    document.getElementById('orgExtraValInput').value = '';
+    document.getElementById('orgDescInput').value = '';
+    alert('새로운 조직도 항목이 추가되었습니다.');
+}
+
+function deleteOrgItem(id) {
+    if (!confirm('해당 조직도 항목을 삭제하시겠습니까?')) return;
+    let list = getOrgData();
+    list = list.filter(o => o.id !== id);
+    saveOrgData(list);
 }
 
 function getMenus() {

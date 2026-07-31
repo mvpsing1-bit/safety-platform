@@ -48,20 +48,26 @@
         <div style="margin-bottom:20px;">
             <p style="font-size:14px; color:#666; margin-top:8px;">
                 각 날짜의 막대를 클릭하면 해당 일자의 위험작업 리스트가 펼쳐집니다.<br>
-                (위험요소나 안전대책이 없는 항목은 N/A로 깔끔하게 표기됩니다.)
+                (위험요소나 안전대책이 없는 항목은 N/A로 표기되며 페이지별 탐색이 가능합니다.)
             </p>
         </div>
         
         <div id="driAccordionContainer"></div>
+        <div id="driPagination" style="display:flex; justify-content:center; gap:5px; margin-top:25px;"></div>
     </div>
 
     <script>
+        let driCurrentPage = 1;
+        const driPerPage = 5;
+
         function searchDri() {
-            const keyword = document.getElementById('driSearchInput').value.trim().toLowerCase();
-            renderDriSection(keyword);
+            driCurrentPage = 1;
+            renderDriSection(1);
         }
 
-        function renderDriSection(searchKeyword = '') {
+        function renderDriSection(page = 1) {
+            driCurrentPage = page;
+            const searchKeyword = document.getElementById('driSearchInput').value.trim().toLowerCase();
             let list = JSON.parse(localStorage.getItem('esol_dri_data') || '[]');
             
             const oneYearAgo = new Date();
@@ -85,14 +91,23 @@
 
             const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
             const container = document.getElementById('driAccordionContainer');
+            const paginationContainer = document.getElementById('driPagination');
 
             if(sortedDates.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:#999; padding:30px; background:#faf8fc; border: 1px solid #eae2f0; border-radius:12px;">조건에 일치하는 DRI 기록이 없습니다.</div>';
+                paginationContainer.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = sortedDates.map((date, index) => {
-                const isExpanded = (index === 0) || (searchKeyword !== ''); 
+            const totalPages = Math.ceil(sortedDates.length / driPerPage);
+            if (driCurrentPage > totalPages) driCurrentPage = totalPages;
+            if (driCurrentPage < 1) driCurrentPage = 1;
+
+            const startIndex = (driCurrentPage - 1) * driPerPage;
+            const currentDates = sortedDates.slice(startIndex, startIndex + driPerPage);
+
+            container.innerHTML = currentDates.map((date, index) => {
+                const isExpanded = (index === 0 && driCurrentPage === 1 && !searchKeyword); 
                 const items = grouped[date];
                 
                 const activeItems = items.filter(d => d.task && d.task.trim() !== '없음');
@@ -152,6 +167,16 @@
                     </div>
                 </div>
             `}).join('');
+
+            let pageHtml = '';
+            for (let i = 1; i <= totalPages; i++) {
+                pageHtml += `
+                    <button onclick="renderDriSection(${i})" style="padding:6px 14px; border:1px solid #4a0082; background:${i === driCurrentPage ? '#4a0082' : '#fff'}; color:${i === driCurrentPage ? '#fff' : '#4a0082'}; border-radius:6px; cursor:pointer; font-weight:bold;">
+                        ${i}
+                    </button>
+                `;
+            }
+            paginationContainer.innerHTML = pageHtml;
         }
 
         function toggleDriDate(date) {
@@ -231,7 +256,7 @@
             });
         }
 
-        window.onload = () => renderDriSection('');
+        window.onload = () => renderDriSection(1);
     </script>
 </body>
 </html>

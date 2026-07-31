@@ -42,6 +42,7 @@
                     🛡️ 환경안전보건 실무 <span class="arrow">▼</span>
                 </div>
                 <div class="nav-items" id="nav-safety">
+                    <button class="nav-item" onclick="switchPanel('tab8', this)">👥 안전보건 조직도 관리</button>
                     <button class="nav-item" onclick="switchPanel('tab7', this)">🚨 Today's DRI 관리</button>
                     <button class="nav-item" onclick="switchPanel('tab6', this)">🧪 MSDS 자료 관리</button>
                     <button class="nav-item" onclick="switchPanel('tab3', this)">🥽 보호구 지급/설정</button>
@@ -102,6 +103,70 @@
                 </table>
             </div>
 
+            <!-- 안전보건 조직도 관리 탭 -->
+            <div id="tab8" class="panel">
+                <h2>👥 안전보건 조직도 맞춤 설정 및 계층 관리</h2>
+                <p style="font-size:13px; color:#666; margin-bottom:15px;">조직도의 테마 및 추가 필드명을 설정하고, 각 항목의 상하 소속(계층) 및 순서를 지정한 뒤 <strong>변경사항 일괄 저장</strong>을 눌러주세요.</p>
+                
+                <!-- 테마 및 추가 필드 설정 박스 -->
+                <div style="background:#f0e6f6; border:2px solid #b0268d; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">🎨 조직도 양식 및 표시 설정</h3>
+                    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:15px; margin-bottom:15px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#555;">조직도 색상 테마</label>
+                            <select id="orgThemeSelect" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; margin-top:4px;">
+                                <option value="purple">💜 퍼플 테마 (기본)</option>
+                                <option value="navy">💙 네이비/블루 테마</option>
+                                <option value="green">💚 에코 그린 테마</option>
+                                <option value="dark">🖤 모던 다크 테마</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#555;">추가 표시 정보 필드명 (예: 연락처 / 이메일)</label>
+                            <input type="text" id="orgExtraFieldLabel" placeholder="예: 연락처" style="width:100%; padding:9px; border:1px solid #ccc; border-radius:6px; margin-top:4px;">
+                        </div>
+                    </div>
+                    <button class="submit-btn" style="background:#b0268d;" onclick="saveOrgSettings()">🎨 양식/테마 설정 저장</button>
+                </div>
+
+                <!-- 신규 항목 추가 -->
+                <div style="background:#f8f5fc; border:1px solid #4a0082; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">➕ 신규 조직/직책 항목 추가</h3>
+                    <div style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="orgRoleInput" placeholder="직책/조직명 (예: 관리감독자)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="orgCountInput" placeholder="인원수 (예: 1명)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="orgNameInput" placeholder="담당자 성명" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <select id="orgParentSelect" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                            <option value="top">상위: 최상단 직속</option>
+                        </select>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 2fr 2fr; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="orgExtraValInput" placeholder="추가 필드 값" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="orgDescInput" placeholder="상세 역할 및 설명" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <button class="submit-btn" style="width:100%; padding:10px;" onclick="addOrgItem()">+ 조직도 항목 추가하기</button>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="font-size:16px;">📋 등록된 안전보건 조직도 항목 편집 (계층 및 위치 변경)</h3>
+                    <button class="submit-btn" style="background:#2e7d32;" onclick="saveAllOrgChanges()">💾 변경사항 일괄 저장</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 17%;">직책 / 조직명</th>
+                            <th style="width: 9%;">인원수</th>
+                            <th style="width: 14%;">담당자 성명</th>
+                            <th style="width: 14%;">상위 소속 지정</th>
+                            <th style="width: 14%;" id="thExtraLabel">추가 정보</th>
+                            <th style="width: 18%;">상세 설명</th>
+                            <th style="width: 14%;">순서 및 관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminOrgListBody"></tbody>
+                </table>
+            </div>
+
             <!-- DRI 탭 -->
             <div id="tab7" class="panel">
                 <h2 style="color:#d32f2f; border-bottom: 2px solid #ffebee;">🚨 Today's DRI (일일 위험작업) 등록 및 관리</h2>
@@ -121,9 +186,8 @@
                     </div>
                     <button class="submit-btn" style="width:100%; padding:12px; font-size:15px; background:#d32f2f;" onclick="submitDri()">+ 위험작업 등록하기</button>
                 </div>
-                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 전체 DRI 목록 (날짜별 아코디언 및 페이지네이션)</h3>
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 전체 DRI 목록 (아코디언 및 페이징)</h3>
                 
-                <!-- 💡 아코디언 및 페이지네이션이 그려질 컨테이너 영역 -->
                 <div id="adminDriAccordionContainer"></div>
                 <div id="adminDriPagination" style="display:flex; justify-content:center; gap:5px; margin-top:20px;"></div>
             </div>
