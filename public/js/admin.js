@@ -81,7 +81,7 @@ function checkPassword() {
         loadAdminPpeSection();
         loadAdminUserList();
         loadAdminMsdsList();
-        loadAdminDriList();
+        loadAdminDriList(1); // 페이지 1부터 로드
     } else {
         alert('비밀번호가 올바르지 않습니다.');
     }
@@ -108,10 +108,9 @@ function getDriData() {
 
 function saveDriData(data) { 
     localStorage.setItem('esol_dri_data', JSON.stringify(data)); 
-    loadAdminDriList(); 
+    loadAdminDriList(1); 
 }
 
-// 💡 [연속 등록 유지 로직 적용됨]
 function submitDri() {
     const date = document.getElementById('driDate').value;
     const dept = document.getElementById('driDept').value.trim();
@@ -139,13 +138,19 @@ function submitDri() {
     document.getElementById('driLocation').focus();
 }
 
-// 💡 [날짜 그룹화 및 태그 렌더링 로직 적용됨]
-function loadAdminDriList() {
+// 💡 [아코디언 및 페이지네이션 적용된 관리자 DRI 리스트]
+let adminDriCurrentPage = 1;
+const adminDriPerPage = 5; // 날짜 기준 5개씩 페이징
+
+function loadAdminDriList(page = 1) {
+    adminDriCurrentPage = page;
     const list = getDriData();
-    const tbody = document.getElementById('adminDriListBody');
+    const container = document.getElementById('adminDriAccordionContainer');
+    const paginationContainer = document.getElementById('adminDriPagination');
     
     if (list.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#999; padding:25px;">최근 1년간 등록된 DRI가 없습니다.</td></tr>`; 
+        container.innerHTML = `<div style="text-align:center; color:#999; padding:25px; background:#fff; border-radius:8px; border:1px solid #ddd;">최근 1년간 등록된 DRI가 없습니다.</div>`; 
+        paginationContainer.innerHTML = '';
         return; 
     }
 
@@ -156,39 +161,97 @@ function loadAdminDriList() {
     });
 
     const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
-    let html = '';
+    const totalPages = Math.ceil(sortedDates.length / adminDriPerPage);
+    
+    if (adminDriCurrentPage > totalPages) adminDriCurrentPage = totalPages;
+    if (adminDriCurrentPage < 1) adminDriCurrentPage = 1;
 
-    sortedDates.forEach(date => {
-        // 💡 colspan을 7에서 8로 늘렸습니다.
-        html += `
-            <tr style="background-color: #f0e6f6; border-top: 3px solid #b0268d;">
-                <td colspan="8" style="padding: 12px 15px; color: #4a0082; font-size: 15px;">
-                    📅 <strong>${date}</strong> 등록 내역 (총 <span style="color:#d32f2f;">${grouped[date].length}</span>건)
-                </td>
-            </tr>
+    const startIndex = (adminDriCurrentPage - 1) * adminDriPerPage;
+    const currentDates = sortedDates.slice(startIndex, startIndex + adminDriPerPage);
+
+    container.innerHTML = currentDates.map((date, index) => {
+        const isExpanded = (index === 0 && adminDriCurrentPage === 1);
+        const items = grouped[date];
+        const activeItems = items.filter(d => d.task && d.task.trim() !== '없음');
+        const noneItems = items.filter(d => !d.task || d.task.trim() === '없음');
+
+        return `
+            <div style="margin-bottom:12px; border:2px solid ${isExpanded ? '#b0268d' : '#eae2f0'}; border-radius:12px; overflow:hidden; background:#fff;">
+                <div style="background:${isExpanded ? '#f8f5fc' : '#faf8fc'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleAdminDriDate('${date}')">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <h4 style="color:${isExpanded ? '#b0268d' : '#4a0082'}; font-size:16px; margin:0;">📅 ${date} 등록 내역</h4>
+                        <span style="background:#e0e0e0; color:#555; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">총 ${items.length}건</span>
+                    </div>
+                    <span id="admin-icon-${date}" style="font-size:14px; font-weight:bold; color:#888;">${isExpanded ? '▲ 접기' : '▼ 펴기'}</span>
+                </div>
+                
+                <div id="admin-table-${date}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eae2f0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">부서</th>
+                                <th style="width: 12%;">장소(설비)</th>
+                                <th style="width: 10%;">작업시간</th>
+                                <th style="width: 20%;">작업 내용</th>
+                                <th style="width: 18%;">위험 요소</th>
+                                <th style="width: 18%;">안전 대책</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${activeItems.map(d => {
+                                const riskTags = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `<div style="background:#ffebee; color:#c62828; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:3px;">${t}</div>`).join('') : '';
+                                const measureTags = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:3px;">${t}</div>`).join('') : '';
+
+                                return `
+                                    <tr style="background-color: #fff; border-bottom: 1px solid #eee;">
+                                        <td style="vertical-align:top;"><strong>${d.dept}</strong></td>
+                                        <td style="vertical-align:top;">${d.location || '-'}</td>
+                                        <td style="vertical-align:top; color:#555;">${d.time || '-'}</td>
+                                        <td style="vertical-align:top; line-height:1.5;">${d.task.replace(/\n/g, '<br>')}</td>
+                                        <td style="vertical-align:top;">${riskTags || '<span style="color:#999; font-style:italic;">N/A</span>'}</td>
+                                        <td style="vertical-align:top;">${measureTags || '<span style="color:#999; font-style:italic;">N/A</span>'}</td>
+                                        <td style="vertical-align:top;"><button class="btn-sm btn-del" onclick="deleteDri(${d.id})">🗑️ 삭제</button></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+
+                            ${noneItems.length > 0 ? `
+                                <tr>
+                                    <td colspan="7" style="background:#fafafa; color:#777; padding:10px; font-size:13px; text-align:left;">
+                                        💤 <strong>특이사항(작업) 없음 부서:</strong> ${noneItems.map(n => n.dept).join(', ')}
+                                    </td>
+                                </tr>
+                            ` : ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         `;
+    }).join('');
 
-        grouped[date].forEach(d => {
-            const riskTags = d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t).map(t => `<div style="background:#ffebee; color:#c62828; padding:4px 8px; border-radius:4px; margin-bottom:4px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:4px;">🚨 ${t}</div>`).join('');
-            const measureTags = d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t).map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; margin-bottom:4px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:4px;">🛡️ ${t}</div>`).join('');
+    // 페이지네이션 버튼 렌더링
+    let pageHtml = '';
+    for (let i = 1; i <= totalPages; i++) {
+        pageHtml += `
+            <button onclick="loadAdminDriList(${i})" style="padding:6px 12px; border:1px solid #4a0082; background:${i === adminDriCurrentPage ? '#4a0082' : '#fff'}; color:${i === adminDriCurrentPage ? '#fff' : '#4a0082'}; border-radius:6px; cursor:pointer; font-weight:bold;">
+                ${i}
+            </button>
+        `;
+    }
+    paginationContainer.innerHTML = pageHtml;
+}
 
-            // 💡 <td> 부분에 작업시간(d.time) 출력 코드 추가
-            html += `
-                <tr style="background-color: #fff; border-bottom: 1px solid #eee;">
-                    <td style="color:#888; font-size:13px; vertical-align:top;">${d.date}</td>
-                    <td style="vertical-align:top;"><strong>${d.dept}</strong></td>
-                    <td style="vertical-align:top;">${d.location}</td>
-                    <td style="vertical-align:top; color:#555;">${d.time}</td>
-                    <td style="vertical-align:top; line-height:1.6;">${d.task.replace(/\n/g, '<br>')}</td>
-                    <td style="vertical-align:top;">${riskTags}</td>
-                    <td style="vertical-align:top;">${measureTags}</td>
-                    <td style="vertical-align:top;"><button class="btn-sm btn-del" onclick="deleteDri(${d.id})">🗑️ 삭제</button></td>
-                </tr>
-            `;
-        });
-    });
-
-    tbody.innerHTML = html;
+function toggleAdminDriDate(date) {
+    const tableDiv = document.getElementById(`admin-table-${date}`);
+    const icon = document.getElementById(`admin-icon-${date}`);
+    if(tableDiv.style.display === 'none') {
+        tableDiv.style.display = 'block';
+        icon.innerText = '▲ 접기';
+    } else {
+        tableDiv.style.display = 'none';
+        icon.innerText = '▼ 펴기';
+    }
 }
 
 function deleteDri(id) {

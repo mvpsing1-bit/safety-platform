@@ -114,7 +114,6 @@
                         <div><label style="font-size:12px; font-weight:bold; color:#555;">장소(설비)</label><input type="text" id="driLocation" placeholder="예: 1라인 배기팬" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
                         <div><label style="font-size:12px; font-weight:bold; color:#555;">작업 시간</label><input type="text" id="driTime" placeholder="예: 09:00 ~ 13:00" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
                     </div>
-                    <!-- 💡 textarea 적용 -->
                     <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
                         <div><label style="font-size:12px; font-weight:bold; color:#555;">작업 내용</label><textarea id="driTask" placeholder="예: 배기팬 모터 교체&#10;필터 청소" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; resize:vertical; height:70px; font-family:inherit;"></textarea></div>
                         <div><label style="font-size:12px; font-weight:bold; color:#d32f2f;">위험 요소</label><textarea id="driRisk" placeholder="예: 추락 위험&#10;협착 위험" style="width:100%; padding:10px; border:1px solid #ffcdd2; border-radius:6px; resize:vertical; height:70px; font-family:inherit; background:#fffbee;"></textarea></div>
@@ -122,23 +121,11 @@
                     </div>
                     <button class="submit-btn" style="width:100%; padding:12px; font-size:15px; background:#d32f2f;" onclick="submitDri()">+ 위험작업 등록하기</button>
                 </div>
-                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 전체 DRI 목록 (최근 1년)</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 10%;">일자</th>
-                            <th style="width: 10%;">부서</th>
-                            <th style="width: 12%;">장소(설비)</th>
-                            <!-- 💡 작업시간 열 추가! -->
-                            <th style="width: 10%;">작업시간</th>
-                            <th style="width: 18%;">작업 내용</th>
-                            <th style="width: 15%;">위험 요소</th>
-                            <th style="width: 15%;">안전 대책</th>
-                            <th>관리</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminDriListBody"></tbody>
-                </table>
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 전체 DRI 목록 (날짜별 아코디언 및 페이지네이션)</h3>
+                
+                <!-- 💡 아코디언 및 페이지네이션이 그려질 컨테이너 영역 -->
+                <div id="adminDriAccordionContainer"></div>
+                <div id="adminDriPagination" style="display:flex; justify-content:center; gap:5px; margin-top:20px;"></div>
             </div>
 
             <!-- 공지사항 탭 -->
