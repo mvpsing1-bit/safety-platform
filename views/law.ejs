@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>산안법령 요지 - ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #f57c00; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #f57c00; }
+        .back-btn { background: #f57c00; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; transition: 0.2s; }
+        .back-btn:hover { opacity: 0.8; }
+        .container { max-width: 1600px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); min-height: 700px; }
+        .page-title { font-size: 24px; color: #f57c00; margin-bottom: 20px; border-bottom: 2px solid #f57c00; padding-bottom: 12px; }
+        .section-title { font-size: 18px; color: #333; margin-bottom: 15px; font-weight: bold; }
+        .btn-download { background: #2e7d32; color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; text-decoration: none; display: inline-block; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-download:hover { opacity: 0.9; }
+        .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #fff3e0; border-radius: 10px; border: 1px dashed #ffb74d; }
+        
+        /* 💡 돋보기(줌) 버튼 스타일 (오렌지 테마) */
+        .zoom-btn { background: #fff; color: #f57c00; border: 1px solid #f57c00; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-left: 5px; }
+        .zoom-btn:hover { background: #f57c00; color: #fff; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand-title">ESOL <span>산업안전보건법령 요지</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+    <div class="container">
+        <div class="page-title"><h2 id="lawTitleDisplay">⚖️ 산업안전보건법령 요지</h2></div>
+        <p id="lawDescDisplay" style="font-size:14px; color:#666; margin-bottom:30px; line-height:1.6;">산업안전보건법 제34조에 따라 근로자가 쉽게 볼 수 있도록 게시하는 법령 요지입니다. 현장 근로자의 안전과 보건을 유지하기 위한 핵심 규정을 담고 있습니다.</p>
+        
+        <div class="section-title">📂 법령요지 게시 및 개정 이력</div>
+        <div id="historyAccordionContainer"></div>
+    </div>
+
+    <script>
+        async function fetchDB() {
+            const res = await fetch('/api/db');
+            return await res.json();
+        }
+
+        async function renderLaw() {
+            const db = await fetchDB();
+            
+            const savedText = db['esol_law_text'];
+            if (savedText) {
+                const textInfo = JSON.parse(savedText);
+                if (textInfo.title) document.getElementById('lawTitleDisplay').innerText = textInfo.title;
+                if (textInfo.desc) document.getElementById('lawDescDisplay').innerText = textInfo.desc;
+            }
+
+            const savedHistory = db['esol_law_history'];
+            const historyList = savedHistory ? JSON.parse(savedHistory) : [];
+            const container = document.getElementById('historyAccordionContainer');
+
+            if (historyList.length === 0) {
+                container.innerHTML = `<div class="empty-state">등록된 산안법령 요지가 없습니다. 관리자 페이지에서 등록해주세요.</div>`; 
+                return;
+            }
+
+            container.innerHTML = historyList.map((m, index) => {
+                const isExpanded = (index === 0);
+                
+                // 💡 어두운 뷰어 배경 및 확대/축소 영역 적용
+                let previewHtml = `
+                    <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:15px; margin-bottom:10px;">
+                        <span style="font-size:13px; color:#666; margin-right:10px;">🔍 뷰어 크기 조절:</span>
+                        <button class="zoom-btn" onclick="adjustZoom('${m.id}', 'out')">➖ 축소</button>
+                        <button class="zoom-btn" onclick="adjustZoom('${m.id}', 'reset')">🔄 원래크기</button>
+                        <button class="zoom-btn" onclick="adjustZoom('${m.id}', 'in')">➕ 확대</button>
+                    </div>
+                    <div style="width:100%; height:75vh; overflow:auto; background:#525659; border-radius:8px; text-align:center; padding:20px; box-sizing:border-box; border:1px solid #ccc;">
+                `;
+
+                if (m.type === 'pdf') { 
+                    previewHtml += `<iframe id="content-${m.id}" src="${m.fileUrl}" style="width:70%; height:1000px; border:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease, height 0.3s ease;"></iframe>`; 
+                } else { 
+                    previewHtml += `<img id="content-${m.id}" src="${m.fileUrl}" style="width:70%; max-width:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease;">`; 
+                }
+                
+                previewHtml += `</div>`;
+                
+                return `
+                    <div style="margin-bottom:12px; border:1px solid #eae2f0; border-radius:8px; overflow:hidden; background:#fff;">
+                        <div style="background:${isExpanded ? '#fff3e0' : '#ffffff'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onclick="toggleHistory('${m.id}')">
+                            <div style="display:flex; align-items:center; gap:15px; flex:1;">
+                                <span style="background:${isExpanded ? '#e53935' : '#f57c00'}; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">${isExpanded ? '최신본' : '과거이력'}</span>
+                                <h4 style="margin:0; color:#222; font-size:16px; flex:1;">${m.title}</h4>
+                                <span style="color:#666; font-size:13px; margin-right:20px;">📅 등록 일자: ${m.date}</span>
+                            </div>
+                            <span id="icon-${m.id}" style="color:#888; font-size:13px; font-weight:bold;">${isExpanded ? '▲ 접기' : '▼ 펼쳐보기'}</span>
+                        </div>
+                        <div id="body-${m.id}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eae2f0;">
+                            <div style="display:flex; justify-content: space-between; align-items: center; background:#f4f5f9; padding:10px 15px; border-radius:8px;">
+                                <span style="font-weight:bold; color:#f57c00; font-size: 14px;">📎 ${m.fileName}</span>
+                                <a href="${m.fileUrl}" download="${m.fileName}" class="btn-download">💾 원본 파일 다운로드</a>
+                            </div>
+                            ${previewHtml}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function toggleHistory(id) {
+            const bodyDiv = document.getElementById(`body-${id}`);
+            const iconSpan = document.getElementById(`icon-${id}`);
+            if (bodyDiv.style.display === 'none') {
+                bodyDiv.style.display = 'block'; iconSpan.innerText = '▲ 접기'; iconSpan.parentElement.style.background = '#fff3e0';
+            } else {
+                bodyDiv.style.display = 'none'; iconSpan.innerText = '▼ 펼쳐보기'; iconSpan.parentElement.style.background = '#ffffff';
+            }
+        }
+
+        // 💡 줌(Zoom) 제어 함수
+        window.zoomLevels = {}; 
+        
+        window.adjustZoom = function(id, action) {
+            if (!window.zoomLevels[id]) window.zoomLevels[id] = 70; 
+
+            if (action === 'in') {
+                window.zoomLevels[id] += 15; 
+            } else if (action === 'out') {
+                window.zoomLevels[id] -= 15; 
+            } else {
+                window.zoomLevels[id] = 70;  
+            }
+
+            if (window.zoomLevels[id] < 30) window.zoomLevels[id] = 30;
+            if (window.zoomLevels[id] > 250) window.zoomLevels[id] = 250;
+
+            const targetEl = document.getElementById(`content-${id}`);
+            if (targetEl) {
+                targetEl.style.width = window.zoomLevels[id] + '%';
+                if (targetEl.tagName === 'IFRAME') {
+                    targetEl.style.height = (window.zoomLevels[id] * 15) + 'px'; 
+                }
+            }
+        };
+
+        window.onload = renderLaw;
+    </script>
+</body>
+</html>

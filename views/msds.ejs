@@ -12,7 +12,6 @@
         .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
         .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
 
-        /* 💡 너비 1500px로 확장 */
         .container { max-width: 1500px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
         .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
@@ -31,7 +30,6 @@
     </style>
 </head>
 <body>
-
     <header class="no-print">
         <div class="brand-title">ESOL <span>환경안전보건 플랫폼</span></div>
         <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
@@ -41,26 +39,14 @@
         <div class="page-title">
             <h2>🧪 MSDS (물질안전보건자료) 즉시 조회</h2>
             <div class="search-box">
-                <span style="font-size:20px; color:#b0268d;">🔍</span>
-                <input type="text" id="msdsSearchInput" placeholder="물질명, CAS No, 유해성 태그 검색..." onkeyup="renderMsdsList()">
+                <span style="font-size:20px; color:#b0268d;">🔍</span><input type="text" id="msdsSearchInput" placeholder="물질명, CAS No, 유해성 태그 검색..." onkeyup="renderMsdsList()">
             </div>
         </div>
 
-        <p style="font-size:14px; color:#666; margin-bottom:20px;">
-            현장에서 취급하는 화학물질의 MSDS를 즉시 검색하고 열람할 수 있습니다. <br>
-            물질명이나 CAS 번호를 검색창에 입력하세요.
-        </p>
+        <p style="font-size:14px; color:#666; margin-bottom:20px;">현장에서 취급하는 화학물질의 MSDS를 즉시 검색하고 열람할 수 있습니다. <br>물질명이나 CAS 번호를 검색창에 입력하세요.</p>
 
         <table class="doc-table">
-            <thead>
-                <tr>
-                    <th style="width: 20%;">화학물질명</th>
-                    <th style="width: 15%;">CAS No.</th>
-                    <th style="width: 15%;">공급업체</th>
-                    <th style="width: 35%;">주요 유해·위험성 태그</th>
-                    <th style="width: 15%;">자료 열람</th>
-                </tr>
-            </thead>
+            <thead><tr><th style="width: 20%;">화학물질명</th><th style="width: 15%;">CAS No.</th><th style="width: 15%;">공급업체</th><th style="width: 35%;">주요 유해·위험성 태그</th><th style="width: 15%;">자료 열람</th></tr></thead>
             <tbody id="msdsListBody"></tbody>
         </table>
 
@@ -69,61 +55,50 @@
                 <h3 id="viewingDocTitle" style="color:#fee500;">📄 MSDS 뷰어</h3>
                 <button onclick="closeViewer()" style="background:#e53935; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">✕ 닫기</button>
             </div>
-            <!-- 💡 창 높이(height)를 850px로 시원하게 확장 -->
             <iframe id="pdfFrame" style="width:100%; height:850px; border:none; background:#fff; border-radius:8px;"></iframe>
         </div>
-
     </div>
 
     <script>
-        function renderMsdsList() {
+        // 💡 서버 연동 함수
+        async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
+
+        async function renderMsdsList() {
             const keyword = document.getElementById('msdsSearchInput').value.trim().toLowerCase();
-            let list = JSON.parse(localStorage.getItem('esol_msds_data') || '[]');
+            
+            const db = await fetchDB();
+            let list = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
             
             if (keyword) {
                 list = list.filter(m => 
-                    m.name.toLowerCase().includes(keyword) || 
-                    m.cas.toLowerCase().includes(keyword) || 
+                    m.name.toLowerCase().includes(keyword) || m.cas.toLowerCase().includes(keyword) || 
                     (m.supplier && m.supplier.toLowerCase().includes(keyword)) ||
                     m.tags.some(t => t.toLowerCase().includes(keyword))
                 );
             }
 
             const tbody = document.getElementById('msdsListBody');
-            
             if (list.length === 0) { 
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:30px;">검색된 물질이 없습니다.</td></tr>`; 
-                return; 
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:30px;">검색된 물질이 없습니다.</td></tr>`; return; 
             }
             
             tbody.innerHTML = list.map(m => {
                 const tagsHtml = m.tags.map(t => `<span class="tag-badge">⚠️ ${t}</span>`).join('');
                 return `
                 <tr>
-                    <td><strong>${m.name}</strong></td>
-                    <td>${m.cas}</td>
-                    <td>${m.supplier || '-'}</td>
-                    <td>${tagsHtml}</td>
-                    <td>
-                        <button class="btn-action btn-view" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS')">📄 PDF 열람</button>
-                    </td>
-                </tr>
-            `}).join('');
+                    <td><strong>${m.name}</strong></td><td>${m.cas}</td><td>${m.supplier || '-'}</td><td>${tagsHtml}</td>
+                    <td><button class="btn-action btn-view" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS')">📄 PDF 열람</button></td>
+                </tr>`}).join('');
         }
 
         function previewPdf(fileUrl, docTitle) {
             document.getElementById('viewingDocTitle').innerText = '📄 ' + docTitle;
             document.getElementById('pdfFrame').src = fileUrl;
             document.getElementById('pdfViewerArea').style.display = 'block';
-            
-            setTimeout(() => {
-                window.scrollTo({ top: document.getElementById('pdfViewerArea').offsetTop - 50, behavior: 'smooth' });
-            }, 100);
+            setTimeout(() => { window.scrollTo({ top: document.getElementById('pdfViewerArea').offsetTop - 50, behavior: 'smooth' }); }, 100);
         }
-        
         function closeViewer() { 
-            document.getElementById('pdfViewerArea').style.display = 'none'; 
-            document.getElementById('pdfFrame').src = ''; 
+            document.getElementById('pdfViewerArea').style.display = 'none'; document.getElementById('pdfFrame').src = ''; 
         }
 
         window.onload = renderMsdsList;

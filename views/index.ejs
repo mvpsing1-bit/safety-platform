@@ -46,19 +46,7 @@
         .card-edu { border-top: 4px solid #009688; }
         .card-etc { border-top: 4px solid #ff9800; }
 
-        .msds-fixed-card {
-            background: linear-gradient(135deg, #f0e6f6, #ffffff);
-            border: 2px solid #b0268d;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(176, 38, 141, 0.15);
-            transition: all 0.2s ease;
-        }
+        .msds-fixed-card { background: linear-gradient(135deg, #f0e6f6, #ffffff); border: 2px solid #b0268d; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(176, 38, 141, 0.15); transition: all 0.2s ease; }
         .msds-fixed-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(176, 38, 141, 0.25); }
         .msds-info { display: flex; align-items: center; gap: 14px; }
         .msds-info .icon { font-size: 30px; }
@@ -66,7 +54,6 @@
         .msds-info p { font-size: 12px; color: #666; }
         .msds-badge { background: #b0268d; color: #fff; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; align-self: center; }
 
-        /* 🤖 AI 챗봇 플로팅 버튼 & 팝업 창 스타일 */
         .ai-fab-btn { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #4a0082, #b0268d); color: #fff; border: none; padding: 16px 24px; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(74,0,130,0.3); z-index: 2500; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
         .ai-fab-btn:hover { transform: scale(1.05); }
 
@@ -118,7 +105,6 @@
 
         <div class="category-group">
             <div class="section-title" style="color: #b0268d;">🩺 보건 (Health)</div>
-            
             <div class="msds-fixed-card" onclick="location.href='/msds'">
                 <div class="msds-info">
                     <div class="icon">🧪</div>
@@ -129,7 +115,6 @@
                 </div>
                 <div class="msds-badge">PDF 열람 ➔</div>
             </div>
-
             <div class="sub-grid" id="grid-health"></div>
         </div>
     </div>
@@ -151,7 +136,7 @@
         <div class="sub-grid" id="grid-etc" style="grid-template-columns: repeat(4, 1fr);"></div>
     </div>
 
-    <!-- 🤖 AI 챗봇 기능 유지 -->
+    <!-- 🤖 AI 챗봇 -->
     <button class="ai-fab-btn" onclick="toggleAiChat()">
         <span>🤖</span> ESOL AI 지식 챗봇
     </button>
@@ -177,16 +162,30 @@
     </div>
 
     <script>
-        const defaultMenus = {
+        async function fetchDB() {
+            try { const res = await fetch('/api/db'); return await res.json(); } 
+            catch (err) { console.error('DB 연동 에러:', err); return {}; }
+        }
+        async function saveDB(key, value) {
+            await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null }) });
+        }
+
+        // 💡 [완벽 복원] 사진에 있는 커스텀 메뉴 100% 일치 적용!
+        const customMenus = {
             '안전': [
                 { title: '안전보건 경영방침', desc: '대표이사 경영방침 및 목표', icon: '📜' },
                 { title: '산안법령 요지', desc: '산업안전보건법 핵심 지침', icon: '⚖️' },
-                { title: '안전보건 조직도', desc: '사내 안전관리 추진 체계', icon: '👥' },
+                { title: '안전보건 조직도', desc: '사내 안전보건체계', icon: '👥' },
+                { title: '산업안전보건위원회', desc: '안건 및 회의록(1회/분기)', icon: '💡' },
                 { title: '비상대응 매뉴얼', desc: '사고 발생 시 행동요령', icon: '🚨' },
                 { title: '위험성평가표', desc: '공정별 위험요인 평가 내역', icon: '⚠️' },
-                { title: '비상연락망', desc: '사내/사외 비상 연락처', icon: '📞' }
+                { title: '비상연락망', desc: '사내/사외 비상 연락처', icon: '📞' },
+                { title: "Today's DRI", desc: '위험작업 확인', icon: '📄' },
+                { title: 'TBM', desc: 'Tool Box Meeting', icon: '📄' }
             ],
             '보건': [
+                { title: '화학물질 자료실', desc: '화학물질 관련 자료', icon: '🧪' },
+                { title: '공정별 화학물질 관리요령', desc: '화학물질 관리요령', icon: '🧪' },
                 { title: '작업환경 측정결과', desc: '유해인자 측정 보고서', icon: '📊' },
                 { title: '근로자 건강관리', desc: '특수/일반 건강검진 안내', icon: '🏥' },
                 { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
@@ -216,72 +215,82 @@
             const now = new Date();
             document.getElementById('clock').innerText = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
         }
-        setInterval(updateClock, 1000);
-        updateClock();
+        setInterval(updateClock, 1000); updateClock();
 
-        function loadSiteTextSettings() {
-            const savedText = localStorage.getItem('esol_site_texts');
+        function goDetail(catTitle) {
+            if (!catTitle) return;
+            
+            if (catTitle.includes('경영방침')) {
+                location.href = '/policy';
+            } 
+            // 👇 새로 추가된 산안법령 요지 길 안내
+            else if (catTitle.includes('법령')) {
+                location.href = '/law';
+            } 
+            else if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) { 
+                location.href = '/notice';  
+            } else if (catTitle === '보호구 관리') { 
+                location.href = '/ppe';     
+            } else if (catTitle.toUpperCase().includes('DRI') || catTitle.includes("Today's DRI")) { 
+                location.href = '/dri';     
+            } else if (catTitle.includes('조직도') || catTitle.includes('안전보건 조직도')) { 
+                location.href = '/org';     
+            } else if (catTitle.includes('위원회') || catTitle.includes('산업안전보건위원회')) { 
+                location.href = '/committee'; 
+            } else if (catTitle.includes('연락망')) { 
+                location.href = '/contact'; 
+            } else if (catTitle.includes('비상대응') || catTitle === '비상 매뉴얼') { 
+                location.href = '/emergency'; 
+            } else { 
+                location.href = '/view?cat=' + encodeURIComponent(catTitle); 
+            }
+        }
+
+        async function renderDashboardMenus() {
+            const db = await fetchDB();
+
+            // 1. 사이트 텍스트 세팅
+            const savedText = db['esol_site_texts'];
             if (savedText) {
                 const config = JSON.parse(savedText);
                 if (config.title) {
                     document.getElementById('sitePageTitle').innerText = config.title;
                     document.getElementById('headerTitle').innerHTML = `ESOL <span>${config.title.replace('ESOL ', '')}</span>`;
                 }
-                if (config.subText) {
-                    document.getElementById('headerSubText').innerText = config.subText;
-                }
+                if (config.subText) document.getElementById('headerSubText').innerText = config.subText;
             }
-        }
 
-        function getMenus() {
-            const saved = localStorage.getItem('esol_menu_structure');
-            if (!saved) {
-                localStorage.setItem('esol_menu_structure', JSON.stringify(defaultMenus));
-                return defaultMenus;
-            }
-            return JSON.parse(saved);
-        }
-
-        // 💡 [핵심] 메뉴 클릭 시 독립된 전용 페이지로 깔끔하게 길 안내 (라우팅 분리)
-        function goDetail(catTitle) {
-            if (!catTitle) return;
-            
-            if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) {
-                location.href = '/notice';  
-            } else if (catTitle === '보호구 관리') {
-                location.href = '/ppe';     
-            } else if (catTitle.toUpperCase().includes('DRI') || catTitle.includes("Today's DRI")) {
-                location.href = '/dri';     
-            } else if (catTitle.includes('조직도') || catTitle.includes('안전보건 조직도')) {
-                location.href = '/org';     // 💡 메인 화면에서 안전보건 조직도 클릭 시 /org 페이지로 이동
-            } else {
-                location.href = '/view?cat=' + encodeURIComponent(catTitle);
-            }
-        }
-
-        function renderTopNotices() {
-            const saved = localStorage.getItem('esol_notices');
-            const noticeList = saved ? JSON.parse(saved) : defaultNotices;
-            const container = document.getElementById('mainNoticeList');
+            // 2. 공지사항 세팅
+            const noticeSaved = db['esol_notices'];
+            const noticeList = noticeSaved ? JSON.parse(noticeSaved) : defaultNotices;
+            const noticeContainer = document.getElementById('mainNoticeList');
             const latestNotices = noticeList.slice(0, 3);
 
             if (latestNotices.length === 0) {
-                container.innerHTML = `<li style="text-align:center; color:#999; padding:10px;">등록된 공지사항이 없습니다.</li>`;
-                return;
+                noticeContainer.innerHTML = `<li style="text-align:center; color:#999; padding:10px;">등록된 공지사항이 없습니다.</li>`;
+            } else {
+                noticeContainer.innerHTML = latestNotices.map(n => `
+                    <li class="notice-item" onclick="goDetail('공지사항')">
+                        <span><strong style="color:#b0268d;">[${n.tag || '공지'}]</strong> ${n.title}</span><span style="color:#888;">${n.date}</span>
+                    </li>
+                `).join('');
             }
 
-            container.innerHTML = latestNotices.map(n => `
-                <li class="notice-item" onclick="goDetail('공지사항')">
-                    <span><strong style="color:#b0268d;">[${n.tag || '공지'}]</strong> ${n.title}</span>
-                    <span style="color:#888;">${n.date}</span>
-                </li>
-            `).join('');
-        }
+            // 3. 메뉴 데이터 및 자동 복구 로직
+            let menusStr = db['esol_menu_structure'];
+            let menus;
+            if (!menusStr) {
+                await saveDB('esol_menu_structure', customMenus);
+                menus = customMenus;
+            } else {
+                menus = JSON.parse(menusStr);
+                // 💡 만약 사용자의 TBM 메뉴가 날아갔다면 사진 버전으로 덮어써서 복원해줍니다!
+                if (!menus['안전'].some(m => m.title === 'TBM')) {
+                    menus = customMenus;
+                    await saveDB('esol_menu_structure', menus);
+                }
+            }
 
-        function renderDashboardMenus() {
-            loadSiteTextSettings();
-            renderTopNotices();
-            const menus = getMenus();
             const mapping = {
                 '안전': { id: 'grid-safety', class: 'card-safety' },
                 '보건': { id: 'grid-health', class: 'card-health' },
@@ -296,9 +305,7 @@
                 const items = menus[key] || [];
                 targetEl.innerHTML = items.map(item => `
                     <div class="card ${mapping[key].class}" data-title="${encodeURIComponent(item.title)}" onclick="goDetail(decodeURIComponent(this.getAttribute('data-title')))">
-                        <div class="icon">${item.icon || '📄'}</div>
-                        <h3>${item.title}</h3>
-                        <p>${item.desc || '환경안전보건 항목'}</p>
+                        <div class="icon">${item.icon || '📄'}</div><h3>${item.title}</h3><p>${item.desc || '환경안전보건 항목'}</p>
                     </div>
                 `).join('');
             }
@@ -306,14 +313,10 @@
 
         function toggleAiChat(initialQuestion = '') {
             const win = document.getElementById('aiChatWindow');
-            if (win.style.display === 'flex' && !initialQuestion) {
-                win.style.display = 'none';
-            } else {
-                win.style.display = 'flex';
-                if (initialQuestion) {
-                    document.getElementById('chatInput').value = initialQuestion;
-                    sendAiQuestion();
-                }
+            if (win.style.display === 'flex' && !initialQuestion) { win.style.display = 'none'; } 
+            else { 
+                win.style.display = 'flex'; 
+                if (initialQuestion) { document.getElementById('chatInput').value = initialQuestion; sendAiQuestion(); }
             }
         }
 
@@ -336,43 +339,27 @@
             messagesContainer.appendChild(aiBubble);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            const ppeGuides = JSON.parse(localStorage.getItem('esol_ppe_guides') || '[]');
-            const notices = JSON.parse(localStorage.getItem('esol_notices') || '[]');
-            const docs = JSON.parse(localStorage.getItem('esol_safety_docs_v2') || '{}');
-            const msdsData = JSON.parse(localStorage.getItem('esol_msds_data') || '[]');
+            const db = await fetchDB();
+            const ppeGuides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [];
+            const notices = db['esol_notices'] ? JSON.parse(db['esol_notices']) : [];
+            const docs = db['esol_safety_docs_v2'] ? JSON.parse(db['esol_safety_docs_v2']) : {};
+            const msdsData = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
 
-            const contextData = {
-                '보호구착용지침': ppeGuides,
-                '사내공지사항': notices,
-                '일반_등록문서목록': docs,
-                'MSDS_즉시조회_등록물질목록': msdsData
-            };
+            const contextData = { '보호구착용지침': ppeGuides, '사내공지사항': notices, '일반_등록문서목록': docs, 'MSDS_즉시조회_등록물질목록': msdsData };
 
             try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question, contextData })
-                });
-
+                const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, contextData }) });
                 const reader = res.body.getReader();
                 const decoder = new TextDecoder('utf-8');
-                let fullText = '';
-                
-                aiBubble.innerHTML = '';
-
+                let fullText = ''; aiBubble.innerHTML = '';
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    
                     fullText += decoder.decode(value, { stream: true });
                     aiBubble.innerHTML = fullText.replace(/\n/g, '<br>');
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
-                
-            } catch (err) {
-                aiBubble.innerHTML = '⚠️ 서버 통신 오류가 발생했습니다.';
-            }
+            } catch (err) { aiBubble.innerHTML = '⚠️ 서버 통신 오류가 발생했습니다.'; }
         }
 
         window.onload = renderDashboardMenus;

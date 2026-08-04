@@ -20,8 +20,26 @@ function toggleNav(navId) {
 }
 
 // ============================================
-// 기존 로직 
+// 💡 DB 통신 유틸 함수
 // ============================================
+async function fetchAdminDB() {
+    try {
+        const res = await fetch('/api/db');
+        return await res.json();
+    } catch (err) {
+        console.error('DB 연동 에러:', err);
+        return {};
+    }
+}
+
+async function saveAdminDB(key, value) {
+    await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null })
+    });
+}
+
 document.getElementById('driDate').value = new Date().toISOString().split('T')[0];
 
 const defaultMenus = {
@@ -29,11 +47,16 @@ const defaultMenus = {
         { title: '안전보건 경영방침', desc: '대표이사 경영방침 및 목표', icon: '📜' },
         { title: '산안법령 요지', desc: '산업안전보건법 핵심 지침', icon: '⚖️' },
         { title: '안전보건 조직도', desc: '사내 안전관리 추진 체계', icon: '👥' },
+        { title: '산업안전보건위원회', desc: '안건 및 회의록(1회/분기)', icon: '💡' },
         { title: '비상대응 매뉴얼', desc: '사고 발생 시 행동요령', icon: '🚨' },
         { title: '위험성평가표', desc: '공정별 위험요인 평가 내역', icon: '⚠️' },
-        { title: '비상연락망', desc: '사내/사외 비상 연락처', icon: '📞' }
+        { title: '비상연락망', desc: '사내/사외 비상 연락처', icon: '📞' },
+        { title: "Today's DRI", desc: '위험작업 확인', icon: '🚧' },
+        { title: 'TBM', desc: 'Tool Box Meeting', icon: '📄' }
     ],
     '보건': [
+        { title: '화학물질 자료실', desc: '화학물질 관련 자료', icon: '🧪' },
+        { title: '공정별 화학물질 관리요령', desc: '화학물질 관리요령', icon: '🧪' },
         { title: '작업환경 측정결과', desc: '유해인자 측정 보고서', icon: '📊' },
         { title: '근로자 건강관리', desc: '특수/일반 건강검진 안내', icon: '🏥' },
         { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
@@ -65,14 +88,6 @@ const defaultPpeGuides = [
 
 const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
 
-const defaultOrgData = [
-    { id: 101, role: '대표이사 / 안전보건관리책임자', count: '1명', name: '대표이사', parentId: 'top', extraVal: '', desc: '안전보건 경영방침 수립 및 총괄 관리' },
-    { id: 102, role: '산업안전보건위원회', count: '노사 동수', name: '근로자위원 / 사용자위원', parentId: '101', extraVal: '', desc: '산업안전 주요 사항 심의·의결' },
-    { id: 103, role: '안전관리자', count: '2명', name: '김안전, 박보건', parentId: '101', extraVal: '', desc: '사내 유해위험방지 및 안전점검 지도' },
-    { id: 104, role: '보건관리자', count: '1명', name: '이보건', parentId: '101', extraVal: '', desc: '근로자 건강관리 및 작업환경 지도' },
-    { id: 105, role: '관리감독자', count: '여러 명 (지정)', name: '부서장 / 파트장 등', parentId: '103', extraVal: '', desc: '담당 공정 내 안전검사 및 일일 점검' }
-];
-
 function getAdminPassword() {
     return localStorage.getItem('esol_admin_password') || '1234';
 }
@@ -90,7 +105,6 @@ function checkPassword() {
         loadAdminUserList();
         loadAdminMsdsList();
         loadAdminDriList(1);
-        loadAdminOrgList();
     } else {
         alert('비밀번호가 올바르지 않습니다.');
     }
@@ -104,23 +118,10 @@ function changeAdminPassword() {
     alert('비밀번호가 변경되었습니다.');
 }
 
-function getDriData() { 
-    let list = JSON.parse(localStorage.getItem('esol_dri_data') || '[]'); 
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    const filteredList = list.filter(d => new Date(d.date) >= oneYearAgo);
-    if(filteredList.length !== list.length) {
-        localStorage.setItem('esol_dri_data', JSON.stringify(filteredList));
-    }
-    return filteredList;
-}
-
-function saveDriData(data) { 
-    localStorage.setItem('esol_dri_data', JSON.stringify(data)); 
-    loadAdminDriList(1); 
-}
-
-function submitDri() {
+// ============================================
+// 🚨 DRI 관리 연동
+// ============================================
+async function submitDri() {
     const date = document.getElementById('driDate').value;
     const dept = document.getElementById('driDept').value.trim();
     const location = document.getElementById('driLocation').value.trim();
@@ -133,9 +134,11 @@ function submitDri() {
         return alert('모든 DRI 항목을 빠짐없이 입력해 주세요.');
     }
 
-    const list = getDriData();
+    const db = await fetchAdminDB();
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
     list.unshift({ id: Date.now(), date, dept, location, time, task, risk, measure });
-    saveDriData(list);
+    
+    await saveAdminDB('esol_dri_data', list);
     
     document.getElementById('driLocation').value = '';
     document.getElementById('driTime').value = '';
@@ -143,16 +146,23 @@ function submitDri() {
     document.getElementById('driRisk').value = '';
     document.getElementById('driMeasure').value = '';
     
-    alert('위험작업(DRI)이 등록되었습니다! \n(동일 부서 연속 등록을 위해 날짜와 부서는 지워지지 않습니다)');
+    alert('위험작업(DRI)이 등록되었습니다!');
     document.getElementById('driLocation').focus();
+    loadAdminDriList(1);
 }
 
 let adminDriCurrentPage = 1;
 const adminDriPerPage = 5;
 
-function loadAdminDriList(page = 1) {
+async function loadAdminDriList(page = 1) {
     adminDriCurrentPage = page;
-    const list = getDriData();
+    const db = await fetchAdminDB();
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
+    
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    list = list.filter(d => new Date(d.date) >= oneYearAgo);
+
     const container = document.getElementById('adminDriAccordionContainer');
     const paginationContainer = document.getElementById('adminDriPagination');
     
@@ -223,7 +233,6 @@ function loadAdminDriList(page = 1) {
                                     </tr>
                                 `;
                             }).join('')}
-
                             ${noneItems.length > 0 ? `
                                 <tr>
                                     <td colspan="7" style="background:#fafafa; color:#777; padding:10px; font-size:13px; text-align:left;">
@@ -261,178 +270,23 @@ function toggleAdminDriDate(date) {
     }
 }
 
-function deleteDri(id) {
+async function deleteDri(id) {
     if (!confirm('해당 위험작업 기록을 삭제하시겠습니까?')) return;
-    let list = getDriData();
+    const db = await fetchAdminDB();
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
     list = list.filter(d => d.id !== id);
-    saveDriData(list);
+    await saveAdminDB('esol_dri_data', list);
+    loadAdminDriList(1);
 }
 
-// --- 안전보건 조직도 맞춤 설정 및 관리 로직 ---
-function getOrgSettings() {
-    const saved = localStorage.getItem('esol_org_settings');
-    return saved ? JSON.parse(saved) : { theme: 'purple', extraLabel: '연락처' };
-}
-
-function saveOrgSettings() {
-    const theme = document.getElementById('orgThemeSelect').value;
-    const extraLabel = document.getElementById('orgExtraFieldLabel').value.trim();
-    const settings = { theme, extraLabel: extraLabel || '추가정보' };
-    localStorage.setItem('esol_org_settings', JSON.stringify(settings));
-    alert('조직도 양식 및 테마 설정이 저장되었습니다.');
-    loadAdminOrgList();
-}
-
-function getOrgData() {
-    const saved = localStorage.getItem('esol_org_data');
-    return saved ? JSON.parse(saved) : defaultOrgData;
-}
-
-function saveOrgData(data) {
-    localStorage.setItem('esol_org_data', JSON.stringify(data));
-    loadAdminOrgList();
-}
-
-function loadAdminOrgList() {
-    const list = getOrgData();
-    const settings = getOrgSettings();
+// ============================================
+// 🛠️ 메뉴 관리 연동
+// ============================================
+async function loadAdminMenuList() {
+    const db = await fetchAdminDB();
+    let menus = db['esol_menu_structure'];
+    menus = menus ? JSON.parse(menus) : defaultMenus;
     
-    document.getElementById('orgThemeSelect').value = settings.theme;
-    document.getElementById('orgExtraFieldLabel').value = settings.extraLabel;
-    document.getElementById('thExtraLabel').innerText = settings.extraLabel;
-    document.getElementById('orgExtraValInput').placeholder = settings.extraLabel + ' 입력';
-
-    const tbody = document.getElementById('adminOrgListBody');
-    const parentSelect = document.getElementById('orgParentSelect');
-    if (!tbody) return;
-
-    let parentOptions = `<option value="top">상위: 대표이사 직속</option>`;
-    list.forEach(o => {
-        parentOptions += `<option value="${o.id}">${o.role} (${o.name})</option>`;
-    });
-    parentSelect.innerHTML = parentOptions;
-
-    if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999; padding:25px;">등록된 조직도 항목이 없습니다.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = list.map((o, idx) => `
-        <tr data-id="${o.id}">
-            <td><input type="text" class="org-role-input" value="${o.role}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
-            <td><input type="text" class="org-count-input" value="${o.count}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
-            <td><input type="text" class="org-name-input" value="${o.name}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;"></td>
-            <td>
-                <select class="org-parent-select" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                    <option value="top" ${o.parentId === 'top' ? 'selected' : ''}>대표이사 직속</option>
-                    ${list.filter(i => i.id !== o.id).map(i => `<option value="${i.id}" ${o.parentId == i.id ? 'selected' : ''}>${i.role} (${i.name})</option>`).join('')}
-                </select>
-            </td>
-            <td><input type="text" class="org-extra-input" value="${o.extraVal || ''}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;" placeholder="${settings.extraLabel}"></td>
-            <td>
-                <button class="btn-sm btn-edit" onclick="toggleAdminOrgDesc(this)" style="margin-bottom:4px; background:#b0268d;">🔽 설명</button>
-                <div class="org-desc-wrap" style="display:none; margin-top:4px;">
-                    <textarea class="org-desc-input" style="width:100%; height:50px; padding:6px; border:1px solid #ccc; border-radius:4px; font-family:inherit; resize:vertical;">${o.desc || ''}</textarea>
-                </div>
-            </td>
-            <td>
-                <div style="display:flex; gap:3px; justify-content:center;">
-                    <button class="btn-sm btn-move" onclick="moveOrgOrder(${idx}, -1)">▲</button>
-                    <button class="btn-sm btn-move" onclick="moveOrgOrder(${idx}, 1)">▼</button>
-                    <button class="btn-sm btn-del" onclick="deleteOrgItem(${o.id})">삭제</button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function moveOrgOrder(index, dir) {
-    let list = getOrgData();
-    const targetIdx = index + dir;
-    if (targetIdx >= 0 && targetIdx < list.length) {
-        const temp = list[index];
-        list[index] = list[targetIdx];
-        list[targetIdx] = temp;
-        // 즉시 저장이 아니라 배열 순서만 바꾼 뒤 리스트 다시 렌더링
-        localStorage.setItem('esol_org_data', JSON.stringify(list));
-        loadAdminOrgList();
-    }
-}
-
-function toggleAdminOrgDesc(btn) {
-    const wrap = btn.nextElementSibling;
-    if (wrap.style.display === 'none') {
-        wrap.style.display = 'block';
-        btn.innerText = '🔼 닫기';
-    } else {
-        wrap.style.display = 'none';
-        btn.innerText = '🔽 설명';
-    }
-}
-
-function saveAllOrgChanges() {
-    const rows = document.querySelectorAll('#adminOrgListBody tr[data-id]');
-    let newList = [];
-
-    rows.forEach(row => {
-        const id = parseInt(row.getAttribute('data-id'), 10);
-        const role = row.querySelector('.org-role-input').value.trim();
-        const count = row.querySelector('.org-count-input').value.trim();
-        const name = row.querySelector('.org-name-input').value.trim();
-        const parentId = row.querySelector('.org-parent-select').value;
-        const extraVal = row.querySelector('.org-extra-input').value.trim();
-        const desc = row.querySelector('.org-desc-input').value.trim();
-
-        if (role && name) {
-            newList.push({ id, role, count, name, parentId, extraVal, desc });
-        }
-    });
-
-    saveOrgData(newList);
-    alert('조직도 변경사항이 일괄 저장되었습니다.');
-}
-
-function addOrgItem() {
-    const role = document.getElementById('orgRoleInput').value.trim();
-    const count = document.getElementById('orgCountInput').value.trim();
-    const name = document.getElementById('orgNameInput').value.trim();
-    const parentId = document.getElementById('orgParentSelect').value;
-    const extraVal = document.getElementById('orgExtraValInput').value.trim();
-    const desc = document.getElementById('orgDescInput').value.trim();
-
-    if (!role || !name) return alert('직책/조직명과 담당자 성명은 필수 입력 항목입니다.');
-
-    let list = getOrgData();
-    list.push({ id: Date.now(), role, count: count || '1명', name, parentId, extraVal, desc });
-    saveOrgData(list);
-
-    document.getElementById('orgRoleInput').value = '';
-    document.getElementById('orgCountInput').value = '';
-    document.getElementById('orgNameInput').value = '';
-    document.getElementById('orgExtraValInput').value = '';
-    document.getElementById('orgDescInput').value = '';
-    alert('새로운 조직도 항목이 추가되었습니다.');
-}
-
-function deleteOrgItem(id) {
-    if (!confirm('해당 조직도 항목을 삭제하시겠습니까?')) return;
-    let list = getOrgData();
-    list = list.filter(o => o.id !== id);
-    saveOrgData(list);
-}
-
-function getMenus() {
-    const saved = localStorage.getItem('esol_menu_structure');
-    return saved ? JSON.parse(saved) : defaultMenus;
-}
-
-function saveMenus(menus) {
-    localStorage.setItem('esol_menu_structure', JSON.stringify(menus));
-    loadAdminMenuList();
-}
-
-function loadAdminMenuList() {
-    const menus = getMenus();
     const tbody = document.getElementById('adminMenuListBody');
     let html = '';
     for (const catKey in menus) {
@@ -467,8 +321,9 @@ function loadAdminMenuList() {
     tbody.innerHTML = html;
 }
 
-function editMenuItem(cat, index) {
-    const menus = getMenus();
+async function editMenuItem(cat, index) {
+    const db = await fetchAdminDB();
+    const menus = db['esol_menu_structure'] ? JSON.parse(db['esol_menu_structure']) : defaultMenus;
     const target = menus[cat][index];
     
     document.getElementById('editMenuCat').value = cat;
@@ -485,7 +340,7 @@ function closeMenuEditModal() {
     document.getElementById('menuEditModal').style.display = 'none';
 }
 
-function saveMenuEditModal() {
+async function saveMenuEditModal() {
     const cat = document.getElementById('editMenuCat').value;
     const index = parseInt(document.getElementById('editMenuIndex').value, 10);
     
@@ -495,74 +350,82 @@ function saveMenuEditModal() {
     
     if (!newTitle) return alert('메뉴 이름을 입력해 주세요.');
     
-    const menus = getMenus();
+    const db = await fetchAdminDB();
+    const menus = db['esol_menu_structure'] ? JSON.parse(db['esol_menu_structure']) : defaultMenus;
+    
     menus[cat][index].icon = newIcon;
     menus[cat][index].title = newTitle;
     menus[cat][index].desc = newDesc;
     
-    saveMenus(menus);
+    await saveAdminDB('esol_menu_structure', menus);
     closeMenuEditModal();
     alert('메뉴 정보가 성공적으로 수정되었습니다.');
+    loadAdminMenuList();
 }
 
-function moveOrder(cat, index, dir) {
-    const m = getMenus();
+async function moveOrder(cat, index, dir) {
+    const db = await fetchAdminDB();
+    const menus = db['esol_menu_structure'] ? JSON.parse(db['esol_menu_structure']) : defaultMenus;
+    
     const t = index + dir;
-    if (t >= 0 && t < m[cat].length) {
-        const temp = m[cat][index];
-        m[cat][index] = m[cat][t];
-        m[cat][t] = temp;
-        saveMenus(m);
+    if (t >= 0 && t < menus[cat].length) {
+        const temp = menus[cat][index];
+        menus[cat][index] = menus[cat][t];
+        menus[cat][t] = temp;
+        await saveAdminDB('esol_menu_structure', menus);
+        loadAdminMenuList();
     }
 }
 
-function addNewMenu() {
+async function addNewMenu() {
     const c = document.getElementById('addCategorySelect').value;
     const icon = document.getElementById('addMenuIcon').value; 
     const t = document.getElementById('addMenuTitle').value.trim();
     const desc = document.getElementById('addMenuDesc').value.trim();
     
     if (t) {
-        const m = getMenus();
-        if (!m[c]) m[c] = [];
-        m[c].push({title: t, desc: desc, icon: icon}); 
-        saveMenus(m);
+        const db = await fetchAdminDB();
+        const menus = db['esol_menu_structure'] ? JSON.parse(db['esol_menu_structure']) : defaultMenus;
         
+        if (!menus[c]) menus[c] = [];
+        menus[c].push({title: t, desc: desc, icon: icon}); 
+        
+        await saveAdminDB('esol_menu_structure', menus);
         document.getElementById('addMenuTitle').value = '';
         document.getElementById('addMenuDesc').value = '';
         alert('새로운 메뉴가 추가되었습니다.');
+        loadAdminMenuList();
     } else {
         alert('메뉴 이름을 입력해 주세요.');
     }
 }
 
-function moveMenuCategory(f, i, t) {
-    const m = getMenus();
-    const item = m[f].splice(i, 1)[0];
-    if (!m[t]) m[t] = [];
-    m[t].push(item);
-    saveMenus(m);
+async function moveMenuCategory(f, i, t) {
+    const db = await fetchAdminDB();
+    const menus = db['esol_menu_structure'] ? JSON.parse(db['esol_menu_structure']) : defaultMenus;
+    
+    const item = menus[f].splice(i, 1)[0];
+    if (!menus[t]) menus[t] = [];
+    menus[t].push(item);
+    
+    await saveAdminDB('esol_menu_structure', menus);
+    loadAdminMenuList();
 }
 
-function deleteMenu(c, i) {
+async function deleteMenu(c, i) {
     if (confirm('삭제하시겠습니까?')) {
-        const m = getMenus();
-        m[c].splice(i, 1);
-        saveMenus(m);
+        const db = await fetchAdminDB();
+        const menus = db['esol_menu_structure'] ? JSON.parse(db['esol_menu_structure']) : defaultMenus;
+        menus[c].splice(i, 1);
+        await saveAdminDB('esol_menu_structure', menus);
+        loadAdminMenuList();
     }
 }
 
-function getNotices() {
-    const saved = localStorage.getItem('esol_notices');
-    return saved ? JSON.parse(saved) : defaultNotices;
-}
-
-function saveNotices(list) {
-    localStorage.setItem('esol_notices', JSON.stringify(list));
-    loadAdminNoticeList();
-}
-
-function adminSubmitNotice() {
+// ============================================
+// 📢 공지사항 관리 연동
+// ============================================
+async function adminSubmitNotice() {
     const tag = document.getElementById('adminNoticeTag').value;
     const title = document.getElementById('adminNoticeTitle').value.trim();
     const writer = document.getElementById('adminNoticeWriter').value.trim();
@@ -570,20 +433,24 @@ function adminSubmitNotice() {
 
     if (!title || !content) return alert('제목과 본문을 작성해 주세요.');
 
-    const list = getNotices();
+    const db = await fetchAdminDB();
+    const list = db['esol_notices'] ? JSON.parse(db['esol_notices']) : defaultNotices;
+    
     const dateStr = new Date().toISOString().split('T')[0];
     list.unshift({ id: Date.now(), tag, title, writer: writer || '환경안전팀', content, date: dateStr });
     
-    saveNotices(list);
+    await saveAdminDB('esol_notices', list);
     
     document.getElementById('adminNoticeTitle').value = '';
     document.getElementById('adminNoticeWriter').value = '';
     document.getElementById('adminNoticeContent').value = '';
     alert('등록되었습니다.');
+    loadAdminNoticeList();
 }
 
-function loadAdminNoticeList() {
-    const list = getNotices();
+async function loadAdminNoticeList() {
+    const db = await fetchAdminDB();
+    const list = db['esol_notices'] ? JSON.parse(db['esol_notices']) : defaultNotices;
     const tbody = document.getElementById('adminNoticeListBody');
     
     if (list.length === 0) {
@@ -605,8 +472,9 @@ function loadAdminNoticeList() {
     `).join('');
 }
 
-function editNotice(id) {
-    const list = getNotices();
+async function editNotice(id) {
+    const db = await fetchAdminDB();
+    const list = db['esol_notices'] ? JSON.parse(db['esol_notices']) : defaultNotices;
     const target = list.find(n => n.id === id);
     if (!target) return;
     
@@ -618,26 +486,32 @@ function editNotice(id) {
     
     target.title = newTitle;
     target.content = newContent;
-    saveNotices(list);
+    await saveAdminDB('esol_notices', list);
     alert('수정되었습니다.');
+    loadAdminNoticeList();
 }
 
-function deleteNotice(id) {
+async function deleteNotice(id) {
     if (!confirm('삭제하시겠습니까?')) return;
-    let list = getNotices();
+    const db = await fetchAdminDB();
+    let list = db['esol_notices'] ? JSON.parse(db['esol_notices']) : defaultNotices;
     list = list.filter(n => n.id !== id);
-    saveNotices(list);
+    await saveAdminDB('esol_notices', list);
+    loadAdminNoticeList();
 }
 
+// ============================================
+// 🥽 보호구 설정 관리 연동
+// ============================================
 function loadAdminPpeSection() {
     loadPpeGuides();
     loadPpeOptions();
     loadAdminPpeList();
 }
 
-function loadPpeGuides() {
-    const saved = localStorage.getItem('esol_ppe_guides');
-    const guides = saved ? JSON.parse(saved) : defaultPpeGuides;
+async function loadPpeGuides() {
+    const db = await fetchAdminDB();
+    const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : defaultPpeGuides;
     const tbody = document.getElementById('adminPpeGuideBody');
     
     tbody.innerHTML = guides.map((g, idx) => `
@@ -652,9 +526,9 @@ function loadPpeGuides() {
     `).join('');
 }
 
-function openPpeGuideModal(idx = -1) {
-    const saved = localStorage.getItem('esol_ppe_guides');
-    const guides = saved ? JSON.parse(saved) : defaultPpeGuides;
+async function openPpeGuideModal(idx = -1) {
+    const db = await fetchAdminDB();
+    const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : defaultPpeGuides;
     document.getElementById('editPpeGuideIndex').value = idx;
     
     if (idx === -1) {
@@ -673,15 +547,15 @@ function closePpeGuideModal() {
     document.getElementById('ppeGuideEditModal').style.display = 'none';
 }
 
-function savePpeGuideModal() {
+async function savePpeGuideModal() {
     const idx = parseInt(document.getElementById('editPpeGuideIndex').value, 10);
     const process = document.getElementById('editPpeProcessInput').value.trim();
     const items = document.getElementById('editPpeItemsInput').value.trim();
     
     if (!process || !items) return alert('입력해 주세요.');
     
-    const saved = localStorage.getItem('esol_ppe_guides');
-    let guides = saved ? JSON.parse(saved) : defaultPpeGuides;
+    const db = await fetchAdminDB();
+    let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : defaultPpeGuides;
     
     if (idx === -1) {
         guides.push({ process, items });
@@ -689,24 +563,24 @@ function savePpeGuideModal() {
         guides[idx] = { process, items };
     }
     
-    localStorage.setItem('esol_ppe_guides', JSON.stringify(guides));
+    await saveAdminDB('esol_ppe_guides', guides);
     closePpeGuideModal();
     loadPpeGuides();
     alert('저장되었습니다.');
 }
 
-function deletePpeGuide(idx) {
+async function deletePpeGuide(idx) {
     if (!confirm('삭제하시겠습니까?')) return;
-    const saved = localStorage.getItem('esol_ppe_guides');
-    let guides = saved ? JSON.parse(saved) : defaultPpeGuides;
+    const db = await fetchAdminDB();
+    let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : defaultPpeGuides;
     guides.splice(idx, 1);
-    localStorage.setItem('esol_ppe_guides', JSON.stringify(guides));
+    await saveAdminDB('esol_ppe_guides', guides);
     loadPpeGuides();
 }
 
-function loadPpeOptions() {
-    const saved = localStorage.getItem('esol_ppe_options');
-    const options = saved ? JSON.parse(saved) : defaultPpeOptions;
+async function loadPpeOptions() {
+    const db = await fetchAdminDB();
+    const options = db['esol_ppe_options'] ? JSON.parse(db['esol_ppe_options']) : defaultPpeOptions;
     
     document.getElementById('adminPpeOptionTags').innerHTML = options.map((opt, idx) => `
         <span style="background:#f0e6f6; border:1px solid #b0268d; color:#4a0082; padding:6px 12px; border-radius:20px; font-size:13px;">
@@ -716,29 +590,30 @@ function loadPpeOptions() {
     `).join('');
 }
 
-function addPpeOption() {
+async function addPpeOption() {
     const val = document.getElementById('newPpeOptionInput').value.trim();
     if (!val) return;
     
-    const saved = localStorage.getItem('esol_ppe_options');
-    const options = saved ? JSON.parse(saved) : defaultPpeOptions;
+    const db = await fetchAdminDB();
+    const options = db['esol_ppe_options'] ? JSON.parse(db['esol_ppe_options']) : defaultPpeOptions;
     options.push(val);
     
-    localStorage.setItem('esol_ppe_options', JSON.stringify(options));
+    await saveAdminDB('esol_ppe_options', options);
     document.getElementById('newPpeOptionInput').value = '';
     loadPpeOptions();
 }
 
-function removePpeOption(idx) {
-    const saved = localStorage.getItem('esol_ppe_options');
-    let options = saved ? JSON.parse(saved) : defaultPpeOptions;
+async function removePpeOption(idx) {
+    const db = await fetchAdminDB();
+    let options = db['esol_ppe_options'] ? JSON.parse(db['esol_ppe_options']) : defaultPpeOptions;
     options.splice(idx, 1);
-    localStorage.setItem('esol_ppe_options', JSON.stringify(options));
+    await saveAdminDB('esol_ppe_options', options);
     loadPpeOptions();
 }
 
-function loadAdminPpeList() {
-    const requests = JSON.parse(localStorage.getItem('esol_ppe_requests') || '[]');
+async function loadAdminPpeList() {
+    const db = await fetchAdminDB();
+    const requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : [];
     const tbody = document.getElementById('adminPpeListBody');
     
     if (requests.length === 0) {
@@ -761,24 +636,19 @@ function loadAdminPpeList() {
     `).join('');
 }
 
-function deletePpeRequest(id) {
+async function deletePpeRequest(id) {
     if (!confirm('삭제하시겠습니까?')) return;
-    let requests = JSON.parse(localStorage.getItem('esol_ppe_requests') || '[]');
+    const db = await fetchAdminDB();
+    let requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : [];
     requests = requests.filter(r => r.id !== id);
-    localStorage.setItem('esol_ppe_requests', JSON.stringify(requests));
+    await saveAdminDB('esol_ppe_requests', requests);
     loadAdminPpeList();
 }
 
-function getRegisteredUsers() {
-    return JSON.parse(localStorage.getItem('esol_registered_users') || '[]');
-}
-
-function saveRegisteredUsers(users) {
-    localStorage.setItem('esol_registered_users', JSON.stringify(users));
-    loadAdminUserList();
-}
-
-function registerUserAccount() {
+// ============================================
+// 👤 계정 관리 연동
+// ============================================
+async function registerUserAccount() {
     const dept = document.getElementById('newUserDept').value.trim();
     const name = document.getElementById('newUserName').value.trim();
     const empNo = document.getElementById('newUserEmpNo').value.trim();
@@ -786,16 +656,19 @@ function registerUserAccount() {
     
     if (!dept || !name || !empNo || !pw) return alert('입력해 주세요.');
     
-    const users = getRegisteredUsers();
+    const db = await fetchAdminDB();
+    const users = db['esol_registered_users'] ? JSON.parse(db['esol_registered_users']) : [];
     if (users.find(u => u.name === name)) return alert('이미 등록된 성명입니다.');
     
     users.push({ id: Date.now(), dept, name, empNo, pw });
-    saveRegisteredUsers(users);
+    await saveAdminDB('esol_registered_users', users);
     alert('등록되었습니다.');
+    loadAdminUserList();
 }
 
-function loadAdminUserList() {
-    const users = getRegisteredUsers();
+async function loadAdminUserList() {
+    const db = await fetchAdminDB();
+    const users = db['esol_registered_users'] ? JSON.parse(db['esol_registered_users']) : [];
     const tbody = document.getElementById('adminUserListBody');
     
     if (users.length === 0) {
@@ -816,13 +689,18 @@ function loadAdminUserList() {
     `).join('');
 }
 
-function deleteUserAccount(id) {
+async function deleteUserAccount(id) {
     if (!confirm('삭제하시겠습니까?')) return;
-    let users = getRegisteredUsers();
+    const db = await fetchAdminDB();
+    let users = db['esol_registered_users'] ? JSON.parse(db['esol_registered_users']) : [];
     users = users.filter(u => u.id !== id);
-    saveRegisteredUsers(users);
+    await saveAdminDB('esol_registered_users', users);
+    loadAdminUserList();
 }
 
+// ============================================
+// 🧪 MSDS 관리 연동
+// ============================================
 async function uploadMsds() {
     const name = document.getElementById('msdsName').value.trim();
     const cas = document.getElementById('msdsCas').value.trim();
@@ -848,34 +726,43 @@ async function uploadMsds() {
         const tagsArray = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
         const newMsds = { id: Date.now(), name: name, cas: cas, supplier: supplier, tags: tagsArray, fileUrl: uploadData.fileUrl };
         
-        let existingData = JSON.parse(localStorage.getItem('esol_msds_data') || '[]');
+        const db = await fetchAdminDB();
+        let existingData = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
         existingData.push(newMsds);
-        localStorage.setItem('esol_msds_data', JSON.stringify(existingData));
+        await saveAdminDB('esol_msds_data', existingData);
         
-        let allDocs = JSON.parse(localStorage.getItem('esol_safety_docs_v2') || '{}');
+        // 일반 문서실에도 MSDS 추가
+        let allDocs = db['esol_safety_docs_v2'] ? JSON.parse(db['esol_safety_docs_v2']) : {};
         if (!allDocs['MSDS 자료실']) allDocs['MSDS 자료실'] = []; 
         
         allDocs['MSDS 자료실'].unshift({
             id: newMsds.id,
             title: name + ' (' + cas + ') MSDS',
-            url: uploadData.fileUrl,
-            uploader: supplier || '관리자',
+            fileUrl: uploadData.fileUrl,
             date: new Date().toISOString().split('T')[0]
         });
-        localStorage.setItem('esol_safety_docs_v2', JSON.stringify(allDocs));
+        await saveAdminDB('esol_safety_docs_v2', allDocs);
         
         alert('등록되었습니다!');
         loadAdminMsdsList();
     } catch (err) {
         alert('업로드 실패');
     } finally {
-        btn.innerText = '+ MSDS 자료 등록하기';
+        btn.innerText = '+ MSDS 등록하기';
         btn.disabled = false;
+        
+        // 입력창 초기화
+        document.getElementById('msdsName').value = '';
+        document.getElementById('msdsCas').value = '';
+        document.getElementById('msdsSupplier').value = '';
+        document.getElementById('msdsTags').value = '';
+        document.getElementById('msdsFile').value = '';
     }
 }
 
-function loadAdminMsdsList() {
-    const list = JSON.parse(localStorage.getItem('esol_msds_data') || '[]');
+async function loadAdminMsdsList() {
+    const db = await fetchAdminDB();
+    const list = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
     const tbody = document.getElementById('adminMsdsListBody');
     
     if (list.length === 0) {
@@ -896,16 +783,21 @@ function loadAdminMsdsList() {
     `).join('');
 }
 
-function deleteMsds(id) {
+async function deleteMsds(id) {
     if (!confirm('삭제하시겠습니까?')) return;
-    let list = JSON.parse(localStorage.getItem('esol_msds_data') || '[]');
+    const db = await fetchAdminDB();
+    let list = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
     list = list.filter(m => m.id !== id);
-    localStorage.setItem('esol_msds_data', JSON.stringify(list));
+    await saveAdminDB('esol_msds_data', list);
     loadAdminMsdsList();
 }
 
-function loadAdminTextSettings() {
-    const savedText = localStorage.getItem('esol_site_texts');
+// ============================================
+// ✏️ 시스템 설정 관리 연동
+// ============================================
+async function loadAdminTextSettings() {
+    const db = await fetchAdminDB();
+    const savedText = db['esol_site_texts'];
     if (savedText) {
         const config = JSON.parse(savedText);
         if (config.title) document.getElementById('siteTitleInput').value = config.title;
@@ -913,11 +805,53 @@ function loadAdminTextSettings() {
     }
 }
 
-function saveTextSettings() {
+async function saveTextSettings() {
     const titleVal = document.getElementById('siteTitleInput').value.trim();
     const subTextVal = document.getElementById('siteSubTextInput').value.trim();
     if (!titleVal) return alert('대표 제목을 입력해 주세요.');
     const config = { title: titleVal, subText: subTextVal };
-    localStorage.setItem('esol_site_texts', JSON.stringify(config));
+    await saveAdminDB('esol_site_texts', config);
     alert('저장되었습니다.');
+}
+// ============================================
+// ⚖️ 6. 산안법령 요지 관리 DB 연동
+// ============================================
+async function renderAdminLaw() {
+    const db = await fetchAdminDB();
+    const savedText = db['esol_law_text'];
+    if (savedText) {
+        const textInfo = JSON.parse(savedText);
+        document.getElementById('lawTitleInput').value = textInfo.title || ''; 
+        document.getElementById('lawDescInput').value = textInfo.desc || '';
+    }
+    const list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : [];
+    const tbody = document.getElementById('adminLawHistoryBody');
+    if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 산안법령 이력이 없습니다.</td></tr>`;
+    tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteLawRevision('${m.id}')">삭제</button></td></tr>`).join('');
+}
+async function saveLawText() {
+    const title = document.getElementById('lawTitleInput').value.trim();
+    const desc = document.getElementById('lawDescInput').value.trim();
+    await saveAdminDB('esol_law_text', { title, desc }); alert('저장 완료');
+}
+async function uploadLawRevision() {
+    const title = document.getElementById('lawRevTitle').value.trim();
+    const date = document.getElementById('lawRevDate').value;
+    const fileInput = document.getElementById('lawRevFile');
+    if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.');
+    const file = fileInput.files[0];
+    try {
+        const base64Data = await readAsDataURL(file);
+        const db = await fetchAdminDB();
+        const list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : [];
+        list.unshift({ id: Date.now().toString(), title, date, fileName: file.name, fileUrl: base64Data, type: file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' });
+        await saveAdminDB('esol_law_history', list); alert('✅ 등록 완료');
+        document.getElementById('lawRevTitle').value = ''; document.getElementById('lawRevDate').value = ''; fileInput.value = ''; renderAdminLaw();
+    } catch (err) { alert('업로드 에러 발생'); }
+}
+async function deleteLawRevision(id) {
+    if (!confirm('삭제하시겠습니까?')) return;
+    const db = await fetchAdminDB();
+    let list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : [];
+    list = list.filter(m => m.id !== id); await saveAdminDB('esol_law_history', list); renderAdminLaw();
 }

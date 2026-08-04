@@ -10,8 +10,16 @@ const PORT = 3000;
 // 사용자님의 API Key 적용
 const genAI = new GoogleGenerativeAI('AQ.Ab8RN6IXmEI-fFwRr61G9RjicODxochJmu-JFYC8k3OvcxuUdw');
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 💡 [추가됨] 1. db.json 파일이 없으면 자동 생성 (미니 데이터베이스 역할)
+const dbPath = path.join(__dirname, 'db.json');
+if (!fs.existsSync(dbPath)) {
+    fs.writeFileSync(dbPath, JSON.stringify({}));
+}
+
+// 💡 [수정됨] 2. 파일 용량 제한 해제 (PDF, 이미지 등 대용량 Base64 저장을 위함)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
@@ -42,7 +50,45 @@ app.get('/msds', (req, res) => res.render('msds'));
 app.get('/dri', (req, res) => res.render('dri'));
 app.get('/ppe', (req, res) => res.render('ppe'));
 app.get('/notice', (req, res) => res.render('notice'));
+app.get('/policy', (req, res) => res.render('policy'));
+app.get('/law', (req, res) => res.render('law'));
+
 app.get('/org', (req, res) => res.render('org')); // 안전보건 조직도 전용 페이지
+app.get('/committee', (req, res) => {
+    res.render('committee'); 
+});
+app.get('/contact', (req, res) => {
+    res.render('contact'); 
+});
+app.get('/emergency', (req, res) => {
+    res.render('emergency'); 
+});
+
+// 💡 [수정됨] 3. 데이터 통신 API (데이터 불러오기) - 캐시 방지 적용
+app.get('/api/db', (req, res) => {
+    // 브라우저가 과거 데이터를 기억(캐시)하지 못하도록 강력하게 막는 주문입니다.
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    res.json(data);
+});
+
+// 💡 [추가됨] 4. 데이터 통신 API (데이터 저장 및 삭제)
+app.post('/api/db', (req, res) => {
+    const { key, value } = req.body;
+    const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    
+    if (value === null) {
+        delete data[key]; // 삭제
+    } else {
+        data[key] = value; // 저장
+    }
+    
+    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+    res.json({ success: true });
+});
 
 // 파일 업로드 API
 app.post('/api/upload', upload.single('file'), (req, res) => {

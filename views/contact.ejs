@@ -2,61 +2,62 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>안전보건 조직도 - ESOL 환경안전보건 플랫폼</title>
+    <title>비상연락망 - ESOL 환경안전보건 플랫폼</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
-        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
-        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
-        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; margin-left: 10px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #f57c00; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #f57c00; }
+        .back-btn { background: #f57c00; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
         .container { max-width: 1600px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); min-height: 700px; }
-        .page-title { font-size: 24px; color: #4a0082; margin-bottom: 30px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; }
+        .page-title { font-size: 24px; color: #f57c00; margin-bottom: 20px; border-bottom: 2px solid #f57c00; padding-bottom: 12px; }
         .section-title { font-size: 18px; color: #333; margin-bottom: 15px; font-weight: bold; }
         .btn-download { background: #2e7d32; color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; text-decoration: none; display: inline-block; cursor: pointer; border: none; }
-        .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #f9f9f9; border-radius: 10px; border: 1px dashed #ccc; }
-        @media print { header, .no-print { display: none !important; } body { background: #fff; padding: 0; } .container { box-shadow: none; padding: 0; } }
+        .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #fff8e1; border-radius: 10px; border: 1px dashed #ffe082; }
     </style>
 </head>
 <body>
-    <header class="no-print">
-        <div class="brand-title">ESOL <span>환경안전보건 플랫폼</span></div>
-        <div>
-            <button class="back-btn" style="background:#2e7d32;" onclick="window.print()">🖨️ 인쇄하기</button>
-            <button class="back-btn" onclick="location.href='/'">🏠 메인 화면</button>
-        </div>
+    <header>
+        <div class="brand-title">ESOL <span>비상연락망</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
     </header>
     <div class="container">
-        <div class="page-title"><h2>👥 안전·보건 관리 조직도</h2></div>
-        <div class="section-title">📂 조직도 개정 이력 자료실</div>
+        <div class="page-title"><h2 id="contactTitleDisplay">📞 사내외 비상연락망 (Hot-Line)</h2></div>
+        <p id="contactDescDisplay" style="font-size:14px; color:#666; margin-bottom:30px;">긴급 상황 발생 시 신속한 전파 및 대처를 위한 내/외부 비상연락망입니다.</p>
+        <div class="section-title">📂 연락망 개정 이력 자료실</div>
         <div id="historyAccordionContainer"></div>
     </div>
     <script>
-        async function renderOrg() {
-            // 서버에서 데이터 불러오기
+        async function renderContact() {
             const res = await fetch('/api/db');
             const db = await res.json();
-            
-            const savedHistory = db['esol_org_history'];
+
+            const savedText = db['esol_contact_text'];
+            if (savedText) {
+                const textInfo = JSON.parse(savedText);
+                if (textInfo.title) document.getElementById('contactTitleDisplay').innerText = textInfo.title;
+                if (textInfo.desc) document.getElementById('contactDescDisplay').innerText = textInfo.desc;
+            }
+
+            const savedHistory = db['esol_contact_history'];
             const historyList = savedHistory ? JSON.parse(savedHistory) : [];
             const container = document.getElementById('historyAccordionContainer');
 
             if (historyList.length === 0) {
-                container.innerHTML = `<div class="empty-state">등록된 조직도가 없습니다. 관리자 페이지에서 등록해주세요.</div>`; return;
+                container.innerHTML = `<div class="empty-state">등록된 비상연락망이 없습니다. 관리자 페이지에서 등록해주세요.</div>`; return;
             }
 
             container.innerHTML = historyList.map((m, index) => {
                 const isExpanded = (index === 0);
                 let previewHtml = '';
-                if (m.type === 'pdf') {
-                    previewHtml = `<iframe src="${m.fileUrl}" width="100%" height="800px" style="border: 1px solid #ccc; border-radius: 8px; margin-top: 15px;"></iframe>`;
-                } else {
-                    previewHtml = `<img src="${m.fileUrl}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px; margin-top: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">`;
-                }
+                if (m.type === 'pdf') { previewHtml = `<iframe src="${m.fileUrl}" width="100%" height="800px" style="border: 1px solid #ccc; border-radius: 8px; margin-top: 15px;"></iframe>`; } 
+                else { previewHtml = `<img src="${m.fileUrl}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 8px; margin-top: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">`; }
+                
                 return `
                     <div style="margin-bottom:12px; border:1px solid #eae2f0; border-radius:8px; overflow:hidden; background:#fff;">
-                        <div style="background:${isExpanded ? '#f8f5fc' : '#ffffff'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onclick="toggleHistory('${m.id}')">
+                        <div style="background:${isExpanded ? '#fff8e1' : '#ffffff'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onclick="toggleHistory('${m.id}')">
                             <div style="display:flex; align-items:center; gap:15px; flex:1;">
-                                <span style="background:${isExpanded ? '#e53935' : '#4a0082'}; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">${isExpanded ? '최신본' : '과거이력'}</span>
+                                <span style="background:${isExpanded ? '#e53935' : '#f57c00'}; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">${isExpanded ? '최신본' : '과거이력'}</span>
                                 <h4 style="margin:0; color:#222; font-size:16px; flex:1;">${m.title}</h4>
                                 <span style="color:#666; font-size:13px; margin-right:20px;">📅 개정 일자: ${m.date}</span>
                             </div>
@@ -76,12 +77,12 @@
             const bodyDiv = document.getElementById(`body-${id}`);
             const iconSpan = document.getElementById(`icon-${id}`);
             if (bodyDiv.style.display === 'none') {
-                bodyDiv.style.display = 'block'; iconSpan.innerText = '▲ 접기'; iconSpan.parentElement.style.background = '#f8f5fc';
+                bodyDiv.style.display = 'block'; iconSpan.innerText = '▲ 접기'; iconSpan.parentElement.style.background = '#fff8e1';
             } else {
                 bodyDiv.style.display = 'none'; iconSpan.innerText = '▼ 펼쳐보기'; iconSpan.parentElement.style.background = '#ffffff';
             }
         }
-        window.onload = renderOrg;
+        window.onload = renderContact;
     </script>
 </body>
 </html>

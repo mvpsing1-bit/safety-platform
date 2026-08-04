@@ -24,7 +24,6 @@
         .btn-view { background: #4a0082; color: white; }
         .btn-delete { background: #e53935; color: white; }
 
-        /* 💡 이미지 정중앙 배치를 위한 뷰어 컨테이너 스타일 */
         #viewerContentBox { width:100%; height:850px; background:#fff; border-radius:8px; display:flex; justify-content:center; align-items:center; overflow:auto; }
 
         @media print {
@@ -38,19 +37,14 @@
     </style>
 </head>
 <body>
-
     <header class="no-print">
         <div class="brand-title" id="headerTitle">ESOL <span>환경안전보건 플랫폼</span></div>
         <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
     </header>
 
     <div class="container">
-        <div class="page-title">
-            <h2 id="categoryTitle">📂 카테고리명</h2>
-        </div>
-
+        <div class="page-title"><h2 id="categoryTitle">📂 카테고리명</h2></div>
         <div id="generalUploadArea">
-            
             <div style="background:#faf8fc; border:2px dashed #b0268d; border-radius:12px; padding:24px; margin-bottom:30px;" class="no-print">
                 <h3 style="color:#4a0082; margin-bottom:14px;">📤 신규 PDF / 이미지 자료 업로드</h3>
                 <div style="display:flex; gap:12px; align-items:center;">
@@ -59,28 +53,18 @@
                     <button class="btn-action btn-view" style="background:#b0268d; padding:12px 24px;" onclick="uploadDocument()">+ 파일 업로드</button>
                 </div>
             </div>
-
             <h3 style="margin-bottom:10px;">📑 등록된 안전보건 자료 목록</h3>
             <table class="doc-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50%;">자료명 / 문서 제목</th>
-                        <th>등록일</th>
-                        <th style="width: 30%;" class="no-print">열람 및 관리</th>
-                    </tr>
-                </thead>
+                <thead><tr><th style="width: 50%;">자료명 / 문서 제목</th><th>등록일</th><th style="width: 30%;" class="no-print">열람 및 관리</th></tr></thead>
                 <tbody id="docListBody"></tbody>
             </table>
-
             <div class="viewer-container" id="pdfViewerArea" style="display:none; background:#2a2a2e; padding:20px; border-radius:12px; margin-top:20px;">
                 <div style="display:flex; justify-content:space-between; color:#fff; margin-bottom:10px;">
                     <h3 id="viewingDocTitle" style="color:#fee500;">📄 문서 바로보기</h3>
                     <button onclick="closeViewer()" style="background:#e53935; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;" class="no-print">✕ 닫기</button>
                 </div>
-                <!-- 💡 파일 형식에 따라 이 박스 안에 iframe(PDF) 또는 img(이미지)가 들어갑니다. -->
                 <div id="viewerContentBox"></div>
             </div>
-
         </div>
     </div>
 
@@ -89,12 +73,19 @@
         const catName = urlParams.get('cat') || '안전보건 자료실';
         document.getElementById('categoryTitle').innerText = '📂 ' + catName;
 
-        function getStoredData() { 
-            return JSON.parse(localStorage.getItem('esol_safety_docs_v2') || '{}'); 
+        // 💡 서버 연동 함수
+        async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
+        async function saveDB(key, value) {
+            await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null }) });
+        }
+
+        async function getStoredData() { 
+            const db = await fetchDB();
+            return db['esol_safety_docs_v2'] ? JSON.parse(db['esol_safety_docs_v2']) : {};
         }
         
-        function saveStoredData(data) { 
-            localStorage.setItem('esol_safety_docs_v2', JSON.stringify(data)); 
+        async function saveStoredData(data) { 
+            await saveDB('esol_safety_docs_v2', data);
         }
 
         async function uploadDocument() {
@@ -112,7 +103,7 @@
                 const data = await res.json();
 
                 if (data.fileUrl) {
-                    const db = getStoredData();
+                    const db = await getStoredData();
                     if (!db[catName]) db[catName] = [];
                     
                     db[catName].push({ 
@@ -122,31 +113,27 @@
                         fileUrl: data.fileUrl 
                     });
                     
-                    saveStoredData(db);
+                    await saveStoredData(db);
                     document.getElementById('docTitleInput').value = '';
                     fileInput.value = '';
                     alert('등록 완료!');
                     renderDocList();
                 }
-            } catch (err) { 
-                alert('업로드 실패'); 
-            }
+            } catch (err) { alert('업로드 실패'); }
         }
 
-        function renderDocList() {
-            const db = getStoredData();
+        async function renderDocList() {
+            const db = await getStoredData();
             const list = db[catName] || [];
             const tbody = document.getElementById('docListBody');
             
             if (list.length === 0) { 
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding:30px;">등록된 자료가 없습니다.</td></tr>`; 
-                return; 
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding:30px;">등록된 자료가 없습니다.</td></tr>`; return; 
             }
             
             tbody.innerHTML = list.map(doc => `
                 <tr>
-                    <td><strong>${doc.title}</strong></td>
-                    <td>${doc.date}</td>
+                    <td><strong>${doc.title}</strong></td><td>${doc.date}</td>
                     <td class="no-print">
                         <button class="btn-action btn-view" onclick="previewPdf('${doc.fileUrl}', '${doc.title}')">📄 즉시 열기</button>
                         <button class="btn-action btn-delete" onclick="deleteDoc(${doc.id})">🗑️ 삭제</button>
@@ -160,28 +147,18 @@
             }
         }
 
-        // 💡 [핵심] 이미지 파일과 PDF 파일을 구분하여 예쁘게 중앙 정렬해주는 로직
         function previewPdf(fileUrl, docTitle) {
             document.getElementById('viewingDocTitle').innerText = '📄 ' + docTitle;
-            
             const viewerBox = document.getElementById('viewerContentBox');
-            
-            // 파일 URL의 끝부분을 검사하여 이미지인지 확인합니다.
             const isImage = fileUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
             
             if (isImage) {
-                // 이미지일 경우: 정중앙에 비율을 유지하면서 꽉 차게 배치
                 viewerBox.innerHTML = `<img src="${fileUrl}" style="max-width:100%; max-height:100%; object-fit:contain; padding:10px;">`;
             } else {
-                // PDF나 다른 형식일 경우: 꽉 찬 문서 뷰어(iframe) 제공
                 viewerBox.innerHTML = `<iframe src="${fileUrl}" style="width:100%; height:100%; border:none;"></iframe>`;
             }
-
             document.getElementById('pdfViewerArea').style.display = 'block';
-            
-            setTimeout(() => {
-                window.scrollTo({ top: document.getElementById('pdfViewerArea').offsetTop - 50, behavior: 'smooth' });
-            }, 100);
+            setTimeout(() => { window.scrollTo({ top: document.getElementById('pdfViewerArea').offsetTop - 50, behavior: 'smooth' }); }, 100);
         }
         
         function closeViewer() { 
@@ -189,14 +166,13 @@
             document.getElementById('viewerContentBox').innerHTML = ''; 
         }
         
-        function deleteDoc(id) {
+        async function deleteDoc(id) {
             if (!confirm('삭제하시겠습니까?')) return;
-            const db = getStoredData();
+            const db = await getStoredData();
             if (db[catName]) { 
                 db[catName] = db[catName].filter(x => x.id !== id); 
-                saveStoredData(db); 
-                renderDocList(); 
-                closeViewer(); 
+                await saveStoredData(db); 
+                renderDocList(); closeViewer(); 
             }
         }
 
