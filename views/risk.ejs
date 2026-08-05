@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>위험성평가 - ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #f57c00; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #f57c00; }
+        .back-btn { background: #f57c00; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; transition: 0.2s; }
+        .back-btn:hover { opacity: 0.8; }
+        .container { max-width: 1600px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); min-height: 700px; }
+        .page-title { font-size: 24px; color: #f57c00; margin-bottom: 20px; border-bottom: 2px solid #f57c00; padding-bottom: 12px; }
+        .btn-download { background: #e65100; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-block; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-download:hover { opacity: 0.9; }
+        .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #fafafa; border-radius: 10px; border: 1px dashed #ccc; }
+        .zoom-btn { background: #fff; color: #f57c00; border: 1px solid #f57c00; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-left: 5px; }
+        .zoom-btn:hover { background: #f57c00; color: #fff; }
+        
+        /* 💡 추가된 hover 애니메이션 클래스 */
+        .dept-card {
+            margin-bottom: 16px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; transition: all 0.2s ease-in-out;
+        }
+        .dept-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 124, 0, 0.12);
+            border-color: #ffb74d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand-title">ESOL <span>부서별 위험성평가</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+    
+    <div class="container">
+        <div class="page-title"><h2>⚠️ 부서별 위험성평가 결과표</h2></div>
+        <p style="font-size:14px; color:#666; margin-bottom:40px; line-height:1.6;">사업장 내 유해·위험요인을 파악하고 이를 감소시키기 위한 부서별 정기/수시 위험성평가 결과입니다. 해당 부서를 클릭하여 자료를 확인하세요.</p>
+        
+        <div id="riskContainer"></div>
+    </div>
+
+    <script>
+        async function fetchDB() {
+            const res = await fetch('/api/db');
+            return await res.json();
+        }
+
+        async function renderRisk() {
+            const db = await fetchDB();
+            
+            const savedDepts = db['esol_risk_depts'];
+            const actualDepts = savedDepts ? JSON.parse(savedDepts) : [];
+
+            const savedHistory = db['esol_risk_history'];
+            const historyList = savedHistory ? JSON.parse(savedHistory) : [];
+            const container = document.getElementById('riskContainer');
+
+            if (actualDepts.length === 0 && historyList.length === 0) {
+                container.innerHTML = `<div class="empty-state">등록된 위험성평가 자료가 없습니다. 관리자 페이지에서 부서와 자료를 등록해주세요.</div>`; 
+                return;
+            }
+
+            const groupedData = {};
+            actualDepts.forEach(d => groupedData[d] = []);
+            historyList.forEach(h => {
+                if (!groupedData[h.dept]) groupedData[h.dept] = [];
+                groupedData[h.dept].push(h);
+            });
+
+            let html = '';
+            for (const dept of actualDepts) {
+                const deptItems = groupedData[dept];
+                const deptId = 'dept-' + dept.replace(/\s/g, '');
+                
+                // 💡 다수의 부서 목록을 위한 슬림하고 촘촘한 리스트 디자인
+                html += `
+                <div class="dept-card" style="margin-bottom:8px;">
+                    <div style="padding:12px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #f57c00;" onclick="toggleDept('${deptId}')">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:16px;">🏢</span>
+                            <h3 style="margin:0; color:#222; font-size:15px; font-weight:bold;">${dept}</h3>
+                            <span style="background:${deptItems.length > 0 ? '#f57c00' : '#e0e0e0'}; color:${deptItems.length > 0 ? '#fff' : '#666'}; font-size:11px; font-weight:bold; padding:3px 8px; border-radius:12px;">자료 ${deptItems.length}건</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span id="icon-${deptId}" style="color:#f57c00; font-size:12px; font-weight:bold; background:#fff3e0; padding:4px 8px; border-radius:6px; transition:0.2s;">▼ 펼쳐보기</span>
+                        </div>
+                    </div>
+                    <div id="body-${deptId}" style="display:none; padding:16px; background:#fafafa; border-top:1px solid #eee;">
+                `;
+
+                if (deptItems.length === 0) {
+                    html += `<div style="text-align:center; color:#999; font-size:14px; padding:20px; background:#fff; border-radius:8px; border:1px dashed #ddd;">등록된 내역이 없습니다.</div>`;
+                } else {
+                    html += deptItems.map((m, idx) => {
+                        const isExpanded = (idx === 0);
+                        const periodStr = (m.periodStart && m.periodEnd) ? `${m.periodStart} ~ ${m.periodEnd}` : '미지정';
+                        
+                        let fileList = [];
+                        if (m.files && m.files.length > 0) fileList = m.files;
+                        else if (m.fileUrl) fileList = [{ fileName: m.fileName || '첨부파일', fileUrl: m.fileUrl }];
+                        
+                        let filesHtml = '';
+                        if (fileList.length > 0) {
+                            filesHtml = fileList.map((f, fIdx) => {
+                                const fileId = `${m.id}-${fIdx}`;
+                                const isPdf = f.fileName.toLowerCase().endsWith('.pdf');
+                                const isFileExpanded = (idx === 0 && fIdx === 0);
+                                
+                                let previewHtml = `
+                                    <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:10px;">
+                                        <span style="font-size:13px; color:#666; margin-right:10px;">🔍 뷰어 크기 조절:</span>
+                                        <button class="zoom-btn" onclick="adjustZoom('${fileId}', 'out')">➖ 축소</button>
+                                        <button class="zoom-btn" onclick="adjustZoom('${fileId}', 'reset')">🔄 원래크기</button>
+                                        <button class="zoom-btn" onclick="adjustZoom('${fileId}', 'in')">➕ 확대</button>
+                                    </div>
+                                    <div style="width:100%; height:75vh; overflow:auto; background:#525659; border-radius:8px; text-align:center; padding:20px; box-sizing:border-box; border:1px solid #ccc;">
+                                `;
+                                if (isPdf) { previewHtml += `<iframe id="content-${fileId}" data-src="${f.fileUrl}" style="width:70%; height:1000px; border:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease, height 0.3s ease;"></iframe>`; } 
+                                else { previewHtml += `<img id="content-${fileId}" src="${f.fileUrl}" style="width:70%; max-width:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease;">`; }
+                                previewHtml += `</div>`;
+                                
+                                return `
+                                    <div style="margin-top:12px; border:1px solid #ffe0b2; border-radius:8px; overflow:hidden;">
+                                        <div style="background:${isFileExpanded ? '#ffe0b2' : '#fff8e1'}; padding:12px 15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-bottom:1px solid #ffe0b2;" onclick="toggleFile('${fileId}')">
+                                            <div style="display:flex; align-items:center; gap:10px;">
+                                                <span style="background:#f57c00; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">첨부 ${fIdx + 1}</span>
+                                                <span style="font-weight:bold; color:#333; font-size:14px;">📎 ${f.fileName}</span>
+                                            </div>
+                                            <div style="display:flex; align-items:center; gap:15px;">
+                                                <a href="${f.fileUrl}" download="${f.fileName}" class="btn-download" onclick="event.stopPropagation();">💾 파일 다운로드</a>
+                                                <span id="file-icon-${fileId}" style="color:#888; font-size:13px; font-weight:bold;">${isFileExpanded ? '▲ 접기' : '▼ 펼쳐보기'}</span>
+                                            </div>
+                                        </div>
+                                        <div id="file-body-${fileId}" style="display:${isFileExpanded ? 'block' : 'none'}; padding:15px; background:#fff;">${previewHtml}</div>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+
+                        // 💡 디자인 개선: 게시글 리스트도 깔끔한 하얀 카드로 변경
+                        return `
+                            <div style="margin-bottom:16px; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+                                <div style="padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='#fff'" onclick="togglePost('${m.id}')">
+                                    <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+                                        <h4 style="margin:0; color:#333; font-size:16px; font-weight:bold;">📑 ${m.title}</h4>
+                                        <span style="background:#fff3e0; color:#e65100; border:1px solid #ffe0b2; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold;">🗓️ 평가기간: ${periodStr}</span>
+                                        <span style="color:#888; font-size:13px;">등록일: ${m.date}</span>
+                                    </div>
+                                    <span id="post-icon-${m.id}" style="color:#888; font-size:13px; font-weight:bold;">${isExpanded ? '▲ 게시글 접기' : '▼ 게시글 펼치기'}</span>
+                                </div>
+                                <div id="post-body-${m.id}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eee; background:#fafafa;">
+                                    ${filesHtml}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                html += `</div></div>`;
+            }
+            container.innerHTML = html;
+            document.querySelectorAll('iframe[data-src]').forEach(iframe => {
+            const base64Data = iframe.getAttribute('data-src');
+            if (base64Data && base64Data.startsWith('data:application/pdf')) {
+                try {
+                    const arr = base64Data.split(',');
+                    const bstr = atob(arr[1]);
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while(n--) { u8arr[n] = bstr.charCodeAt(n); }
+                    const blob = new Blob([u8arr], {type: 'application/pdf'});
+                    iframe.src = URL.createObjectURL(blob);
+                } catch (e) {
+                    iframe.src = base64Data;
+                }
+            } else {
+                iframe.src = base64Data;
+            }
+        });
+        }
+
+        // 💡 아코디언 텍스트 및 효과 수정
+        function toggleDept(deptId) {
+            const body = document.getElementById(`body-${deptId}`);
+            const icon = document.getElementById(`icon-${deptId}`);
+            if (body.style.display === 'none') { 
+                body.style.display = 'block'; 
+                icon.innerText = '▲ 접기'; 
+                icon.style.background = '#e65100'; 
+                icon.style.color = '#fff'; 
+            } else { 
+                body.style.display = 'none'; 
+                icon.innerText = '▼ 펼쳐보기'; 
+                icon.style.background = '#fff3e0'; 
+                icon.style.color = '#f57c00'; 
+            }
+        }
+
+        function togglePost(id) {
+            const body = document.getElementById(`post-body-${id}`);
+            const icon = document.getElementById(`post-icon-${id}`);
+            if (body.style.display === 'none') { body.style.display = 'block'; icon.innerText = '▲ 게시글 접기'; } 
+            else { body.style.display = 'none'; icon.innerText = '▼ 게시글 펼치기'; }
+        }
+
+        function toggleFile(fileId) {
+            const body = document.getElementById(`file-body-${fileId}`);
+            const icon = document.getElementById(`file-icon-${fileId}`);
+            if (body.style.display === 'none') { body.style.display = 'block'; icon.innerText = '▲ 접기'; icon.parentElement.parentElement.style.background = '#ffe0b2';} 
+            else { body.style.display = 'none'; icon.innerText = '▼ 펼쳐보기'; icon.parentElement.parentElement.style.background = '#fff8e1';}
+        }
+
+        window.zoomLevels = {}; 
+        window.adjustZoom = function(id, action) {
+            if (!window.zoomLevels[id]) window.zoomLevels[id] = 70; 
+            if (action === 'in') window.zoomLevels[id] += 15; 
+            else if (action === 'out') window.zoomLevels[id] -= 15; 
+            else window.zoomLevels[id] = 70;  
+            if (window.zoomLevels[id] < 30) window.zoomLevels[id] = 30;
+            if (window.zoomLevels[id] > 250) window.zoomLevels[id] = 250;
+            const targetEl = document.getElementById(`content-${id}`);
+            if (targetEl) {
+                targetEl.style.width = window.zoomLevels[id] + '%';
+                if (targetEl.tagName === 'IFRAME') targetEl.style.height = (window.zoomLevels[id] * 15) + 'px'; 
+            }
+        };
+
+        window.onload = renderRisk;
+    </script>
+</body>
+</html>
