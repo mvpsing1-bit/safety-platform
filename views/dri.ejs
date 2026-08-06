@@ -80,13 +80,22 @@
                 );
             }
 
+            // 💡 [수정됨] 화면에 그리기 직전에 최신순으로 완벽하게 줄을 세웁니다.
+            list.sort((a, b) => {
+                if (a.date === b.date) {
+                    return a.id - b.id; // 1순위: 같은 날짜면 먼저 등록한 부서가 위에 고정 (오름차순)
+                }
+                return new Date(b.date) - new Date(a.date); // 2순위: 날짜가 다르면 무조건 최신 날짜가 위로 (내림차순)
+            });
+
             const grouped = {};
             list.forEach(d => {
                 if(!grouped[d.date]) grouped[d.date] = [];
-                grouped[d.date].push(d);
+                grouped[d.date].push(d); // 정렬된 순서대로 그룹 바구니에 차곡차곡 담깁니다.
             });
 
-            const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+            // 💡 날짜별 아코디언(블록) 순서도 최신 날짜가 맨 위로 오게 다시 한번 보장!
+            const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
             const container = document.getElementById('driAccordionContainer');
             const paginationContainer = document.getElementById('driPagination');
 

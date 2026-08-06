@@ -119,7 +119,7 @@ function changeAdminPassword() {
 }
 
 // ============================================
-// 🚨 DRI 관리 연동
+// 🚨 DRI 관리 연동 (날짜는 최신순, 같은 날짜 안에서는 처음 등록한 순서대로 위에서부터!)
 // ============================================
 async function submitDri() {
     const date = document.getElementById('driDate').value;
@@ -136,7 +136,17 @@ async function submitDri() {
 
     const db = await fetchAdminDB();
     let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
-    list.unshift({ id: Date.now(), date, dept, location, time, task, risk, measure });
+    
+    // 데이터를 배열에 넣습니다. (어차피 정렬할 거라서 push 사용)
+    list.push({ id: Date.now(), date, dept, location, time, task, risk, measure });
+    
+    // 💡 핵심 정렬 로직 (이것 때문에 순서가 완벽해집니다)
+    list.sort((a, b) => {
+        if (a.date === b.date) {
+            return a.id - b.id; // 같은 날짜인 경우: 먼저 등록한 것(id가 작은 것)이 위로 오게 고정 (오름차순)
+        }
+        return new Date(b.date) - new Date(a.date); // 날짜가 다를 경우: 최신 날짜가 무조건 위로 오게 (내림차순)
+    });
     
     await saveAdminDB('esol_dri_data', list);
     
@@ -163,6 +173,14 @@ async function loadAdminDriList(page = 1) {
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     list = list.filter(d => new Date(d.date) >= oneYearAgo);
 
+    // 💡 화면에 렌더링할 때도 동일한 정렬 규칙을 강제로 먹여서 그립니다.
+    list.sort((a, b) => {
+        if (a.date === b.date) {
+            return a.id - b.id; 
+        }
+        return new Date(b.date) - new Date(a.date); 
+    });
+
     const container = document.getElementById('adminDriAccordionContainer');
     const paginationContainer = document.getElementById('adminDriPagination');
     
@@ -175,10 +193,10 @@ async function loadAdminDriList(page = 1) {
     const grouped = {};
     list.forEach(d => {
         if(!grouped[d.date]) grouped[d.date] = [];
-        grouped[d.date].push(d);
+        grouped[d.date].push(d); // 여기서 쏙쏙 담길 때 이미 정렬된 순서대로 담깁니다.
     });
 
-    const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+    const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
     const totalPages = Math.ceil(sortedDates.length / adminDriPerPage);
     
     if (adminDriCurrentPage > totalPages) adminDriCurrentPage = totalPages;
