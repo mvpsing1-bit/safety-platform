@@ -223,10 +223,13 @@
             if (catTitle.includes('경영방침')) {
                 location.href = '/policy';
             } 
-            // 👇 새로 추가된 산안법령 요지 길 안내
             else if (catTitle.includes('법령')) {
                 location.href = '/law';
             } 
+            // 💡 [여기가 추가된 부분입니다!] 위험성평가 메뉴 클릭 시 완벽하게 risk.ejs로 이동!
+            else if (catTitle.includes('위험성평가')) {
+                location.href = '/risk';
+            }
             else if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) { 
                 location.href = '/notice';  
             } else if (catTitle === '보호구 관리') { 

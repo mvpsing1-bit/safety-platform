@@ -16,8 +16,6 @@
         .btn-download { background: #e65100; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-block; cursor: pointer; border: none; transition: 0.2s; }
         .btn-download:hover { opacity: 0.9; }
         .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #fafafa; border-radius: 10px; border: 1px dashed #ccc; }
-        .zoom-btn { background: #fff; color: #f57c00; border: 1px solid #f57c00; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-left: 5px; }
-        .zoom-btn:hover { background: #f57c00; color: #fff; }
         
         /* 💡 추가된 hover 애니메이션 클래스 */
         .dept-card {
@@ -57,7 +55,7 @@
             const actualDepts = savedDepts ? JSON.parse(savedDepts) : [];
 
             const savedHistory = db['esol_risk_history'];
-            const historyList = savedHistory ? JSON.parse(savedHistory) : [];
+            let historyList = savedHistory ? JSON.parse(savedHistory) : [];
             const container = document.getElementById('riskContainer');
 
             if (actualDepts.length === 0 && historyList.length === 0) {
@@ -65,19 +63,26 @@
                 return;
             }
 
+            // 💡 게시글 최신 등록순 정렬 추가
+            historyList.sort((a, b) => b.id - a.id);
+
             const groupedData = {};
             actualDepts.forEach(d => groupedData[d] = []);
             historyList.forEach(h => {
-                if (!groupedData[h.dept]) groupedData[h.dept] = [];
+                if (!groupedData[h.dept]) {
+                    groupedData[h.dept] = [];
+                    actualDepts.push(h.dept);
+                }
                 groupedData[h.dept].push(h);
             });
 
             let html = '';
-            for (const dept of actualDepts) {
+            const sortedDepts = [...new Set(actualDepts)].sort();
+
+            for (const dept of sortedDepts) {
                 const deptItems = groupedData[dept];
                 const deptId = 'dept-' + dept.replace(/\s/g, '');
                 
-                // 💡 다수의 부서 목록을 위한 슬림하고 촘촘한 리스트 디자인
                 html += `
                 <div class="dept-card" style="margin-bottom:8px;">
                     <div style="padding:12px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #f57c00;" onclick="toggleDept('${deptId}')">
@@ -111,17 +116,14 @@
                                 const isPdf = f.fileName.toLowerCase().endsWith('.pdf');
                                 const isFileExpanded = (idx === 0 && fIdx === 0);
                                 
-                                let previewHtml = `
-                                    <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:10px;">
-                                        <span style="font-size:13px; color:#666; margin-right:10px;">🔍 뷰어 크기 조절:</span>
-                                        <button class="zoom-btn" onclick="adjustZoom('${fileId}', 'out')">➖ 축소</button>
-                                        <button class="zoom-btn" onclick="adjustZoom('${fileId}', 'reset')">🔄 원래크기</button>
-                                        <button class="zoom-btn" onclick="adjustZoom('${fileId}', 'in')">➕ 확대</button>
-                                    </div>
-                                    <div style="width:100%; height:75vh; overflow:auto; background:#525659; border-radius:8px; text-align:center; padding:20px; box-sizing:border-box; border:1px solid #ccc;">
-                                `;
-                                if (isPdf) { previewHtml += `<iframe id="content-${fileId}" data-src="${f.fileUrl}" style="width:70%; height:1000px; border:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease, height 0.3s ease;"></iframe>`; } 
-                                else { previewHtml += `<img id="content-${fileId}" src="${f.fileUrl}" style="width:70%; max-width:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease;">`; }
+                                // 💡 뷰어 크기 조절 버튼 제거 및 100% 꽉 찬 뷰어 생성
+                                let previewHtml = `<div style="width:100%; height:85vh; background:#525659; border-radius:8px; border:1px solid #ccc; overflow:hidden;">`;
+                                
+                                if (isPdf) { 
+                                    previewHtml += `<iframe data-src="${f.fileUrl}" style="width:100%; height:100%; border:none; display:block;"></iframe>`; 
+                                } else { 
+                                    previewHtml += `<div style="width:100%; height:100%; overflow:auto; padding:20px; text-align:center;"><img src="${f.fileUrl}" style="max-width:100%; box-shadow:0 4px 15px rgba(0,0,0,0.5);"></div>`; 
+                                }
                                 previewHtml += `</div>`;
                                 
                                 return `
@@ -142,7 +144,6 @@
                             }).join('');
                         }
 
-                        // 💡 디자인 개선: 게시글 리스트도 깔끔한 하얀 카드로 변경
                         return `
                             <div style="margin-bottom:16px; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
                                 <div style="padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='#fff'" onclick="togglePost('${m.id}')">
@@ -164,27 +165,27 @@
                 html += `</div></div>`;
             }
             container.innerHTML = html;
+            
             document.querySelectorAll('iframe[data-src]').forEach(iframe => {
-            const base64Data = iframe.getAttribute('data-src');
-            if (base64Data && base64Data.startsWith('data:application/pdf')) {
-                try {
-                    const arr = base64Data.split(',');
-                    const bstr = atob(arr[1]);
-                    let n = bstr.length;
-                    const u8arr = new Uint8Array(n);
-                    while(n--) { u8arr[n] = bstr.charCodeAt(n); }
-                    const blob = new Blob([u8arr], {type: 'application/pdf'});
-                    iframe.src = URL.createObjectURL(blob);
-                } catch (e) {
+                const base64Data = iframe.getAttribute('data-src');
+                if (base64Data && base64Data.startsWith('data:application/pdf')) {
+                    try {
+                        const arr = base64Data.split(',');
+                        const bstr = atob(arr[1]);
+                        let n = bstr.length;
+                        const u8arr = new Uint8Array(n);
+                        while(n--) { u8arr[n] = bstr.charCodeAt(n); }
+                        const blob = new Blob([u8arr], {type: 'application/pdf'});
+                        iframe.src = URL.createObjectURL(blob);
+                    } catch (e) {
+                        iframe.src = base64Data;
+                    }
+                } else {
                     iframe.src = base64Data;
                 }
-            } else {
-                iframe.src = base64Data;
-            }
-        });
+            });
         }
 
-        // 💡 아코디언 텍스트 및 효과 수정
         function toggleDept(deptId) {
             const body = document.getElementById(`body-${deptId}`);
             const icon = document.getElementById(`icon-${deptId}`);
@@ -214,21 +215,6 @@
             if (body.style.display === 'none') { body.style.display = 'block'; icon.innerText = '▲ 접기'; icon.parentElement.parentElement.style.background = '#ffe0b2';} 
             else { body.style.display = 'none'; icon.innerText = '▼ 펼쳐보기'; icon.parentElement.parentElement.style.background = '#fff8e1';}
         }
-
-        window.zoomLevels = {}; 
-        window.adjustZoom = function(id, action) {
-            if (!window.zoomLevels[id]) window.zoomLevels[id] = 70; 
-            if (action === 'in') window.zoomLevels[id] += 15; 
-            else if (action === 'out') window.zoomLevels[id] -= 15; 
-            else window.zoomLevels[id] = 70;  
-            if (window.zoomLevels[id] < 30) window.zoomLevels[id] = 30;
-            if (window.zoomLevels[id] > 250) window.zoomLevels[id] = 250;
-            const targetEl = document.getElementById(`content-${id}`);
-            if (targetEl) {
-                targetEl.style.width = window.zoomLevels[id] + '%';
-                if (targetEl.tagName === 'IFRAME') targetEl.style.height = (window.zoomLevels[id] * 15) + 'px'; 
-            }
-        };
 
         window.onload = renderRisk;
     </script>

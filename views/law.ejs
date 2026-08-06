@@ -66,17 +66,11 @@
                 
                 // 💡 어두운 뷰어 배경 및 확대/축소 영역 적용
                 let previewHtml = `
-                    <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:15px; margin-bottom:10px;">
-                        <span style="font-size:13px; color:#666; margin-right:10px;">🔍 뷰어 크기 조절:</span>
-                        <button class="zoom-btn" onclick="adjustZoom('${m.id}', 'out')">➖ 축소</button>
-                        <button class="zoom-btn" onclick="adjustZoom('${m.id}', 'reset')">🔄 원래크기</button>
-                        <button class="zoom-btn" onclick="adjustZoom('${m.id}', 'in')">➕ 확대</button>
-                    </div>
                     <div style="width:100%; height:75vh; overflow:auto; background:#525659; border-radius:8px; text-align:center; padding:20px; box-sizing:border-box; border:1px solid #ccc;">
                 `;
 
                 if (m.type === 'pdf') { 
-                    previewHtml += `<iframe id="content-${m.id}" src="${m.fileUrl}" style="width:70%; height:1000px; border:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease, height 0.3s ease;"></iframe>`; 
+                    previewHtml += `<iframe id="content-${m.id}" src="${m.fileUrl}" style="width:70%; height:100%; border:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease, height 0.3s ease;"></iframe>`; 
                 } else { 
                     previewHtml += `<img id="content-${m.id}" src="${m.fileUrl}" style="width:70%; max-width:none; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.5); transition:width 0.3s ease;">`; 
                 }
