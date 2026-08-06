@@ -23,8 +23,8 @@
 
     <div class="admin-wrapper">
         
-        <!-- 👈 좌측 메뉴 사이드바 -->
-        <aside class="sidebar">
+        <!-- 💡 [수정됨] 고정된 사이드바를 DB와 연동되는 '동적 사이드바'로 교체 -->
+        <aside class="sidebar" id="dynamicSidebar">
             <div class="nav-group">
                 <div class="nav-title" onclick="toggleNav('nav-system')">
                     ⚙️ 시스템 및 운영 관리 <span class="arrow">▼</span>
@@ -36,24 +36,8 @@
                     <button class="nav-item" onclick="switchPanel('tab2', this)">✏️ 시스템 일반 설정</button>
                 </div>
             </div>
-
-            <div class="nav-group">
-                <div class="nav-title" onclick="toggleNav('nav-safety')">
-                    🛡️ 환경안전보건 실무 <span class="arrow">▼</span>
-                </div>
-                <div class="nav-items" id="nav-safety">
-                    <!-- 💡 [추가됨] 경영방침 관리 메뉴 -->
-                    <button class="nav-item" onclick="switchPanel('tab12', this); renderAdminPolicy();">📜 환경안전보건 경영방침 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab13', this); renderAdminLaw();">⚖️ 산안법령 요지 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab8', this); renderAdminOrgTable();">👥 안전보건 조직도 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab9', this); renderAdminCommittee();">🤝 산업안전보건위원회 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab10', this); renderAdminEmergency();">🚨 비상대응 매뉴얼 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab11', this); renderAdminContact();">📞 비상연락망 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab7', this)">🚨 Today's DRI 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab6', this)">🧪 MSDS 자료 관리</button>
-                    <button class="nav-item" onclick="switchPanel('tab3', this)">🥽 보호구 지급/설정</button>
-                </div>
-            </div>
+            <!-- 현황판 메뉴 관리에서 추가/수정하는 실무 메뉴들이 동적으로 들어오는 공간 -->
+            <div id="dynamicNavGroups"></div>
         </aside>
 
         <!-- 👉 우측 메인 콘텐츠 영역 -->
@@ -73,27 +57,11 @@
                             <option value="기타">📂 기타 (Others)</option>
                         </select>
                         <select id="addMenuIcon" style="width:100px; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;">
-                            <option value="📄">📄 문서</option>
-                            <option value="📜">📜 방침</option>
-                            <option value="⚖️">⚖️ 법령</option>
-                            <option value="👥">👥 조직</option>
-                            <option value="🚨">🚨 비상</option>
-                            <option value="⚠️">⚠️ 위험</option>
-                            <option value="📞">📞 연락</option>
-                            <option value="📊">📊 통계</option>
-                            <option value="🏥">🏥 보건</option>
-                            <option value="🥽">🥽 보호구</option>
-                            <option value="🌿">🌿 환경</option>
-                            <option value="🏭">🏭 배출</option>
-                            <option value="💧">💧 수계</option>
-                            <option value="♻️">♻️ 폐기물</option>
-                            <option value="🎬">🎬 영상</option>
-                            <option value="📚">📚 교육</option>
-                            <option value="📁">📁 폴더</option>
-                            <option value="💡">💡 아이디어</option>
-                            <option value="🧪">🧪 화학물질</option>
-                            <option value="🔥">🔥 화기</option>
-                            <option value="🏗️">🏗️ 공사</option>
+                            <option value="📄">📄 문서</option><option value="📜">📜 방침</option><option value="⚖️">⚖️ 법령</option><option value="👥">👥 조직</option>
+                            <option value="🚨">🚨 비상</option><option value="⚠️">⚠️ 위험</option><option value="📞">📞 연락</option><option value="📊">📊 통계</option>
+                            <option value="🏥">🏥 보건</option><option value="🥽">🥽 보호구</option><option value="🌿">🌿 환경</option><option value="🏭">🏭 배출</option>
+                            <option value="💧">💧 수계</option><option value="♻️">♻️ 폐기물</option><option value="🎬">🎬 영상</option><option value="📚">📚 교육</option>
+                            <option value="📁">📁 폴더</option><option value="💡">💡 아이디어</option><option value="🧪">🧪 화학물질</option><option value="🔥">🔥 화기</option><option value="🏗️">🏗️ 공사</option>
                         </select>
                         <input type="text" id="addMenuTitle" placeholder="메뉴 이름" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="text" id="addMenuDesc" placeholder="설명 문구" style="width:250px; padding:10px; border:1px solid #ccc; border-radius:6px;">
@@ -102,14 +70,12 @@
                 </div>
                 <h3 style="margin-top:25px; font-size:16px;">📋 현재 현황판 전체 섹션별 메뉴 리스트</h3>
                 <table>
-                    <thead>
-                        <tr><th style="width: 12%;">소속 구획</th><th style="width: 8%; text-align:center;">아이콘</th><th style="width: 20%;">메뉴 이름</th><th style="width: 25%;">메뉴 설명 문구</th><th style="width: 15%;">순서 변경</th><th style="width: 10%;">구획 이동</th><th>관리</th></tr>
-                    </thead>
+                    <thead><tr><th style="width: 12%;">소속 구획</th><th style="width: 8%; text-align:center;">아이콘</th><th style="width: 20%;">메뉴 이름</th><th style="width: 25%;">메뉴 설명 문구</th><th style="width: 15%;">순서 변경</th><th style="width: 10%;">구획 이동</th><th>관리</th></tr></thead>
                     <tbody id="adminMenuListBody"></tbody>
                 </table>
             </div>
 
-            <!-- 💡 [추가됨] 탭12: 경영방침 관리 -->
+            <!-- 탭12: 경영방침 관리 -->
             <div id="tab12" class="panel">
                 <h2 style="color:#0277bd; border-bottom: 2px solid #e1f5fe; margin-bottom: 20px;">📜 환경안전보건 경영방침 관리 (개정이력 관리)</h2>
                 <div style="background:#e1f5fe; border:2px solid #0277bd; padding:20px; border-radius:12px; margin-bottom:24px;">
@@ -121,7 +87,7 @@
                 <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
                     <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📂 신규 개정판 경영방침 업로드</h3>
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="text" id="policyRevTitle" placeholder="버전/개정명 (예: 2026년 안전보건 경영방침)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="policyRevTitle" placeholder="버전/개정명" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="date" id="policyRevDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="file" id="policyRevFile" accept=".pdf, image/jpeg, image/png" style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         <button class="submit-btn" style="padding:10px 20px; background:#333;" onclick="uploadPolicyRevision()">+ 개정판 등록</button>
@@ -129,10 +95,11 @@
                 </div>
                 <h3 style="font-size:16px; margin-bottom:10px;">📋 경영방침 개정이력 목록</h3>
                 <table>
-                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">개정 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%;">관리</th></tr></thead>
+                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">개정 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%; text-align:center;">관리</th></tr></thead>
                     <tbody id="adminPolicyHistoryBody"></tbody>
                 </table>
             </div>
+
             <!-- 탭13: 산안법령 요지 관리 -->
             <div id="tab13" class="panel">
                 <h2 style="color:#f57c00; border-bottom: 2px solid #fff3e0; margin-bottom: 20px;">⚖️ 산안법령 요지 관리 (개정이력 관리)</h2>
@@ -145,7 +112,7 @@
                 <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
                     <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📂 신규 개정판 산안법령 요지 업로드</h3>
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="text" id="lawRevTitle" placeholder="버전/개정명 (예: 2026년 최신 산안법령 요지)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="lawRevTitle" placeholder="버전/개정명" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="date" id="lawRevDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="file" id="lawRevFile" accept=".pdf, image/jpeg, image/png" style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         <button class="submit-btn" style="padding:10px 20px; background:#333;" onclick="uploadLawRevision()">+ 등록</button>
@@ -153,8 +120,40 @@
                 </div>
                 <h3 style="font-size:16px; margin-bottom:10px;">📋 산안법령 개정이력 목록</h3>
                 <table>
-                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">등록 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%;">관리</th></tr></thead>
+                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">등록 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%; text-align:center;">관리</th></tr></thead>
                     <tbody id="adminLawHistoryBody"></tbody>
+                </table>
+            </div>
+
+            <!-- 탭14: 위험성평가 관리 -->
+            <div id="tab14" class="panel">
+                <h2 style="color:#e65100; border-bottom: 2px solid #fff3e0; margin-bottom: 20px;">⚠️ 위험성평가 자료 관리 (부서별)</h2>
+                <div style="background:#fff3e0; border:1px solid #f57c00; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#e65100; font-size:16px; margin-bottom:12px;">🏢 1. 평가 대상 부서 관리</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:400px;">
+                        <input type="text" id="newRiskDeptInput" placeholder="신규 부서명 입력" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" style="background:#e65100;" onclick="addRiskDept()">+ 부서 추가</button>
+                    </div>
+                    <div id="adminRiskDeptTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                </div>
+                <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📂 2. 신규 위험성평가 업로드</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr 2fr; gap:10px; margin-bottom:10px;">
+                        <div><label style="font-size:12px; font-weight:bold; color:#666;">부서 선택</label><select id="riskRevDept" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#666;">평가명(제목)</label><input type="text" id="riskRevTitle" placeholder="예: 2026년 정기평가" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#666;">첨부파일(다중 선택 가능)</label><input type="file" id="riskRevFile" accept=".pdf, image/jpeg, image/png" multiple style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;"></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; align-items:end;">
+                        <div><label style="font-size:12px; font-weight:bold; color:#666;">등록 일자</label><input type="date" id="riskRevDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#666;">평가기간 시작일</label><input type="date" id="riskPeriodStart" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <div><label style="font-size:12px; font-weight:bold; color:#666;">평가기간 종료일</label><input type="date" id="riskPeriodEnd" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        <button class="submit-btn" style="padding:10px 30px; height:40px; background:#333;" onclick="uploadRiskRevision()">+ 자료 등록</button>
+                    </div>
+                </div>
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 위험성평가 목록</h3>
+                <table>
+                    <thead><tr><th style="width: 15%;">부서명</th><th style="width: 30%;">평가명(제목)</th><th style="width: 15%;">평가 기간</th><th style="width: 15%;">등록 일자</th><th style="width: 10%;">첨부</th><th style="width: 15%; text-align:center;">관리</th></tr></thead>
+                    <tbody id="adminRiskHistoryBody"></tbody>
                 </table>
             </div>
 
@@ -164,7 +163,7 @@
                 <div style="background:#f8f5fc; border:1px solid #4a0082; padding:20px; border-radius:12px; margin-bottom:24px;">
                     <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📂 신규 개정판 조직도 업로드</h3>
                     <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
-                        <input type="text" id="orgRevTitle" placeholder="버전/개정명 (예: 2026년 상반기 조직도)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="orgRevTitle" placeholder="버전/개정명" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="date" id="orgRevDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="file" id="orgRevFile" accept=".pdf, image/jpeg, image/png" style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         <button class="submit-btn" style="padding:10px 20px;" onclick="uploadOrgRevision()">+ 개정판 등록</button>
@@ -172,7 +171,7 @@
                 </div>
                 <h3 style="font-size:16px; margin-bottom:10px;">📋 조직도 개정이력 목록</h3>
                 <table>
-                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">개정 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%;">관리</th></tr></thead>
+                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">개정 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%; text-align:center;">관리</th></tr></thead>
                     <tbody id="adminOrgHistoryBody"></tbody>
                 </table>
             </div>
@@ -183,9 +182,7 @@
                 <div style="background:#fffbee; border:2px solid #b0268d; padding:20px; border-radius:12px; margin-bottom:30px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <h3 style="color:#b0268d; font-size:16px; margin:0;">📢 [섹션1] 다음 위원회 개최 공지 설정</h3>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <label style="font-size:14px; font-weight:bold; color:#333;"><input type="checkbox" id="cmtNoticeActive" style="width:16px; height:16px;"> 메인 화면에 공지 띄우기</label>
-                        </div>
+                        <label style="font-size:14px; font-weight:bold; color:#333;"><input type="checkbox" id="cmtNoticeActive" style="width:16px; height:16px;"> 메인 화면에 공지 띄우기</label>
                     </div>
                     <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
                         <div><label style="font-size:12px; font-weight:bold; color:#555;">회의 명칭</label><input type="text" id="cmtNoticeTitle" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
@@ -199,8 +196,8 @@
                     <button class="submit-btn" style="width:100%; padding:12px; font-size:15px; background:#b0268d;" onclick="saveCommitteeNotice()">🚀 개최 공지 저장 및 반영</button>
                 </div>
                 <div style="background:#f0e6f6; border:1px solid #4a0082; padding:20px; border-radius:12px; margin-bottom:24px;">
-                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📂 [섹션2] 신규 회의록(결과) 업로드 (파일 다중 선택 가능)</h3>
-                    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📂 [섹션2] 신규 회의록(결과) 업로드 (다중 첨부)</h3>
+                    <div style="display:flex; gap:10px; align-items:center;">
                         <input type="text" id="cmtMinuteTitle" placeholder="회의명" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="date" id="cmtMinuteDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="file" id="cmtMinuteFile" accept=".pdf, image/jpeg, image/png" multiple style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
@@ -209,7 +206,7 @@
                 </div>
                 <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 회의록 목록</h3>
                 <table>
-                    <thead><tr><th style="width: 45%;">회의명</th><th style="width: 15%;">개최 일자</th><th style="width: 25%;">첨부 파일 개수</th><th style="width: 15%;">관리</th></tr></thead>
+                    <thead><tr><th style="width: 45%;">회의명</th><th style="width: 15%;">개최 일자</th><th style="width: 25%;">첨부 파일</th><th style="width: 15%; text-align:center;">관리</th></tr></thead>
                     <tbody id="adminCommitteeMinutesBody"></tbody>
                 </table>
             </div>
@@ -226,7 +223,7 @@
                 <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
                     <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📂 신규 개정판 매뉴얼 업로드</h3>
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="text" id="emgRevTitle" placeholder="버전/개정명 (예: Ver.2026 비상시나리오)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="emgRevTitle" placeholder="버전/개정명" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="date" id="emgRevDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="file" id="emgRevFile" accept=".pdf, image/jpeg, image/png" style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         <button class="submit-btn" style="padding:10px 20px; background:#333;" onclick="uploadEmgRevision()">+ 개정판 등록</button>
@@ -234,7 +231,7 @@
                 </div>
                 <h3 style="font-size:16px; margin-bottom:10px;">📋 매뉴얼 개정이력 목록</h3>
                 <table>
-                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">개정 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%;">관리</th></tr></thead>
+                    <thead><tr><th>버전/개정명</th><th>개정 일자</th><th>첨부 파일명</th><th style="text-align:center;">관리</th></tr></thead>
                     <tbody id="adminEmgHistoryBody"></tbody>
                 </table>
             </div>
@@ -251,7 +248,7 @@
                 <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
                     <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📂 신규 개정판 연락망 업로드</h3>
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="text" id="cntRevTitle" placeholder="버전/개정명 (예: 2026년 하반기 비상연락도)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="cntRevTitle" placeholder="버전/개정명" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="date" id="cntRevDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="file" id="cntRevFile" accept=".pdf, image/jpeg, image/png" style="flex:1.5; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         <button class="submit-btn" style="padding:10px 20px; background:#333;" onclick="uploadCntRevision()">+ 개정판 등록</button>
@@ -259,7 +256,7 @@
                 </div>
                 <h3 style="font-size:16px; margin-bottom:10px;">📋 연락망 개정이력 목록</h3>
                 <table>
-                    <thead><tr><th style="width: 45%;">버전/개정명</th><th style="width: 15%;">개정 일자</th><th style="width: 25%;">첨부 파일명</th><th style="width: 15%;">관리</th></tr></thead>
+                    <thead><tr><th>버전/개정명</th><th>개정 일자</th><th>첨부 파일명</th><th style="text-align:center;">관리</th></tr></thead>
                     <tbody id="adminCntHistoryBody"></tbody>
                 </table>
             </div>
@@ -342,34 +339,38 @@
                 </table>
             </div>
 
-            <!-- 탭3: 보호구 관리 -->
+            <!-- 💡 [수정됨] 탭3: 보호구 관리 및 지급대장 (고도화 버전) -->
             <div id="tab3" class="panel">
-                <h2>🥽 현장 보호구 설정</h2>
-                <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h3 style="color:#4a0082; font-size:16px;">📌 1. 필수 보호구 지침</h3>
-                        <button class="submit-btn" style="background:#b0268d;" onclick="openPpeGuideModal()">+ 추가하기</button>
+                <h2 style="color:#4a148c; border-bottom: 2px solid #ede7f6; margin-bottom: 20px;">🥽 보호구 관리 및 지급대장 관리</h2>
+                <!-- 보호구 종류(Select Box) 관리 -->
+                <div style="background:#fff8e1; border:1px solid #ffb300; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#ff8f00; font-size:16px; margin-bottom:12px;">+ 신청 가능한 보호구 종류 관리</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:400px;">
+                        <input type="text" id="newPpeTypeInput" placeholder="신규 보호구 종류 입력" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" style="background:#ff8f00;" onclick="addPpeType()">+ 종류 추가</button>
                     </div>
-                    <table>
-                        <thead><tr><th style="width: 30%;">작업 명칭</th><th style="width: 50%;">보호구 목록</th><th style="width: 20%;">관리</th></tr></thead>
-                        <tbody id="adminPpeGuideBody"></tbody>
-                    </table>
+                    <div id="adminPpeTypeTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                 </div>
-                <div style="background:#f8f5fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
-                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📝 2. 보호구 종류 목록</h3>
-                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:500px;">
-                        <input type="text" id="newPpeOptionInput" placeholder="신규 보호구 종류" style="flex:1; padding:8px;">
-                        <button class="submit-btn" onclick="addPpeOption()">+ 추가</button>
+                <!-- 지침 설정 -->
+                <div style="background:#ede7f6; border:1px solid #7e57c2; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#4a148c; font-size:16px; margin-bottom:12px;">+ 공정별 / 작업별 필수 착용 보호구 지침 등록</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="newPpeProcess" placeholder="공정 명칭" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="newPpeItems" placeholder="필수 착용 보호구 목록" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" style="background:#512da8;" onclick="addPpeGuide()">+ 지침 등록</button>
                     </div>
-                    <div id="adminPpeOptionTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                 </div>
-                <div>
-                    <h3 style="color:#4a0082; font-size:16px; margin-bottom:12px;">📋 3. 신청 및 지급 내역</h3>
-                    <table>
-                        <thead><tr><th>신청일시</th><th>부서/이름</th><th>종류</th><th>목적</th><th>지급 상태</th><th>서명</th><th>관리</th></tr></thead>
-                        <tbody id="adminPpeListBody"></tbody>
-                    </table>
-                </div>
+                <h3 style="font-size:15px; margin-bottom:10px;">📋 등록된 공정별 보호구 지침 목록</h3>
+                <table style="margin-bottom:30px;">
+                    <thead><tr><th style="width: 30%;">공정 명칭</th><th style="width: 50%;">필수 착용 보호구 목록</th><th style="width: 20%; text-align:center;">관리</th></tr></thead>
+                    <tbody id="adminPpeGuideTableBody"></tbody>
+                </table>
+                <!-- 임직원 지급대장 -->
+                <h3 style="font-size:16px; margin-bottom:10px; color:#333;">📦 임직원 보호구 신청 및 수령 서명 현황</h3>
+                <table>
+                    <thead><tr><th>신청일시</th><th>부서명</th><th>신청자(사번)</th><th>보호구 종류</th><th>신청 목적</th><th style="text-align:center;">지급 상태</th><th style="text-align:center;">수령 서명</th><th style="text-align:center;">관리</th></tr></thead>
+                    <tbody id="adminPpeRequestsTableBody"></tbody>
+                </table>
             </div>
 
             <!-- 탭2: 시스템 설정 -->
@@ -392,7 +393,25 @@
         </main>
     </div>
 
-    <!-- 모달 유지 -->
+    <!-- 💡 [복구됨] 모달 영역: 개정이력 수정, 보호구 서명, 메뉴 수정 등 -->
+    <div class="custom-modal-overlay" id="historyEditModal">
+        <div class="custom-modal-box">
+            <div class="custom-modal-header"><h3 id="historyEditModalTitle">📝 내역 수정</h3><button onclick="closeHistoryEditModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
+            <input type="hidden" id="editHistDbKey"><input type="hidden" id="editHistId">
+            <div class="form-group" id="editHistDeptGroup" style="display:none;"><label>평가 대상 부서</label><select id="editHistDeptSelect" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select></div>
+            <div class="form-group"><label>버전/개정명 (제목)</label><input type="text" id="editHistTitleInput"></div>
+            <div class="form-group"><label>등록 일자</label><input type="date" id="editHistDateInput"></div>
+            <div class="form-group" id="editHistPeriodGroup" style="display:none;">
+                <label>평가 기간</label>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="date" id="editHistPeriodStart" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;"><span>~</span><input type="date" id="editHistPeriodEnd" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                </div>
+            </div>
+            <div class="form-group"><label style="color:#b0268d;">첨부파일 변경 (선택사항)</label><input type="file" id="editHistFileInput" style="background:#f8f9fa;" accept=".pdf, image/jpeg, image/png"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;"><button class="submit-btn" style="background:#888;" onclick="closeHistoryEditModal()">취소</button><button class="submit-btn" onclick="saveHistoryEditModal()">💾 저장</button></div>
+        </div>
+    </div>
+
     <div class="custom-modal-overlay" id="ppeGuideEditModal">
         <div class="custom-modal-box">
             <div class="custom-modal-header"><h3 id="ppeGuideModalTitle">📌 지침 편집</h3><button onclick="closePpeGuideModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
@@ -402,11 +421,11 @@
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;"><button class="submit-btn" style="background:#888;" onclick="closePpeGuideModal()">취소</button><button class="submit-btn" onclick="savePpeGuideModal()">💾 저장</button></div>
         </div>
     </div>
+
     <div class="custom-modal-overlay" id="menuEditModal">
         <div class="custom-modal-box">
             <div class="custom-modal-header"><h3 id="menuEditModalTitle">✏️ 메뉴 정보 수정</h3><button onclick="closeMenuEditModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
-            <input type="hidden" id="editMenuCat" value="">
-            <input type="hidden" id="editMenuIndex" value="-1">
+            <input type="hidden" id="editMenuCat" value=""><input type="hidden" id="editMenuIndex" value="-1">
             <div class="form-group"><label>아이콘 선택</label><select id="editMenuIcon" style="width:100%; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;"><option value="📄">📄 문서</option></select></div>
             <div class="form-group"><label>메뉴 이름</label><input type="text" id="editMenuTitleInput"></div>
             <div class="form-group"><label>설명 문구</label><input type="text" id="editMenuDescInput"></div>
@@ -414,256 +433,236 @@
         </div>
     </div>
 
-    <!-- 스크립트 영역 -->
+    <!-- 스크립트 영역 (기존 함수 통합 및 누락분 복구) -->
     <script src="/js/admin.js"></script>
     <script>
         // 💡 [DB 통신 유틸 함수]
-        async function fetchDB() {
-            const res = await fetch('/api/db');
-            return await res.json();
-        }
-        async function saveDB(key, value) {
-            await fetch('/api/db', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null })
-            });
-        }
+        async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
+        async function saveDB(key, value) { await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null }) }); }
+        const readAsDataURL = (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.onerror = (e) => reject(e); reader.readAsDataURL(file); });
+        const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); reader.onerror = (e) => reject(e); reader.readAsDataURL(file); });
 
-        const readAsDataURL = (file) => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = (e) => reject(e);
-            reader.readAsDataURL(file);
-        });
+        // 💡 [복구됨] 동적 사이드바 렌더링
+        async function renderDynamicSidebar() {
+            const db = await fetchDB(); 
+            let menus = db['esol_menu_structure'];
+            menus = menus ? JSON.parse(menus) : (typeof defaultMenus !== 'undefined' ? defaultMenus : { '안전': [], '보건': [], '환경': [], '교육': [], '기타': [] });
+            const container = document.getElementById('dynamicNavGroups');
+            if (!container) return;
 
-        // ==========================================
-        // 1. 조직도 개정이력 DB 연동
-        // ==========================================
-        async function renderAdminOrgTable() {
-            const db = await fetchDB();
-            const list = db['esol_org_history'] ? JSON.parse(db['esol_org_history']) : [];
-            const tbody = document.getElementById('adminOrgHistoryBody');
-            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 조직도 개정이력이 없습니다.</td></tr>`;
-            tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteOrgRevision('${m.id}')">삭제</button></td></tr>`).join('');
-        }
-        async function uploadOrgRevision() {
-            const title = document.getElementById('orgRevTitle').value.trim();
-            const date = document.getElementById('orgRevDate').value;
-            const fileInput = document.getElementById('orgRevFile');
-            if (!title || !date || !fileInput.files.length) return alert('모든 정보를 입력 및 첨부해주세요.');
-            const file = fileInput.files[0];
-            try {
-                const base64Data = await readAsDataURL(file);
-                const db = await fetchDB();
-                const list = db['esol_org_history'] ? JSON.parse(db['esol_org_history']) : [];
-                list.unshift({ id: Date.now().toString(), title, date, fileName: file.name, fileUrl: base64Data, type: file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' });
-                await saveDB('esol_org_history', list);
-                alert('✅ 등록되었습니다.');
-                document.getElementById('orgRevTitle').value = ''; document.getElementById('orgRevDate').value = ''; fileInput.value = ''; renderAdminOrgTable();
-            } catch (err) { alert('업로드 에러 발생'); }
-        }
-        async function deleteOrgRevision(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
-            const db = await fetchDB();
-            let list = db['esol_org_history'] ? JSON.parse(db['esol_org_history']) : [];
-            list = list.filter(m => m.id !== id); 
-            await saveDB('esol_org_history', list); renderAdminOrgTable();
-        }
+            const sectionIcons = { '안전': '🛡️', '보건': '🩺', '환경': '🌱', '교육': '🎓', '기타': '📂' };
+            const menuActionMap = {
+                '안전보건 경영방침': "switchPanel('tab12', this); renderAdminPolicy();",
+                '산안법령 요지': "switchPanel('tab13', this); renderAdminLaw();",
+                '안전보건 조직도': "switchPanel('tab8', this); renderAdminOrgTable();",
+                '산업안전보건위원회': "switchPanel('tab9', this); renderAdminCommittee();",
+                '비상대응 매뉴얼': "switchPanel('tab10', this); renderAdminEmergency();",
+                '비상연락망': "switchPanel('tab11', this); renderAdminContact();",
+                "Today's DRI": "switchPanel('tab7', this);",
+                '화학물질 자료실 / MSDS': "switchPanel('tab6', this);",
+                '화학물질 자료실': "switchPanel('tab6', this);",
+                'MSDS 자료 관리': "switchPanel('tab6', this);",
+                '보호구 지급/설정': "switchPanel('tab3', this); loadAdminPpeManagement();",
+                '보호구 관리 및 지급대장': "switchPanel('tab3', this); loadAdminPpeManagement();",
+                '보호구 관리': "switchPanel('tab3', this); loadAdminPpeManagement();",
+                '위험성평가표': "switchPanel('tab14', this); renderAdminRisk();",
+                '위험성평가': "switchPanel('tab14', this); renderAdminRisk();",
+                '부서별 위험성평가': "switchPanel('tab14', this); renderAdminRisk();",
+                '위험성평가 관리': "switchPanel('tab14', this); renderAdminRisk();"
+            };
 
-        // ==========================================
-        // 2. 비상대응 매뉴얼 개정이력 DB 연동
-        // ==========================================
-        async function renderAdminEmergency() {
-            const db = await fetchDB();
-            const savedText = db['esol_emergency_text'];
-            if (savedText) {
-                const textInfo = JSON.parse(savedText);
-                document.getElementById('emgTitleInput').value = textInfo.title || ''; document.getElementById('emgDescInput').value = textInfo.desc || '';
+            let html = '';
+            for (const catKey in menus) {
+                const icon = sectionIcons[catKey] || '📌';
+                const navId = 'nav-' + catKey;
+                const list = menus[catKey] || [];
+                html += `<div class="nav-group"><div class="nav-title" onclick="toggleNav('${navId}')">${icon} ${catKey} <span class="arrow">▼</span></div><div class="nav-items" id="${navId}">`;
+                list.forEach((m) => {
+                    const action = menuActionMap[m.title] || "switchPanel('tab1', this);";
+                    html += `<button class="nav-item" onclick="${action}">${m.icon || '📄'} ${m.title}</button>`;
+                });
+                html += `</div></div>`;
             }
-            const list = db['esol_emergency_history'] ? JSON.parse(db['esol_emergency_history']) : [];
-            const tbody = document.getElementById('adminEmgHistoryBody');
-            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 매뉴얼 이력이 없습니다.</td></tr>`;
-            tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteEmgRevision('${m.id}')">삭제</button></td></tr>`).join('');
+            container.innerHTML = html;
         }
-        async function saveEmergencyText() {
-            const title = document.getElementById('emgTitleInput').value.trim();
-            const desc = document.getElementById('emgDescInput').value.trim();
-            await saveDB('esol_emergency_text', { title, desc }); alert('저장 완료');
-        }
-        async function uploadEmgRevision() {
-            const title = document.getElementById('emgRevTitle').value.trim();
-            const date = document.getElementById('emgRevDate').value;
-            const fileInput = document.getElementById('emgRevFile');
-            if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.');
-            const file = fileInput.files[0];
-            try {
-                const base64Data = await readAsDataURL(file);
-                const db = await fetchDB();
-                const list = db['esol_emergency_history'] ? JSON.parse(db['esol_emergency_history']) : [];
-                list.unshift({ id: Date.now().toString(), title, date, fileName: file.name, fileUrl: base64Data, type: file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' });
-                await saveDB('esol_emergency_history', list); alert('✅ 등록 완료');
-                document.getElementById('emgRevTitle').value = ''; document.getElementById('emgRevDate').value = ''; fileInput.value = ''; renderAdminEmergency();
-            } catch (err) { alert('업로드 에러 발생'); }
-        }
-        async function deleteEmgRevision(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
+
+        // 💡 [복구됨] 공통 이력 수정 팝업 제어
+        async function openHistoryEditModal(dbKey, id) {
             const db = await fetchDB();
-            let list = db['esol_emergency_history'] ? JSON.parse(db['esol_emergency_history']) : [];
-            list = list.filter(m => m.id !== id); await saveDB('esol_emergency_history', list); renderAdminEmergency();
+            const list = db[dbKey] ? JSON.parse(db[dbKey]) : [];
+            const item = list.find(m => m.id == id);
+            if (!item) return;
+
+            document.getElementById('editHistDbKey').value = dbKey;
+            document.getElementById('editHistId').value = id;
+            document.getElementById('editHistTitleInput').value = item.title;
+            document.getElementById('editHistDateInput').value = item.date;
+            
+            const fileInput = document.getElementById('editHistFileInput');
+            fileInput.value = '';
+            
+            if (dbKey === 'esol_risk_history') {
+                fileInput.multiple = true;
+                document.getElementById('editHistDeptGroup').style.display = 'block';
+                document.getElementById('editHistPeriodGroup').style.display = 'block';
+                const depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : [];
+                document.getElementById('editHistDeptSelect').innerHTML = depts.map(d => `<option value="${d}" ${d===item.dept?'selected':''}>${d}</option>`).join('');
+                document.getElementById('editHistPeriodStart').value = item.periodStart || '';
+                document.getElementById('editHistPeriodEnd').value = item.periodEnd || '';
+            } else if (dbKey === 'esol_committee_minutes') {
+                fileInput.multiple = true;
+                document.getElementById('editHistDeptGroup').style.display = 'none';
+                if(document.getElementById('editHistPeriodGroup')) document.getElementById('editHistPeriodGroup').style.display = 'none';
+            } else {
+                fileInput.multiple = false;
+                document.getElementById('editHistDeptGroup').style.display = 'none';
+                if(document.getElementById('editHistPeriodGroup')) document.getElementById('editHistPeriodGroup').style.display = 'none';
+            }
+            document.getElementById('historyEditModal').style.display = 'flex';
+        }
+
+        function closeHistoryEditModal() { document.getElementById('historyEditModal').style.display = 'none'; }
+
+        async function saveHistoryEditModal() {
+            const dbKey = document.getElementById('editHistDbKey').value; const id = document.getElementById('editHistId').value;
+            const newTitle = document.getElementById('editHistTitleInput').value.trim(); const newDate = document.getElementById('editHistDateInput').value;
+            const fileInput = document.getElementById('editHistFileInput');
+            if (!newTitle || !newDate) return alert('제목과 일자를 모두 입력해주세요.');
+
+            const db = await fetchDB(); let list = db[dbKey] ? JSON.parse(db[dbKey]) : [];
+            const itemIndex = list.findIndex(m => m.id == id); if (itemIndex === -1) return;
+
+            list[itemIndex].title = newTitle; list[itemIndex].date = newDate;
+
+            if (dbKey === 'esol_risk_history') {
+                const pStart = document.getElementById('editHistPeriodStart').value; const pEnd = document.getElementById('editHistPeriodEnd').value;
+                if (!pStart || !pEnd) return alert('평가 기간을 모두 선택해주세요.');
+                list[itemIndex].dept = document.getElementById('editHistDeptSelect').value; list[itemIndex].periodStart = pStart; list[itemIndex].periodEnd = pEnd;
+            }
+
+            if (fileInput.files.length > 0) {
+                if (dbKey === 'esol_committee_minutes' || dbKey === 'esol_risk_history') {
+                    const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); list[itemIndex].files = filesData;
+                } else {
+                    const file = fileInput.files[0]; const base64Data = await readAsDataURL(file);
+                    list[itemIndex].fileName = file.name; list[itemIndex].fileUrl = base64Data; list[itemIndex].type = file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image';
+                }
+            }
+
+            await saveDB(dbKey, list); closeHistoryEditModal(); alert('수정 내용이 저장되었습니다.');
+            if (dbKey === 'esol_policy_history') renderAdminPolicy(); if (dbKey === 'esol_law_history') renderAdminLaw(); if (dbKey === 'esol_org_history') renderAdminOrgTable();
+            if (dbKey === 'esol_committee_minutes') renderAdminCommittee(); if (dbKey === 'esol_emergency_history') renderAdminEmergency(); if (dbKey === 'esol_contact_history') renderAdminContact();
+            if (dbKey === 'esol_risk_history') renderAdminRisk();
         }
 
         // ==========================================
-        // 3. 비상연락망 개정이력 DB 연동
+        // 💡 [복구됨] 위험성평가, 보호구, 그리고 나머지 공통 이력 관리 로직
         // ==========================================
-        async function renderAdminContact() {
+        
+        // --- 탭14: 위험성평가 ---
+        async function renderAdminRisk() {
             const db = await fetchDB();
-            const savedText = db['esol_contact_text'];
-            if (savedText) {
-                const textInfo = JSON.parse(savedText);
-                document.getElementById('contactTitleInput').value = textInfo.title || ''; document.getElementById('contactDescInput').value = textInfo.desc || '';
-            }
-            const list = db['esol_contact_history'] ? JSON.parse(db['esol_contact_history']) : [];
-            const tbody = document.getElementById('adminCntHistoryBody');
-            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 연락망 이력이 없습니다.</td></tr>`;
-            tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteCntRevision('${m.id}')">삭제</button></td></tr>`).join('');
-        }
-        async function saveContactText() {
-            const title = document.getElementById('contactTitleInput').value.trim();
-            const desc = document.getElementById('contactDescInput').value.trim();
-            await saveDB('esol_contact_text', { title, desc }); alert('저장 완료');
-        }
-        async function uploadCntRevision() {
-            const title = document.getElementById('cntRevTitle').value.trim();
-            const date = document.getElementById('cntRevDate').value;
-            const fileInput = document.getElementById('cntRevFile');
-            if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.');
-            const file = fileInput.files[0];
-            try {
-                const base64Data = await readAsDataURL(file);
-                const db = await fetchDB();
-                const list = db['esol_contact_history'] ? JSON.parse(db['esol_contact_history']) : [];
-                list.unshift({ id: Date.now().toString(), title, date, fileName: file.name, fileUrl: base64Data, type: file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' });
-                await saveDB('esol_contact_history', list); alert('✅ 등록 완료');
-                document.getElementById('cntRevTitle').value = ''; document.getElementById('cntRevDate').value = ''; fileInput.value = ''; renderAdminContact();
-            } catch (err) { alert('업로드 에러 발생'); }
-        }
-        async function deleteCntRevision(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
-            const db = await fetchDB();
-            let list = db['esol_contact_history'] ? JSON.parse(db['esol_contact_history']) : [];
-            list = list.filter(m => m.id !== id); await saveDB('esol_contact_history', list); renderAdminContact();
-        }
+            const savedDepts = db['esol_risk_depts']; let depts = savedDepts ? JSON.parse(savedDepts) : [];
+            document.getElementById('adminRiskDeptTags').innerHTML = depts.map(d => `<span style="background:#ffe0b2; border:1px solid #f57c00; color:#e65100; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:bold;">${d} <button onclick="deleteRiskDept('${d}')" style="border:none; background:none; color:#d32f2f; cursor:pointer;">✕</button></span>`).join('');
+            let deptOptions = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+            if(depts.length === 0) deptOptions = `<option value="">부서를 먼저 추가하세요</option>`;
+            document.getElementById('riskRevDept').innerHTML = deptOptions;
 
-        // ==========================================
-        // 4. 산안위 관리 DB 연동
-        // ==========================================
-        async function renderAdminCommittee() {
-            const db = await fetchDB();
-            const savedNotice = db['esol_committee_notice'];
-            if (savedNotice) {
-                const notice = JSON.parse(savedNotice);
-                document.getElementById('cmtNoticeActive').checked = notice.isActive;
-                document.getElementById('cmtNoticeTitle').value = notice.title;
-                document.getElementById('cmtNoticeDate').value = notice.date;
-                document.getElementById('cmtNoticeTime').value = notice.time;
-                document.getElementById('cmtNoticeLocation').value = notice.location;
-                document.getElementById('cmtNoticeAttendees').value = notice.attendees;
-            }
-            const list = db['esol_committee_minutes'] ? JSON.parse(db['esol_committee_minutes']) : [];
-            const tbody = document.getElementById('adminCommitteeMinutesBody');
-            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 회의록이 없습니다.</td></tr>`;
+            const list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : [];
+            const tbody = document.getElementById('adminRiskHistoryBody');
+            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">등록된 이력이 없습니다.</td></tr>`;
+            
             tbody.innerHTML = list.map(m => {
-                const fileCount = m.files ? m.files.length : (m.fileName ? 1 : 0);
-                return `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">첨부 ${fileCount}건</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteCommitteeMinute('${m.id}')">삭제</button></td></tr>`;
+                let fileCount = 0; if (m.files && m.files.length > 0) fileCount = m.files.length; else if (m.fileUrl) fileCount = 1;
+                const periodStr = (m.periodStart && m.periodEnd) ? `${m.periodStart} ~ ${m.periodEnd}` : '-';
+                return `<tr><td style="color:#e65100; font-weight:bold;">${m.dept}</td><td style="font-weight:bold;">${m.title}</td><td style="color:#555; font-size:13px;">${periodStr}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">첨부 ${fileCount}건</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_risk_history', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteRiskRevision('${m.id}')">삭제</button></td></tr>`;
             }).join('');
         }
-        async function saveCommitteeNotice() {
-            const notice = {
-                isActive: document.getElementById('cmtNoticeActive').checked,
-                title: document.getElementById('cmtNoticeTitle').value.trim(),
-                date: document.getElementById('cmtNoticeDate').value,
-                time: document.getElementById('cmtNoticeTime').value,
-                location: document.getElementById('cmtNoticeLocation').value.trim(),
-                attendees: document.getElementById('cmtNoticeAttendees').value.trim()
-            };
-            await saveDB('esol_committee_notice', notice); alert('✅ 저장되었습니다.');
+        async function addRiskDept() { const val = document.getElementById('newRiskDeptInput').value.trim(); if (!val) return; const db = await fetchDB(); const depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : []; if(depts.includes(val)) return alert('이미 존재하는 부서입니다.'); depts.push(val); await saveDB('esol_risk_depts', depts); document.getElementById('newRiskDeptInput').value = ''; renderAdminRisk(); }
+        async function deleteRiskDept(dept) { if (!confirm(`'${dept}' 부서를 삭제하시겠습니까?`)) return; const db = await fetchDB(); let depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : []; depts = depts.filter(d => d !== dept); await saveDB('esol_risk_depts', depts); renderAdminRisk(); }
+        async function uploadRiskRevision() {
+            const dept = document.getElementById('riskRevDept').value; const title = document.getElementById('riskRevTitle').value.trim(); const date = document.getElementById('riskRevDate').value; const periodStart = document.getElementById('riskPeriodStart').value; const periodEnd = document.getElementById('riskPeriodEnd').value; const fileInput = document.getElementById('riskRevFile');
+            if (!dept || !title || !date || !periodStart || !periodEnd || !fileInput.files.length) return alert('모두 입력해주세요.');
+            try { const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); const db = await fetchDB(); const list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : []; list.unshift({ id: Date.now().toString(), dept, title, date, periodStart, periodEnd, files: filesData }); await saveDB('esol_risk_history', list); alert('✅ 등록 완료'); document.getElementById('riskRevTitle').value = ''; document.getElementById('riskRevDate').value = ''; document.getElementById('riskPeriodStart').value = ''; document.getElementById('riskPeriodEnd').value = ''; fileInput.value = ''; renderAdminRisk(); } catch (err) { alert('에러 발생'); }
         }
-        async function uploadCommitteeMinute() {
-            const title = document.getElementById('cmtMinuteTitle').value.trim();
-            const date = document.getElementById('cmtMinuteDate').value;
-            const fileInput = document.getElementById('cmtMinuteFile');
-            if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.');
-            
-            const readAsDataURL_multi = (file) => new Promise((resolve, reject) => {
-                const reader = new FileReader(); reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); reader.onerror = (e) => reject(e); reader.readAsDataURL(file);
-            });
-            try {
-                const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f)));
-                const db = await fetchDB();
-                const list = db['esol_committee_minutes'] ? JSON.parse(db['esol_committee_minutes']) : [];
-                list.unshift({ id: Date.now().toString(), title, date, files: filesData });
-                await saveDB('esol_committee_minutes', list); alert('✅ 등록 완료');
-                document.getElementById('cmtMinuteTitle').value = ''; document.getElementById('cmtMinuteDate').value = ''; fileInput.value = ''; renderAdminCommittee();
-            } catch (err) { alert('업로드 에러 발생'); }
-        }
-        async function deleteCommitteeMinute(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
-            const db = await fetchDB();
-            let list = db['esol_committee_minutes'] ? JSON.parse(db['esol_committee_minutes']) : [];
-            list = list.filter(m => m.id !== id); await saveDB('esol_committee_minutes', list); renderAdminCommittee();
-        }
+        async function deleteRiskRevision(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_risk_history', list); renderAdminRisk(); }
 
-        // ==========================================
-        // 💡 5. 경영방침 관리 DB 연동 (추가됨)
-        // ==========================================
-        async function renderAdminPolicy() {
-            const db = await fetchDB();
-            const savedText = db['esol_policy_text'];
-            if (savedText) {
-                const textInfo = JSON.parse(savedText);
-                document.getElementById('policyTitleInput').value = textInfo.title || ''; 
-                document.getElementById('policyDescInput').value = textInfo.desc || '';
-            }
-            const list = db['esol_policy_history'] ? JSON.parse(db['esol_policy_history']) : [];
-            const tbody = document.getElementById('adminPolicyHistoryBody');
-            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 경영방침 이력이 없습니다.</td></tr>`;
-            tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePolicyRevision('${m.id}')">삭제</button></td></tr>`).join('');
+        // --- 탭3: 보호구 고도화 관리 ---
+        async function loadAdminPpeManagement() { await loadAdminPpeTypes(); await loadAdminPpeSection(); await loadAdminPpeRequests(); }
+        async function loadAdminPpeTypes() {
+            const db = await fetchDB(); let types = db['esol_ppe_types'] ? JSON.parse(db['esol_ppe_types']) : ['안전모', '안전화', '보안경', '방진마스크', '방독마스크', '안전장갑', '귀마개'];
+            const container = document.getElementById('adminPpeTypeTags');
+            if(container) container.innerHTML = types.map(t => `<span style="background:#fff3e0; border:1px solid #ffb300; color:#ff8f00; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:bold;">${t} <button onclick="deletePpeType('${t}')" style="border:none; background:none; color:#d32f2f; cursor:pointer;">✕</button></span>`).join('');
         }
-        async function savePolicyText() {
-            const title = document.getElementById('policyTitleInput').value.trim();
-            const desc = document.getElementById('policyDescInput').value.trim();
-            await saveDB('esol_policy_text', { title, desc }); alert('저장 완료');
+        async function addPpeType() { const val = document.getElementById('newPpeTypeInput').value.trim(); if (!val) return; const db = await fetchDB(); let types = db['esol_ppe_types'] ? JSON.parse(db['esol_ppe_types']) : ['안전모', '안전화', '보안경', '방진마스크', '방독마스크', '안전장갑', '귀마개']; if(types.includes(val)) return alert('이미 존재하는 보호구입니다.'); types.push(val); await saveDB('esol_ppe_types', types); document.getElementById('newPpeTypeInput').value = ''; loadAdminPpeTypes(); }
+        async function deletePpeType(type) { if (!confirm(`'${type}' 항목을 삭제하시겠습니까?`)) return; const db = await fetchDB(); let types = db['esol_ppe_types'] ? JSON.parse(db['esol_ppe_types']) : ['안전모', '안전화', '보안경', '방진마스크', '방독마스크', '안전장갑', '귀마개']; types = types.filter(t => t !== type); await saveDB('esol_ppe_types', types); loadAdminPpeTypes(); }
+        async function loadAdminPpeSection() {
+            const db = await fetchDB(); const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [{ process: '용접 작업 공정', items: '용접면, 방진마스크, 가죽안전장갑' }, { process: '화학물질 취급 공정', items: '내화학안전장갑, 보안경, 방독마스크' }];
+            const tbody = document.getElementById('adminPpeGuideTableBody'); if (!tbody) return;
+            if (guides.length === 0) return tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:#888;">등록된 지침이 없습니다.</td></tr>`;
+            tbody.innerHTML = guides.map((g, idx) => `<tr><td style="font-weight:bold; color:#512da8;">${g.process}</td><td>${g.items}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePpeGuide(${idx})">삭제</button></td></tr>`).join('');
         }
-        async function uploadPolicyRevision() {
-            const title = document.getElementById('policyRevTitle').value.trim();
-            const date = document.getElementById('policyRevDate').value;
-            const fileInput = document.getElementById('policyRevFile');
-            if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.');
-            const file = fileInput.files[0];
-            try {
-                const base64Data = await readAsDataURL(file);
-                const db = await fetchDB();
-                const list = db['esol_policy_history'] ? JSON.parse(db['esol_policy_history']) : [];
-                list.unshift({ id: Date.now().toString(), title, date, fileName: file.name, fileUrl: base64Data, type: file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' });
-                await saveDB('esol_policy_history', list); alert('✅ 등록 완료');
-                document.getElementById('policyRevTitle').value = ''; document.getElementById('policyRevDate').value = ''; fileInput.value = ''; renderAdminPolicy();
-            } catch (err) { alert('업로드 에러 발생'); }
+        async function addPpeGuide() { const process = document.getElementById('newPpeProcess').value.trim(); const items = document.getElementById('newPpeItems').value.trim(); if (!process || !items) return alert('모두 입력해주세요.'); const db = await fetchDB(); let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : []; guides.push({ process, items }); await saveDB('esol_ppe_guides', guides); document.getElementById('newPpeProcess').value = ''; document.getElementById('newPpeItems').value = ''; loadAdminPpeSection(); }
+        async function deletePpeGuide(idx) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : []; guides.splice(idx, 1); await saveDB('esol_ppe_guides', guides); loadAdminPpeSection(); }
+        async function loadAdminPpeRequests() {
+            const db = await fetchDB(); const requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : []; const tbody = document.getElementById('adminPpeRequestsTableBody'); if (!tbody) return;
+            if (requests.length === 0) return tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">접수된 보호구 신청 내역이 없습니다.</td></tr>`;
+            tbody.innerHTML = requests.map((r, idx) => {
+                let signDisplay = `<span style="color:#d32f2f; font-size:12px;">미서명</span>`; if (r.signature) signDisplay = `<img src="${r.signature}" style="height:30px; border:1px solid #ccc; background:#fff;" alt="서명">`;
+                let statusColor = r.status === '지급완료' ? '#2e7d32' : '#e65100';
+                return `<tr><td>${r.date || '-'}</td><td style="font-weight:bold;">${r.dept}</td><td>${r.name} (${r.empNo})</td><td>${r.item}</td><td>${r.purpose}</td><td style="text-align:center; font-weight:bold; color:${statusColor};">${r.status || '신청접수'}</td><td style="text-align:center;">${signDisplay}</td><td style="text-align:center;"><div style="display:flex; gap:5px; justify-content:center;"><button class="submit-btn" style="background:#512da8; padding:5px 10px; font-size:12px;" onclick="togglePpeStatus(${idx})">상태변경</button><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePpeRequest(${idx})">삭제</button></div></td></tr>`;
+            }).join('');
         }
-        async function deletePolicyRevision(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
-            const db = await fetchDB();
-            let list = db['esol_policy_history'] ? JSON.parse(db['esol_policy_history']) : [];
-            list = list.filter(m => m.id !== id); await saveDB('esol_policy_history', list); renderAdminPolicy();
-        }
+        async function togglePpeStatus(idx) { const db = await fetchDB(); let requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : []; if (!requests[idx]) return; requests[idx].status = requests[idx].status === '지급완료' ? '신청접수' : '지급완료'; await saveDB('esol_ppe_requests', requests); loadAdminPpeRequests(); }
+        async function deletePpeRequest(idx) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : []; requests.splice(idx, 1); await saveDB('esol_ppe_requests', requests); loadAdminPpeRequests(); }
+
+        // --- 기타 일반 탭 로드 로직 모음 ---
+        async function renderAdminOrgTable() { const db = await fetchDB(); const list = db['esol_org_history'] ? JSON.parse(db['esol_org_history']) : []; const tbody = document.getElementById('adminOrgHistoryBody'); if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 조직도 개정이력이 없습니다.</td></tr>`; tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_org_history', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteOrgRevision('${m.id}')">삭제</button></td></tr>`).join(''); }
+        async function uploadOrgRevision() { const title = document.getElementById('orgRevTitle').value.trim(); const date = document.getElementById('orgRevDate').value; const fileInput = document.getElementById('orgRevFile'); if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.'); try { const base64Data = await readAsDataURL(fileInput.files[0]); const db = await fetchDB(); const list = db['esol_org_history'] ? JSON.parse(db['esol_org_history']) : []; list.unshift({ id: Date.now().toString(), title, date, fileName: fileInput.files[0].name, fileUrl: base64Data, type: fileInput.files[0].name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' }); await saveDB('esol_org_history', list); alert('✅ 등록 완료'); document.getElementById('orgRevTitle').value = ''; document.getElementById('orgRevDate').value = ''; fileInput.value = ''; renderAdminOrgTable(); } catch (err) { alert('업로드 에러 발생'); } }
+        async function deleteOrgRevision(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_org_history'] ? JSON.parse(db['esol_org_history']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_org_history', list); renderAdminOrgTable(); }
+        
+        async function renderAdminEmergency() { const db = await fetchDB(); const savedText = db['esol_emergency_text']; if (savedText) { const textInfo = JSON.parse(savedText); document.getElementById('emgTitleInput').value = textInfo.title || ''; document.getElementById('emgDescInput').value = textInfo.desc || ''; } const list = db['esol_emergency_history'] ? JSON.parse(db['esol_emergency_history']) : []; const tbody = document.getElementById('adminEmgHistoryBody'); if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 매뉴얼 이력이 없습니다.</td></tr>`; tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_emergency_history', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteEmgRevision('${m.id}')">삭제</button></td></tr>`).join(''); }
+        async function saveEmergencyText() { const title = document.getElementById('emgTitleInput').value.trim(); const desc = document.getElementById('emgDescInput').value.trim(); await saveDB('esol_emergency_text', { title, desc }); alert('저장 완료'); }
+        async function uploadEmgRevision() { const title = document.getElementById('emgRevTitle').value.trim(); const date = document.getElementById('emgRevDate').value; const fileInput = document.getElementById('emgRevFile'); if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.'); try { const base64Data = await readAsDataURL(fileInput.files[0]); const db = await fetchDB(); const list = db['esol_emergency_history'] ? JSON.parse(db['esol_emergency_history']) : []; list.unshift({ id: Date.now().toString(), title, date, fileName: fileInput.files[0].name, fileUrl: base64Data, type: fileInput.files[0].name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' }); await saveDB('esol_emergency_history', list); alert('✅ 등록 완료'); document.getElementById('emgRevTitle').value = ''; document.getElementById('emgRevDate').value = ''; fileInput.value = ''; renderAdminEmergency(); } catch (err) { alert('에러 발생'); } }
+        async function deleteEmgRevision(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_emergency_history'] ? JSON.parse(db['esol_emergency_history']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_emergency_history', list); renderAdminEmergency(); }
+
+        async function renderAdminContact() { const db = await fetchDB(); const savedText = db['esol_contact_text']; if (savedText) { const textInfo = JSON.parse(savedText); document.getElementById('contactTitleInput').value = textInfo.title || ''; document.getElementById('contactDescInput').value = textInfo.desc || ''; } const list = db['esol_contact_history'] ? JSON.parse(db['esol_contact_history']) : []; const tbody = document.getElementById('adminCntHistoryBody'); if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 연락망 이력이 없습니다.</td></tr>`; tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_contact_history', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteCntRevision('${m.id}')">삭제</button></td></tr>`).join(''); }
+        async function saveContactText() { const title = document.getElementById('contactTitleInput').value.trim(); const desc = document.getElementById('contactDescInput').value.trim(); await saveDB('esol_contact_text', { title, desc }); alert('저장 완료'); }
+        async function uploadCntRevision() { const title = document.getElementById('cntRevTitle').value.trim(); const date = document.getElementById('cntRevDate').value; const fileInput = document.getElementById('cntRevFile'); if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.'); try { const base64Data = await readAsDataURL(fileInput.files[0]); const db = await fetchDB(); const list = db['esol_contact_history'] ? JSON.parse(db['esol_contact_history']) : []; list.unshift({ id: Date.now().toString(), title, date, fileName: fileInput.files[0].name, fileUrl: base64Data, type: fileInput.files[0].name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' }); await saveDB('esol_contact_history', list); alert('✅ 등록 완료'); document.getElementById('cntRevTitle').value = ''; document.getElementById('cntRevDate').value = ''; fileInput.value = ''; renderAdminContact(); } catch (err) { alert('에러 발생'); } }
+        async function deleteCntRevision(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_contact_history'] ? JSON.parse(db['esol_contact_history']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_contact_history', list); renderAdminContact(); }
+
+        async function renderAdminCommittee() { const db = await fetchDB(); const savedNotice = db['esol_committee_notice']; if (savedNotice) { const notice = JSON.parse(savedNotice); document.getElementById('cmtNoticeActive').checked = notice.isActive; document.getElementById('cmtNoticeTitle').value = notice.title; document.getElementById('cmtNoticeDate').value = notice.date; document.getElementById('cmtNoticeTime').value = notice.time; document.getElementById('cmtNoticeLocation').value = notice.location; document.getElementById('cmtNoticeAttendees').value = notice.attendees; } const list = db['esol_committee_minutes'] ? JSON.parse(db['esol_committee_minutes']) : []; const tbody = document.getElementById('adminCommitteeMinutesBody'); if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 회의록이 없습니다.</td></tr>`; tbody.innerHTML = list.map(m => { const fileCount = m.files ? m.files.length : (m.fileName ? 1 : 0); return `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">첨부 ${fileCount}건</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_committee_minutes', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteCommitteeMinute('${m.id}')">삭제</button></td></tr>`; }).join(''); }
+        async function saveCommitteeNotice() { const notice = { isActive: document.getElementById('cmtNoticeActive').checked, title: document.getElementById('cmtNoticeTitle').value.trim(), date: document.getElementById('cmtNoticeDate').value, time: document.getElementById('cmtNoticeTime').value, location: document.getElementById('cmtNoticeLocation').value.trim(), attendees: document.getElementById('cmtNoticeAttendees').value.trim() }; await saveDB('esol_committee_notice', notice); alert('✅ 저장되었습니다.'); }
+        async function uploadCommitteeMinute() { const title = document.getElementById('cmtMinuteTitle').value.trim(); const date = document.getElementById('cmtMinuteDate').value; const fileInput = document.getElementById('cmtMinuteFile'); if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.'); try { const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); const db = await fetchDB(); const list = db['esol_committee_minutes'] ? JSON.parse(db['esol_committee_minutes']) : []; list.unshift({ id: Date.now().toString(), title, date, files: filesData }); await saveDB('esol_committee_minutes', list); alert('✅ 등록 완료'); document.getElementById('cmtMinuteTitle').value = ''; document.getElementById('cmtMinuteDate').value = ''; fileInput.value = ''; renderAdminCommittee(); } catch (err) { alert('에러 발생'); } }
+        async function deleteCommitteeMinute(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_committee_minutes'] ? JSON.parse(db['esol_committee_minutes']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_committee_minutes', list); renderAdminCommittee(); }
+
+        async function renderAdminPolicy() { const db = await fetchDB(); const savedText = db['esol_policy_text']; if (savedText) { const textInfo = JSON.parse(savedText); document.getElementById('policyTitleInput').value = textInfo.title || ''; document.getElementById('policyDescInput').value = textInfo.desc || ''; } const list = db['esol_policy_history'] ? JSON.parse(db['esol_policy_history']) : []; const tbody = document.getElementById('adminPolicyHistoryBody'); if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 경영방침 이력이 없습니다.</td></tr>`; tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_policy_history', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePolicyRevision('${m.id}')">삭제</button></td></tr>`).join(''); }
+        async function savePolicyText() { const title = document.getElementById('policyTitleInput').value.trim(); const desc = document.getElementById('policyDescInput').value.trim(); await saveDB('esol_policy_text', { title, desc }); alert('저장 완료'); }
+        async function uploadPolicyRevision() { const title = document.getElementById('policyRevTitle').value.trim(); const date = document.getElementById('policyRevDate').value; const fileInput = document.getElementById('policyRevFile'); if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.'); try { const base64Data = await readAsDataURL(fileInput.files[0]); const db = await fetchDB(); const list = db['esol_policy_history'] ? JSON.parse(db['esol_policy_history']) : []; list.unshift({ id: Date.now().toString(), title, date, fileName: fileInput.files[0].name, fileUrl: base64Data, type: fileInput.files[0].name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' }); await saveDB('esol_policy_history', list); alert('✅ 등록 완료'); document.getElementById('policyRevTitle').value = ''; document.getElementById('policyRevDate').value = ''; fileInput.value = ''; renderAdminPolicy(); } catch (err) { alert('에러 발생'); } }
+        async function deletePolicyRevision(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_policy_history'] ? JSON.parse(db['esol_policy_history']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_policy_history', list); renderAdminPolicy(); }
+
+        async function renderAdminLaw() { const db = await fetchDB(); const savedText = db['esol_law_text']; if (savedText) { const textInfo = JSON.parse(savedText); document.getElementById('lawTitleInput').value = textInfo.title || ''; document.getElementById('lawDescInput').value = textInfo.desc || ''; } const list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : []; const tbody = document.getElementById('adminLawHistoryBody'); if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 산안법령 이력이 없습니다.</td></tr>`; tbody.innerHTML = list.map(m => `<tr><td style="font-weight:bold;">${m.title}</td><td>${m.date}</td><td style="color:#1976d2; font-size:12px;">${m.fileName}</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_law_history', '${m.id}')">수정</button> <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteLawRevision('${m.id}')">삭제</button></td></tr>`).join(''); }
+        async function saveLawText() { const title = document.getElementById('lawTitleInput').value.trim(); const desc = document.getElementById('lawDescInput').value.trim(); await saveDB('esol_law_text', { title, desc }); alert('저장 완료'); }
+        async function uploadLawRevision() { const title = document.getElementById('lawRevTitle').value.trim(); const date = document.getElementById('lawRevDate').value; const fileInput = document.getElementById('lawRevFile'); if (!title || !date || !fileInput.files.length) return alert('모두 입력해주세요.'); try { const base64Data = await readAsDataURL(fileInput.files[0]); const db = await fetchDB(); const list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : []; list.unshift({ id: Date.now().toString(), title, date, fileName: fileInput.files[0].name, fileUrl: base64Data, type: fileInput.files[0].name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image' }); await saveDB('esol_law_history', list); alert('✅ 등록 완료'); document.getElementById('lawRevTitle').value = ''; document.getElementById('lawRevDate').value = ''; fileInput.value = ''; renderAdminLaw(); } catch (err) { alert('에러 발생'); } }
+        async function deleteLawRevision(id) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : []; list = list.filter(m => m.id !== id); await saveDB('esol_law_history', list); renderAdminLaw(); }
+
+        // 💡 페이지 로드시 실행할 항목 설정 (기존 admin.js의 로직과 충돌 방지 및 안전 연동)
+        const originalLoadAdminMenuList = window.loadAdminMenuList;
+        window.loadAdminMenuList = async function() {
+            if (typeof originalLoadAdminMenuList === 'function') await originalLoadAdminMenuList();
+            await renderDynamicSidebar();
+        };
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (document.getElementById('tab8').classList.contains('active')) renderAdminOrgTable();
-            if (document.getElementById('tab9').classList.contains('active')) renderAdminCommittee();
-            if (document.getElementById('tab10').classList.contains('active')) renderAdminEmergency();
-            if (document.getElementById('tab11').classList.contains('active')) renderAdminContact();
-            if (document.getElementById('tab12').classList.contains('active')) renderAdminPolicy();
-            if (document.getElementById('tab13').classList.contains('active')) renderAdminLaw();
+            renderDynamicSidebar();
+            if (document.getElementById('tab3') && document.getElementById('tab3').classList.contains('active')) loadAdminPpeManagement();
+            if (document.getElementById('tab8') && document.getElementById('tab8').classList.contains('active')) renderAdminOrgTable();
+            if (document.getElementById('tab9') && document.getElementById('tab9').classList.contains('active')) renderAdminCommittee();
+            if (document.getElementById('tab10') && document.getElementById('tab10').classList.contains('active')) renderAdminEmergency();
+            if (document.getElementById('tab11') && document.getElementById('tab11').classList.contains('active')) renderAdminContact();
+            if (document.getElementById('tab12') && document.getElementById('tab12').classList.contains('active')) renderAdminPolicy();
+            if (document.getElementById('tab13') && document.getElementById('tab13').classList.contains('active')) renderAdminLaw();
+            if (document.getElementById('tab14') && document.getElementById('tab14').classList.contains('active')) renderAdminRisk();
         });
     </script>
 </body>

@@ -855,3 +855,151 @@ async function deleteLawRevision(id) {
     let list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : [];
     list = list.filter(m => m.id !== id); await saveAdminDB('esol_law_history', list); renderAdminLaw();
 }
+// ==========================================
+// ⚠️ 탭14: 위험성평가 관리 (부서 및 자료 연동)
+// ==========================================
+
+// 1. 위험성평가 화면 및 테이블 렌더링
+async function renderAdminRisk() {
+    const db = await fetchAdminDB(); // 외부 JS용 통신 함수
+    
+    // 부서 목록 로드 및 태그 생성
+    const savedDepts = db['esol_risk_depts']; 
+    let depts = savedDepts ? JSON.parse(savedDepts) : [];
+    
+    const tagsContainer = document.getElementById('adminRiskDeptTags');
+    if (tagsContainer) {
+        tagsContainer.innerHTML = depts.map(d => 
+            `<span style="background:#ffe0b2; border:1px solid #f57c00; color:#e65100; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:bold;">
+                ${d} <button onclick="deleteRiskDept('${d}')" style="border:none; background:none; color:#d32f2f; cursor:pointer;">✕</button>
+            </span>`
+        ).join('');
+    }
+    
+    // Select 박스 옵션 채우기
+    const deptSelect = document.getElementById('riskRevDept');
+    if (deptSelect) {
+        let deptOptions = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+        if(depts.length === 0) deptOptions = `<option value="">부서를 먼저 추가하세요</option>`;
+        deptSelect.innerHTML = deptOptions;
+    }
+
+    // 등록된 자료 목록 로드
+    const list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : [];
+    const tbody = document.getElementById('adminRiskHistoryBody');
+    if (!tbody) return;
+    
+    if (list.length === 0) {
+        return tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">등록된 위험성평가 이력이 없습니다.</td></tr>`;
+    }
+    
+    tbody.innerHTML = list.map(m => {
+        let fileCount = 0; 
+        if (m.files && m.files.length > 0) fileCount = m.files.length; 
+        else if (m.fileUrl) fileCount = 1;
+
+        const periodStr = (m.periodStart && m.periodEnd) ? `${m.periodStart} ~ ${m.periodEnd}` : '-';
+        
+        return `
+            <tr>
+                <td style="color:#e65100; font-weight:bold;">${m.dept}</td>
+                <td style="font-weight:bold;">${m.title}</td>
+                <td style="color:#555; font-size:13px;">${periodStr}</td>
+                <td>${m.date}</td>
+                <td style="color:#1976d2; font-size:12px;">첨부 ${fileCount}건</td>
+                <td style="text-align:center;">
+                    <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteRiskRevision('${m.id}')">삭제</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 2. 신규 부서 추가
+async function addRiskDept() {
+    const val = document.getElementById('newRiskDeptInput').value.trim(); 
+    if (!val) return;
+
+    const db = await fetchAdminDB(); 
+    const depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : [];
+    if(depts.includes(val)) return alert('이미 존재하는 부서입니다.');
+    
+    depts.push(val); 
+    await saveAdminDB('esol_risk_depts', depts); 
+    document.getElementById('newRiskDeptInput').value = ''; 
+    renderAdminRisk();
+}
+
+// 3. 부서 삭제
+async function deleteRiskDept(dept) {
+    if (!confirm(`'${dept}' 부서를 삭제하시겠습니까? (기존에 업로드된 게시글은 삭제되지 않습니다)`)) return;
+    
+    const db = await fetchAdminDB(); 
+    let depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : [];
+    depts = depts.filter(d => d !== dept); 
+    
+    await saveAdminDB('esol_risk_depts', depts); 
+    renderAdminRisk();
+}
+
+// 4. 신규 자료 업로드 (다중 파일 지원)
+async function uploadRiskRevision() {
+    const dept = document.getElementById('riskRevDept').value; 
+    const title = document.getElementById('riskRevTitle').value.trim(); 
+    const date = document.getElementById('riskRevDate').value; 
+    const periodStart = document.getElementById('riskPeriodStart').value; 
+    const periodEnd = document.getElementById('riskPeriodEnd').value; 
+    const fileInput = document.getElementById('riskRevFile');
+    
+    if (!dept || !title || !date || !periodStart || !periodEnd || !fileInput.files.length) {
+        return alert('부서, 제목, 일자, 평가기간 및 첨부파일을 모두 입력/선택해주세요.');
+    }
+
+    const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { 
+        const reader = new FileReader(); 
+        reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); 
+        reader.onerror = (e) => reject(e); 
+        reader.readAsDataURL(file); 
+    });
+
+    try { 
+        const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); 
+        const db = await fetchAdminDB(); 
+        const list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : []; 
+        
+        list.unshift({ 
+            id: Date.now().toString(), 
+            dept, 
+            title, 
+            date, 
+            periodStart, 
+            periodEnd, 
+            files: filesData 
+        }); 
+        
+        await saveAdminDB('esol_risk_history', list); 
+        alert('✅ 위험성평가 자료가 성공적으로 등록되었습니다.'); 
+        
+        document.getElementById('riskRevTitle').value = ''; 
+        document.getElementById('riskRevDate').value = ''; 
+        document.getElementById('riskPeriodStart').value = ''; 
+        document.getElementById('riskPeriodEnd').value = ''; 
+        fileInput.value = ''; 
+        
+        renderAdminRisk(); 
+    } catch (err) { 
+        alert('파일 업로드 중 에러가 발생했습니다.'); 
+    }
+}
+
+// 5. 등록된 자료 삭제
+async function deleteRiskRevision(id) {
+    if (!confirm('해당 자료를 완전히 삭제하시겠습니까?')) return;
+    
+    const db = await fetchAdminDB(); 
+    let list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : [];
+    list = list.filter(m => m.id !== id); 
+    
+    await saveAdminDB('esol_risk_history', list); 
+    renderAdminRisk();
+}

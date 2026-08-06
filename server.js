@@ -63,6 +63,9 @@ app.get('/contact', (req, res) => {
 app.get('/emergency', (req, res) => {
     res.render('emergency'); 
 });
+app.get('/risk', (req, res) => {
+    res.render('risk'); // views/risk.ejs 파일을 화면에 렌더링
+});
 
 // 💡 [수정됨] 3. 데이터 통신 API (데이터 불러오기) - 캐시 방지 적용
 app.get('/api/db', (req, res) => {
