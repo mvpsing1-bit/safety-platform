@@ -244,6 +244,8 @@
                 location.href = '/contact'; 
             } else if (catTitle.includes('비상대응') || catTitle === '비상 매뉴얼') { 
                 location.href = '/emergency'; 
+            } else if (catTitle.includes('인증서')) {
+                location.href = '/cert';   
             } else { 
                 location.href = '/view?cat=' + encodeURIComponent(catTitle); 
             }

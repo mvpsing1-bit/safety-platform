@@ -1021,3 +1021,130 @@ async function deleteRiskRevision(id) {
     await saveAdminDB('esol_risk_history', list); 
     renderAdminRisk();
 }
+// ==========================================
+// 🪪 탭15: 안전인증서 관리 연동
+// ==========================================
+async function renderAdminCert() {
+    const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB();
+    
+    // 1. 카테고리 렌더링
+    const savedCats = db['esol_cert_categories']; 
+    let cats = savedCats ? JSON.parse(savedCats) : ['보호구', '방호장치', '기타'];
+    
+    const tagsContainer = document.getElementById('adminCertCatTags');
+    if (tagsContainer) {
+        tagsContainer.innerHTML = cats.map(c => 
+            `<span style="background:#e0f7fa; border:1px solid #00838f; color:#006064; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:bold;">
+                ${c} <button onclick="deleteCertCategory('${c}')" style="border:none; background:none; color:#d32f2f; cursor:pointer;">✕</button>
+            </span>`
+        ).join('');
+    }
+    
+    // 2. Select 박스 렌더링
+    const catSelect = document.getElementById('certRevCat');
+    if (catSelect) {
+        let catOptions = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        if(cats.length === 0) catOptions = `<option value="">분류를 먼저 추가하세요</option>`;
+        catSelect.innerHTML = catOptions;
+    }
+
+    // 3. 목록 렌더링
+    const list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : [];
+    const tbody = document.getElementById('adminCertHistoryBody');
+    if (!tbody) return;
+    
+    if (list.length === 0) {
+        return tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#888;">등록된 인증서 자료가 없습니다.</td></tr>`;
+    }
+    
+    tbody.innerHTML = list.map(m => {
+        let fileCount = m.files && m.files.length > 0 ? m.files.length : (m.fileUrl ? 1 : 0);
+        return `
+            <tr>
+                <td style="color:#00838f; font-weight:bold;">${m.category}</td>
+                <td style="font-weight:bold;">${m.title}</td>
+                <td>${m.date}</td>
+                <td style="color:#1976d2; font-size:12px;">첨부 ${fileCount}건</td>
+                <td style="text-align:center;">
+                    <button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_cert_history', '${m.id}')">수정</button>
+                    <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteCertRevision('${m.id}')">삭제</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function addCertCategory() {
+    const val = document.getElementById('newCertCatInput').value.trim(); 
+    if (!val) return;
+    const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB(); 
+    let cats = db['esol_cert_categories'] ? JSON.parse(db['esol_cert_categories']) : ['보호구', '방호장치', '기타'];
+    if(cats.includes(val)) return alert('이미 존재하는 분류입니다.');
+    cats.push(val); 
+    const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
+    await saveFunc('esol_cert_categories', cats); 
+    document.getElementById('newCertCatInput').value = ''; 
+    renderAdminCert();
+}
+
+async function deleteCertCategory(cat) {
+    if (!confirm(`'${cat}' 분류를 삭제하시겠습니까? (기존 자료는 삭제되지 않습니다)`)) return;
+    const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB(); 
+    let cats = db['esol_cert_categories'] ? JSON.parse(db['esol_cert_categories']) : ['보호구', '방호장치', '기타'];
+    cats = cats.filter(c => c !== cat); 
+    const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
+    await saveFunc('esol_cert_categories', cats); 
+    renderAdminCert();
+}
+
+async function uploadCertRevision() {
+    const category = document.getElementById('certRevCat').value; 
+    const title = document.getElementById('certRevTitle').value.trim(); 
+    const date = document.getElementById('certRevDate').value; 
+    const fileInput = document.getElementById('certRevFile');
+    
+    if (!category || !title || !date || !fileInput.files.length) {
+        return alert('분류, 제목, 일자 및 첨부파일을 모두 입력해주세요.');
+    }
+
+    const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { 
+        const reader = new FileReader(); 
+        reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); 
+        reader.onerror = (e) => reject(e); 
+        reader.readAsDataURL(file); 
+    });
+
+    try { 
+        const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); 
+        const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB(); 
+        const list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : []; 
+        
+        list.unshift({ 
+            id: Date.now().toString(), 
+            category, title, date, 
+            files: filesData 
+        }); 
+        
+        const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
+        await saveFunc('esol_cert_history', list); 
+        alert('✅ 안전인증서가 성공적으로 등록되었습니다.'); 
+        
+        document.getElementById('certRevTitle').value = ''; 
+        document.getElementById('certRevDate').value = ''; 
+        fileInput.value = ''; 
+        
+        renderAdminCert(); 
+    } catch (err) { 
+        alert('에러가 발생했습니다.'); 
+    }
+}
+
+async function deleteCertRevision(id) {
+    if (!confirm('해당 인증서를 삭제하시겠습니까?')) return;
+    const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB(); 
+    let list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : [];
+    list = list.filter(m => m.id !== id); 
+    const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
+    await saveFunc('esol_cert_history', list); 
+    renderAdminCert();
+}

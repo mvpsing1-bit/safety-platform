@@ -3,43 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>위험성평가 - ESOL 환경안전보건 플랫폼</title>
+    <title>안전인증서 - ESOL 환경안전보건 플랫폼</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
-        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #f57c00; margin-bottom: 24px; }
-        .brand-title { font-size: 26px; font-weight: 900; color: #f57c00; }
-        .back-btn { background: #f57c00; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; transition: 0.2s; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #00838f; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #00838f; }
+        .back-btn { background: #00838f; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; transition: 0.2s; }
         .back-btn:hover { opacity: 0.8; }
         .container { max-width: 1600px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); min-height: 700px; }
-        .page-title { font-size: 24px; color: #f57c00; margin-bottom: 20px; border-bottom: 2px solid #f57c00; padding-bottom: 12px; }
-        .btn-download { background: #e65100; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-block; cursor: pointer; border: none; transition: 0.2s; }
+        .page-title { font-size: 24px; color: #00838f; margin-bottom: 20px; border-bottom: 2px solid #00838f; padding-bottom: 12px; }
+        .btn-download { background: #006064; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-block; cursor: pointer; border: none; transition: 0.2s; }
         .btn-download:hover { opacity: 0.9; }
         .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #fafafa; border-radius: 10px; border: 1px dashed #ccc; }
         
-        /* 💡 추가된 hover 애니메이션 클래스 */
-        .dept-card {
+        .cat-card {
             margin-bottom: 16px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; transition: all 0.2s ease-in-out;
         }
-        .dept-card:hover {
+        .cat-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(245, 124, 0, 0.12);
-            border-color: #ffb74d;
+            box-shadow: 0 6px 16px rgba(0, 131, 143, 0.12);
+            border-color: #4dd0e1;
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="brand-title">ESOL <span>부서별 위험성평가</span></div>
+        <div class="brand-title">ESOL <span>안전인증서 자료실</span></div>
         <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
     </header>
     
     <div class="container">
-        <div class="page-title"><h2>⚠️ 부서별 위험성평가 결과표</h2></div>
-        <p style="font-size:14px; color:#666; margin-bottom:40px; line-height:1.6;">사업장 내 유해·위험요인을 파악하고 이를 감소시키기 위한 부서별 정기/수시 위험성평가 결과입니다. 해당 부서를 클릭하여 자료를 확인하세요.</p>
+        <div class="page-title"><h2>📜 분야별 안전인증서 보관함</h2></div>
+        <p style="font-size:14px; color:#666; margin-bottom:40px; line-height:1.6;">보호구, 방호장치 등 안전인증 및 검사 합격 증명서 모음입니다. 분류를 클릭하여 자료를 확인하세요.</p>
         
-        <div id="riskContainer"></div>
+        <div id="certContainer"></div>
     </div>
 
     <script>
@@ -48,62 +47,61 @@
             return await res.json();
         }
 
-        async function renderRisk() {
+        async function renderCert() {
             const db = await fetchDB();
             
-            const savedDepts = db['esol_risk_depts'];
-            const actualDepts = savedDepts ? JSON.parse(savedDepts) : [];
+            const savedCats = db['esol_cert_categories'];
+            const actualCats = savedCats ? JSON.parse(savedCats) : [];
 
-            const savedHistory = db['esol_risk_history'];
+            const savedHistory = db['esol_cert_history'];
             let historyList = savedHistory ? JSON.parse(savedHistory) : [];
-            const container = document.getElementById('riskContainer');
+            const container = document.getElementById('certContainer');
 
-            if (actualDepts.length === 0 && historyList.length === 0) {
-                container.innerHTML = `<div class="empty-state">등록된 위험성평가 자료가 없습니다. 관리자 페이지에서 부서와 자료를 등록해주세요.</div>`; 
+            if (actualCats.length === 0 && historyList.length === 0) {
+                container.innerHTML = `<div class="empty-state">등록된 안전인증서 자료가 없습니다. 관리자 페이지에서 등록해주세요.</div>`; 
                 return;
             }
 
-            // 💡 게시글 최신 등록순 정렬 추가
+            // 게시글 최신 등록순 정렬
             historyList.sort((a, b) => b.id - a.id);
 
             const groupedData = {};
-            actualDepts.forEach(d => groupedData[d] = []);
+            actualCats.forEach(c => groupedData[c] = []);
             historyList.forEach(h => {
-                if (!groupedData[h.dept]) {
-                    groupedData[h.dept] = [];
-                    actualDepts.push(h.dept);
+                if (!groupedData[h.category]) {
+                    groupedData[h.category] = [];
+                    actualCats.push(h.category);
                 }
-                groupedData[h.dept].push(h);
+                groupedData[h.category].push(h);
             });
 
             let html = '';
-            const sortedDepts = [...new Set(actualDepts)].sort();
+            const sortedCats = [...new Set(actualCats)].sort();
 
-            for (const dept of sortedDepts) {
-                const deptItems = groupedData[dept];
-                const deptId = 'dept-' + dept.replace(/\s/g, '');
+            for (const cat of sortedCats) {
+                const catItems = groupedData[cat];
+                const catId = 'cat-' + cat.replace(/\s/g, '');
                 
                 html += `
-                <div class="dept-card" style="margin-bottom:8px;">
-                    <div style="padding:12px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #f57c00;" onclick="toggleDept('${deptId}')">
+                <div class="cat-card" style="margin-bottom:8px;">
+                    <div style="padding:12px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #00838f;" onclick="toggleCat('${catId}')">
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:16px;">🏢</span>
-                            <h3 style="margin:0; color:#222; font-size:15px; font-weight:bold;">${dept}</h3>
-                            <span style="background:${deptItems.length > 0 ? '#f57c00' : '#e0e0e0'}; color:${deptItems.length > 0 ? '#fff' : '#666'}; font-size:11px; font-weight:bold; padding:3px 8px; border-radius:12px;">자료 ${deptItems.length}건</span>
+                            <span style="font-size:16px;">📂</span>
+                            <h3 style="margin:0; color:#222; font-size:15px; font-weight:bold;">${cat}</h3>
+                            <span style="background:${catItems.length > 0 ? '#00838f' : '#e0e0e0'}; color:${catItems.length > 0 ? '#fff' : '#666'}; font-size:11px; font-weight:bold; padding:3px 8px; border-radius:12px;">자료 ${catItems.length}건</span>
                         </div>
                         <div style="display:flex; align-items:center;">
-                            <span id="icon-${deptId}" style="color:#f57c00; font-size:12px; font-weight:bold; background:#fff3e0; padding:4px 8px; border-radius:6px; transition:0.2s;">▼ 펼쳐보기</span>
+                            <span id="icon-${catId}" style="color:#00838f; font-size:12px; font-weight:bold; background:#e0f7fa; padding:4px 8px; border-radius:6px; transition:0.2s;">▼ 펼쳐보기</span>
                         </div>
                     </div>
-                    <div id="body-${deptId}" style="display:none; padding:16px; background:#fafafa; border-top:1px solid #eee;">
+                    <div id="body-${catId}" style="display:none; padding:16px; background:#fafafa; border-top:1px solid #eee;">
                 `;
 
-                if (deptItems.length === 0) {
+                if (catItems.length === 0) {
                     html += `<div style="text-align:center; color:#999; font-size:14px; padding:20px; background:#fff; border-radius:8px; border:1px dashed #ddd;">등록된 내역이 없습니다.</div>`;
                 } else {
-                    html += deptItems.map((m, idx) => {
-                        const isExpanded = (idx === 0);
-                        const periodStr = (m.periodStart && m.periodEnd) ? `${m.periodStart} ~ ${m.periodEnd}` : '미지정';
+                    html += catItems.map((m, idx) => {
+                        const isExpanded = true;
                         
                         let fileList = [];
                         if (m.files && m.files.length > 0) fileList = m.files;
@@ -114,11 +112,10 @@
                             filesHtml = fileList.map((f, fIdx) => {
                                 const fileId = `${m.id}-${fIdx}`;
                                 const isPdf = f.fileName.toLowerCase().endsWith('.pdf');
-                                const isFileExpanded = (idx === 0 && fIdx === 0);
+                                const isFileExpanded = false;
                                 
-                                // 💡 뷰어 크기 조절 버튼 제거 및 100% 꽉 찬 뷰어 생성
+                                // 💡 불필요한 자체 버튼 없는 100% 뷰어
                                 let previewHtml = `<div style="width:100%; height:85vh; background:#525659; border-radius:8px; border:1px solid #ccc; overflow:hidden;">`;
-                                
                                 if (isPdf) { 
                                     previewHtml += `<iframe data-src="${f.fileUrl}" style="width:100%; height:100%; border:none; display:block;"></iframe>`; 
                                 } else { 
@@ -127,10 +124,10 @@
                                 previewHtml += `</div>`;
                                 
                                 return `
-                                    <div style="margin-top:12px; border:1px solid #ffe0b2; border-radius:8px; overflow:hidden;">
-                                        <div style="background:${isFileExpanded ? '#ffe0b2' : '#fff8e1'}; padding:12px 15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-bottom:1px solid #ffe0b2;" onclick="toggleFile('${fileId}')">
+                                    <div style="margin-top:12px; border:1px solid #b2ebf2; border-radius:8px; overflow:hidden;">
+                                        <div style="background:${isFileExpanded ? '#b2ebf2' : '#e0f7fa'}; padding:12px 15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-bottom:1px solid #b2ebf2;" onclick="toggleFile('${fileId}')">
                                             <div style="display:flex; align-items:center; gap:10px;">
-                                                <span style="background:#f57c00; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">첨부 ${fIdx + 1}</span>
+                                                <span style="background:#00838f; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">첨부 ${fIdx + 1}</span>
                                                 <span style="font-weight:bold; color:#333; font-size:14px;">📎 ${f.fileName}</span>
                                             </div>
                                             <div style="display:flex; align-items:center; gap:15px;">
@@ -148,7 +145,6 @@
                                 <div style="padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='#fff'" onclick="togglePost('${m.id}')">
                                     <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
                                         <h4 style="margin:0; color:#333; font-size:16px; font-weight:bold;">📑 ${m.title}</h4>
-                                        <span style="background:#fff3e0; color:#e65100; border:1px solid #ffe0b2; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold;">🗓️ 평가기간: ${periodStr}</span>
                                         <span style="color:#888; font-size:13px;">등록일: ${m.date}</span>
                                     </div>
                                     <span id="post-icon-${m.id}" style="color:#888; font-size:13px; font-weight:bold;">${isExpanded ? '▲ 게시글 접기' : '▼ 게시글 펼치기'}</span>
@@ -185,19 +181,15 @@
             });
         }
 
-        function toggleDept(deptId) {
-            const body = document.getElementById(`body-${deptId}`);
-            const icon = document.getElementById(`icon-${deptId}`);
+        function toggleCat(catId) {
+            const body = document.getElementById(`body-${catId}`);
+            const icon = document.getElementById(`icon-${catId}`);
             if (body.style.display === 'none') { 
-                body.style.display = 'block'; 
-                icon.innerText = '▲ 접기'; 
-                icon.style.background = '#e65100'; 
-                icon.style.color = '#fff'; 
+                body.style.display = 'block'; icon.innerText = '▲ 접기'; 
+                icon.style.background = '#00838f'; icon.style.color = '#fff'; 
             } else { 
-                body.style.display = 'none'; 
-                icon.innerText = '▼ 펼쳐보기'; 
-                icon.style.background = '#fff3e0'; 
-                icon.style.color = '#f57c00'; 
+                body.style.display = 'none'; icon.innerText = '▼ 펼쳐보기'; 
+                icon.style.background = '#e0f7fa'; icon.style.color = '#00838f'; 
             }
         }
 
@@ -211,11 +203,11 @@
         function toggleFile(fileId) {
             const body = document.getElementById(`file-body-${fileId}`);
             const icon = document.getElementById(`file-icon-${fileId}`);
-            if (body.style.display === 'none') { body.style.display = 'block'; icon.innerText = '▲ 접기'; icon.parentElement.parentElement.style.background = '#ffe0b2';} 
-            else { body.style.display = 'none'; icon.innerText = '▼ 펼쳐보기'; icon.parentElement.parentElement.style.background = '#fff8e1';}
+            if (body.style.display === 'none') { body.style.display = 'block'; icon.innerText = '▲ 접기'; icon.parentElement.parentElement.style.background = '#b2ebf2';} 
+            else { body.style.display = 'none'; icon.innerText = '▼ 펼쳐보기'; icon.parentElement.parentElement.style.background = '#e0f7fa';}
         }
 
-        window.onload = renderRisk;
+        window.onload = renderCert;
     </script>
 </body>
 </html>

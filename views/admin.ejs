@@ -157,6 +157,54 @@
                 </table>
             </div>
 
+            <!-- 탭15: 안전인증서 관리 -->
+            <div id="tab15" class="panel">
+                <h2 style="color:#00838f; border-bottom: 2px solid #e0f7fa; margin-bottom: 20px;">📜 안전인증서 관리 (다중 첨부 및 분류)</h2>
+                
+                <!-- 1. 분류(카테고리) 관리 -->
+                <div style="background:#e0f7fa; border:1px solid #00838f; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#00838f; font-size:16px; margin-bottom:12px;">📂 1. 인증서 분류(섹션) 관리</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:400px;">
+                        <input type="text" id="newCertCatInput" placeholder="새로운 분류 입력 (예: 방호장치)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" style="background:#00838f;" onclick="addCertCategory()">+ 분류 추가</button>
+                    </div>
+                    <div id="adminCertCatTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                </div>
+
+                <!-- 2. 신규 업로드 폼 -->
+                <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📤 2. 신규 안전인증서 등록</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">분류 선택</label>
+                            <select id="certRevCat" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">인증서명(제목)</label>
+                            <input type="text" id="certRevTitle" placeholder="예: KCs 안전인증서 (안전모)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr auto; gap:10px; align-items:end;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">등록(발급) 일자</label>
+                            <input type="date" id="certRevDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">첨부파일 (다중 선택 가능 - PDF, 이미지)</label>
+                            <input type="file" id="certRevFile" accept=".pdf, image/jpeg, image/png" multiple style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                        <button class="submit-btn" style="padding:10px 30px; height:40px; background:#333;" onclick="uploadCertRevision()">+ 자료 등록</button>
+                    </div>
+                </div>
+
+                <!-- 3. 등록된 목록 -->
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 안전인증서 목록</h3>
+                <table>
+                    <thead><tr><th style="width: 15%;">분류</th><th style="width: 35%;">인증서명(제목)</th><th style="width: 15%;">등록 일자</th><th style="width: 15%;">첨부 파일</th><th style="width: 20%; text-align:center;">관리</th></tr></thead>
+                    <tbody id="adminCertHistoryBody"></tbody>
+                </table>
+            </div>
+
             <!-- 탭8: 조직도 관리 -->
             <div id="tab8" class="panel">
                 <h2>👥 안전보건 조직도 관리 (개정이력 관리)</h2>
@@ -399,6 +447,7 @@
             <div class="custom-modal-header"><h3 id="historyEditModalTitle">📝 내역 수정</h3><button onclick="closeHistoryEditModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
             <input type="hidden" id="editHistDbKey"><input type="hidden" id="editHistId">
             <div class="form-group" id="editHistDeptGroup" style="display:none;"><label>평가 대상 부서</label><select id="editHistDeptSelect" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select></div>
+            <div class="form-group" id="editHistCategoryGroup" style="display:none;"><label>분류 선택</label><select id="editHistCategorySelect" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select></div>
             <div class="form-group"><label>버전/개정명 (제목)</label><input type="text" id="editHistTitleInput"></div>
             <div class="form-group"><label>등록 일자</label><input type="date" id="editHistDateInput"></div>
             <div class="form-group" id="editHistPeriodGroup" style="display:none;">
@@ -468,6 +517,7 @@
                 '위험성평가표': "switchPanel('tab14', this); renderAdminRisk();",
                 '위험성평가': "switchPanel('tab14', this); renderAdminRisk();",
                 '부서별 위험성평가': "switchPanel('tab14', this); renderAdminRisk();",
+                '안전인증서': "switchPanel('tab15', this); renderAdminCert();",
                 '위험성평가 관리': "switchPanel('tab14', this); renderAdminRisk();"
             };
 
@@ -486,7 +536,7 @@
             container.innerHTML = html;
         }
 
-        // 💡 [복구됨] 공통 이력 수정 팝업 제어
+        // 💡 [복구됨] 공통 이력 수정 팝업 제어 (창 열기)
         async function openHistoryEditModal(dbKey, id) {
             const db = await fetchDB();
             const list = db[dbKey] ? JSON.parse(db[dbKey]) : [];
@@ -500,6 +550,9 @@
             
             const fileInput = document.getElementById('editHistFileInput');
             fileInput.value = '';
+
+            // 💡 혹시 열려있을 수 있는 카테고리 창을 기본적으로 숨깁니다.
+            if(document.getElementById('editHistCategoryGroup')) document.getElementById('editHistCategoryGroup').style.display = 'none';
             
             if (dbKey === 'esol_risk_history') {
                 fileInput.multiple = true;
@@ -509,6 +562,19 @@
                 document.getElementById('editHistDeptSelect').innerHTML = depts.map(d => `<option value="${d}" ${d===item.dept?'selected':''}>${d}</option>`).join('');
                 document.getElementById('editHistPeriodStart').value = item.periodStart || '';
                 document.getElementById('editHistPeriodEnd').value = item.periodEnd || '';
+            
+            // 💡 [추가] 안전인증서일 때 카테고리 선택창 띄우기
+            } else if (dbKey === 'esol_cert_history') {
+                fileInput.multiple = true;
+                document.getElementById('editHistDeptGroup').style.display = 'none';
+                if(document.getElementById('editHistPeriodGroup')) document.getElementById('editHistPeriodGroup').style.display = 'none';
+                
+                if(document.getElementById('editHistCategoryGroup')) {
+                    document.getElementById('editHistCategoryGroup').style.display = 'block';
+                    const cats = db['esol_cert_categories'] ? JSON.parse(db['esol_cert_categories']) : ['보호구', '방호장치', '기타'];
+                    document.getElementById('editHistCategorySelect').innerHTML = cats.map(c => `<option value="${c}" ${c===item.category?'selected':''}>${c}</option>`).join('');
+                }
+
             } else if (dbKey === 'esol_committee_minutes') {
                 fileInput.multiple = true;
                 document.getElementById('editHistDeptGroup').style.display = 'none';
@@ -520,7 +586,7 @@
             }
             document.getElementById('historyEditModal').style.display = 'flex';
         }
-
+  
         function closeHistoryEditModal() { document.getElementById('historyEditModal').style.display = 'none'; }
 
         async function saveHistoryEditModal() {
@@ -540,8 +606,15 @@
                 list[itemIndex].dept = document.getElementById('editHistDeptSelect').value; list[itemIndex].periodStart = pStart; list[itemIndex].periodEnd = pEnd;
             }
 
+            // 💡 [추가] 안전인증서 카테고리 정보 저장하기
+            if (dbKey === 'esol_cert_history') {
+                const catSelect = document.getElementById('editHistCategorySelect');
+                if(catSelect) list[itemIndex].category = catSelect.value;
+            }
+
             if (fileInput.files.length > 0) {
-                if (dbKey === 'esol_committee_minutes' || dbKey === 'esol_risk_history') {
+                // 💡 다중 파일 첨부 처리 부분에 안전인증서(esol_cert_history)도 추가
+                if (dbKey === 'esol_committee_minutes' || dbKey === 'esol_risk_history' || dbKey === 'esol_cert_history') {
                     const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); list[itemIndex].files = filesData;
                 } else {
                     const file = fileInput.files[0]; const base64Data = await readAsDataURL(file);
@@ -553,6 +626,9 @@
             if (dbKey === 'esol_policy_history') renderAdminPolicy(); if (dbKey === 'esol_law_history') renderAdminLaw(); if (dbKey === 'esol_org_history') renderAdminOrgTable();
             if (dbKey === 'esol_committee_minutes') renderAdminCommittee(); if (dbKey === 'esol_emergency_history') renderAdminEmergency(); if (dbKey === 'esol_contact_history') renderAdminContact();
             if (dbKey === 'esol_risk_history') renderAdminRisk();
+            
+            // 💡 [추가] 인증서 수정 완료 후 화면 다시 그리기
+            if (dbKey === 'esol_cert_history') renderAdminCert(); 
         }
 
         // ==========================================
