@@ -51,7 +51,6 @@
     </div>
 
     <script>
-        // 💡 서버 연동 함수
         async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
 
         let driCurrentPage = 1;
@@ -80,21 +79,12 @@
                 );
             }
 
-            // 💡 [수정됨] 화면에 그리기 직전에 최신순으로 완벽하게 줄을 세웁니다.
-            list.sort((a, b) => {
-                if (a.date === b.date) {
-                    return a.id - b.id; // 1순위: 같은 날짜면 먼저 등록한 부서가 위에 고정 (오름차순)
-                }
-                return new Date(b.date) - new Date(a.date); // 2순위: 날짜가 다르면 무조건 최신 날짜가 위로 (내림차순)
-            });
-
             const grouped = {};
             list.forEach(d => {
                 if(!grouped[d.date]) grouped[d.date] = [];
-                grouped[d.date].push(d); // 정렬된 순서대로 그룹 바구니에 차곡차곡 담깁니다.
+                grouped[d.date].push(d);
             });
 
-            // 💡 날짜별 아코디언(블록) 순서도 최신 날짜가 맨 위로 오게 다시 한번 보장!
             const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
             const container = document.getElementById('driAccordionContainer');
             const paginationContainer = document.getElementById('driPagination');
@@ -114,15 +104,13 @@
             container.innerHTML = currentDates.map((date, index) => {
                 const isExpanded = (index === 0 && driCurrentPage === 1 && !searchKeyword); 
                 const items = grouped[date];
-                const activeItems = items.filter(d => d.task && d.task.trim() !== '없음');
-                const noneItems = items.filter(d => !d.task || d.task.trim() === '없음');
 
                 return `
                 <div style="margin-bottom:12px; border:2px solid ${isExpanded ? '#ffcdd2' : '#eae2f0'}; border-radius:12px; overflow:hidden; background:#fff;">
                     <div style="background:${isExpanded ? '#fffbee' : '#faf8fc'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleDriDate('${date}')">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <h4 style="color:${isExpanded ? '#c62828' : '#4a0082'}; font-size:16px; margin:0;">📅 ${date} 위험작업 내역</h4>
-                            <span style="background:#e0e0e0; color:#555; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">총 ${items.length}건 (활성작업: ${activeItems.length}건)</span>
+                            <span style="background:#e0e0e0; color:#555; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">총 ${items.length}건</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:15px;">
                             <button class="btn-action" style="background:#d32f2f; color:#fff; margin:0; padding:8px 16px;" onclick="event.stopPropagation(); copyDriEmailByDate('${date}')">📧 메일 양식 복사</button>
@@ -134,18 +122,23 @@
                         <table class="dri-table">
                             <thead><tr><th style="width: 12%;">부서</th><th style="width: 12%;">장소(설비)</th><th style="width: 12%;">작업시간</th><th style="width: 22%;">작업내용</th><th style="width: 20%;">위험요소</th><th style="width: 22%;">안전대책</th></tr></thead>
                             <tbody>
-                                ${activeItems.map(d => {
-                                    const riskTags = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `<div style="background:#ffebee; color:#c62828; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:3px;">${t}</div>`).join('') : '';
-                                    const measureTags = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:3px;">${t}</div>`).join('') : '';
+                                ${items.map(d => {
+                                    const displayTime = (d.startTime && d.endTime) ? `${d.startTime} ~ ${d.endTime}` : (d.time || '-');
+                                    const isNone = (d.task.trim() === '없음'); // 작업 없음 여부 확인
+                                    
+                                    const riskTags = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `<div style="background:#ffebee; color:#c62828; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:3px;">${t}</div>`).join('') : '';
+                                    const measureTags = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:3px;">${t}</div>`).join('') : '';
+                                    
                                     return `
-                                    <tr>
-                                        <td style="vertical-align:middle;"><strong>${d.dept}</strong></td><td style="vertical-align:middle;">${d.location || '-'}</td><td style="vertical-align:middle;">${d.time || '-'}</td>
-                                        <td style="text-align:left; vertical-align:middle; font-weight:bold; color:#222;">${d.task.replace(/\n/g, '<br>')}</td>
-                                        <td style="text-align:left; vertical-align:middle;">${riskTags || '<span style="color:#999; font-style:italic;">N/A</span>'}</td>
-                                        <td style="text-align:left; vertical-align:middle;">${measureTags || '<span style="color:#999; font-style:italic;">N/A</span>'}</td>
+                                    <tr style="${isNone ? 'background-color:#fafafa; color:#888;' : ''}">
+                                        <td style="vertical-align:middle;"><strong>${d.dept}</strong></td>
+                                        <td style="vertical-align:middle;">${d.location || '-'}</td>
+                                        <td style="vertical-align:middle; font-weight:bold; color:${isNone ? '#888' : '#006064'};">${displayTime}</td>
+                                        <td style="text-align:left; vertical-align:middle; font-weight:${isNone ? 'normal' : 'bold'}; color:${isNone ? '#888' : '#222'};">${d.task.replace(/\n/g, '<br>')}</td>
+                                        <td style="text-align:left; vertical-align:middle;">${riskTags || '<span style="color:#999; font-style:italic;">-</span>'}</td>
+                                        <td style="text-align:left; vertical-align:middle;">${measureTags || '<span style="color:#999; font-style:italic;">-</span>'}</td>
                                     </tr>`;
                                 }).join('')}
-                                ${noneItems.length > 0 ? `<tr><td colspan="6" style="background:#fafafa; color:#777; padding:10px; font-size:13px; text-align:left;">💤 <strong>특이사항(작업) 없음 부서:</strong> ${noneItems.map(n => n.dept).join(', ')}</td></tr>` : ''}
                             </tbody>
                         </table>
                     </div>
@@ -172,15 +165,16 @@
             const targetDri = list.filter(d => d.date === targetDate);
 
             if (targetDri.length === 0) return alert('데이터를 찾을 수 없습니다.');
-            const activeDri = targetDri.filter(d => d.task && d.task.trim() !== '없음');
 
-            const tableRows = activeDri.map(d => {
-                const emailRisks = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `- ${t}`).join('<br>') : '';
-                const emailMeasures = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `- ${t}`).join('<br>') : '';
-                return `<tr><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.date}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;"><strong>${d.dept}</strong></td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.location || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.time || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; vertical-align:middle;">${d.task.replace(/\n/g, '<br>')}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:#d32f2f; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailRisks || 'N/A'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:#1976d2; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailMeasures || 'N/A'}</td></tr>`;
+            const tableRows = targetDri.map(d => {
+                const displayTime = (d.startTime && d.endTime) ? `${d.startTime} ~ ${d.endTime}` : (d.time || '-');
+                const isNone = (d.task.trim() === '없음');
+                
+                const emailRisks = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `- ${t}`).join('<br>') : '';
+                const emailMeasures = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `- ${t}`).join('<br>') : '';
+                
+                return `<tr style="${isNone ? 'color:#777;' : ''}"><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.date}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;"><strong>${d.dept}</strong></td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.location || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap; font-weight:${isNone ? 'normal' : 'bold'};">${displayTime}</td><td style="border: 1px solid #bbb; padding: 6px 8px; vertical-align:middle;">${d.task.replace(/\n/g, '<br>')}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:${isNone ? '#777' : '#d32f2f'}; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailRisks || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:${isNone ? '#777' : '#1976d2'}; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailMeasures || '-'}</td></tr>`;
             }).join('');
-
-            const noneDepts = targetDri.filter(d => !d.task || d.task.trim() === '없음').map(d => d.dept).join(', ');
 
             const emailHtml = `
                 <div style="font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 10pt; color: #333;">
@@ -190,7 +184,7 @@
                         <thead style="background-color: #f4f5f9;"><tr><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">일시</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">부서</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">장소(설비)</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업시간</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업내용</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">위험요소</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">안전대책</th></tr></thead>
                         <tbody>${tableRows}</tbody>
                     </table>
-                    ${noneDepts ? `<p style="margin-top:10px; font-size:9pt; color:#666;">※ 특이사항(작업) 없음 부서: ${noneDepts}</p>` : ''}<br><p>감사합니다.</p>
+                    <br><p>감사합니다.</p>
                 </div>
             `;
 

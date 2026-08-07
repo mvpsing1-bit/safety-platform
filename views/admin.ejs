@@ -21,6 +21,38 @@
         <a href="/" class="back-btn">🖥️ 메인 화면으로 돌아가기</a>
     </header>
 
+    <!-- 💡 DRI 수정 팝업창 -->
+    <div class="custom-modal-overlay" id="driEditModal">
+        <div class="custom-modal" style="max-width: 600px;">
+            <h3 style="color:#4a0082; border-bottom:2px solid #eae2f0; padding-bottom:10px; margin-bottom:20px;">📝 DRI 내용 수정</h3>
+            <input type="hidden" id="editDriId">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <div><label style="font-size:12px; font-weight:bold;">날짜</label><input type="date" id="editDriDate" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></div>
+                <div><label style="font-size:12px; font-weight:bold;">부서</label><select id="editDriDeptSelect" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></select></div>
+            </div>
+            
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:bold;">작업시간</label>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="time" id="editDriStartTime" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                    <span>~</span>
+                    <input type="time" id="editDriEndTime" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">장소(설비)</label><input type="text" id="editDriLocation" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></div>
+            <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">작업 내용</label><textarea id="editDriTask" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea></div>
+            <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">위험 요소</label><textarea id="editDriRisk" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea></div>
+            <div style="margin-bottom:20px;"><label style="font-size:12px; font-weight:bold;">안전 대책</label><textarea id="editDriMeasure" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea></div>
+            
+            <div style="display:flex; gap:10px;">
+                <button class="submit-btn" style="flex:1; background:#888;" onclick="document.getElementById('driEditModal').style.display='none'">취소</button>
+                <button class="submit-btn" style="flex:1; background:#4a0082;" onclick="saveDriEdit()">수정 저장</button>
+            </div>
+        </div>
+    </div>
+
     <div class="admin-wrapper">
         
         <!-- 💡 [수정됨] 고정된 사이드바를 DB와 연동되는 '동적 사이드바'로 교체 -->
@@ -311,20 +343,70 @@
 
             <!-- 탭7: DRI 관리 -->
             <div id="tab7" class="panel">
-                <h2 style="color:#d32f2f; border-bottom: 2px solid #ffebee;">🚨 Today's DRI (일일 위험작업) 등록 및 관리</h2>
+                <h2 style="color:#d32f2f; border-bottom: 2px solid #ffebee; margin-bottom: 20px;">🚨 Today's DRI (일일 위험작업) 등록 및 관리</h2>
+                
+                <!-- 1. DRI 부서 관리 (드롭다운 용) -->
                 <div style="background:#fffbee; border:1px solid #ffcdd2; padding:20px; border-radius:12px; margin-bottom:24px;">
-                    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:10px;">
-                        <input type="date" id="driDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-                        <input type="text" id="driDept" placeholder="부서명" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-                        <input type="text" id="driLocation" placeholder="장소(설비)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-                        <input type="text" id="driTime" placeholder="작업 시간" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    <h3 style="color:#d32f2f; font-size:16px; margin-bottom:12px;">📂 1. DRI 부서 관리 (드롭다운 등록)</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:400px;">
+                        <input type="text" id="newDriDeptInput" placeholder="새 부서명 (예: 환경안전팀)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" style="background:#d32f2f; padding:8px 15px;" onclick="addDriDept()">+ 부서 추가</button>
                     </div>
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
-                        <textarea id="driTask" placeholder="작업 내용" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; height:70px;"></textarea>
-                        <textarea id="driRisk" placeholder="위험 요소" style="width:100%; padding:10px; border:1px solid #ffcdd2; border-radius:6px; height:70px;"></textarea>
-                        <textarea id="driMeasure" placeholder="안전 대책" style="width:100%; padding:10px; border:1px solid #bbdefb; border-radius:6px; height:70px;"></textarea>
+                    <div id="adminDriDeptTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                </div>
+
+                <!-- 2. 신규 등록 폼 -->
+                <div style="background:#fff; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📤 2. 신규 DRI 등록</h3>
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">날짜</label>
+                            <input type="date" id="driDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">부서 선택</label>
+                            <select id="driDept" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">작업시간 (시작 ~ 종료)</label>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <input type="time" id="driStartTime" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                                <span>~</span>
+                                <input type="time" id="driEndTime" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                            </div>
+                        </div>
                     </div>
-                    <button class="submit-btn" style="width:100%; background:#d32f2f;" onclick="submitDri()">+ 위험작업 등록</button>
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">장소(설비)</label>
+                            <input type="text" id="driLocation" placeholder="작업 장소" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label style="font-size:12px; font-weight:bold; color:#666; margin:0;">작업 내용</label>
+                                <!-- 💡 추가된 원클릭 '작업 없음' 버튼 -->
+                                <span style="font-size:11px; color:#fff; background:#1976d2; padding:3px 8px; border-radius:12px; cursor:pointer; font-weight:bold;" onclick="fillNoWork()">💤 특이사항(작업) 없음 일괄 입력</span>
+                            </div>
+                            <input type="text" id="driTask" placeholder="작업 내용 (특이사항 없을 시 '없음')" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom:15px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">위험 요소</label>
+                            <textarea id="driRisk" rows="2" placeholder="위험 요소 입력" style="width:100%; padding:10px; border:1px solid #ffcdd2; border-radius:6px;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">안전 대책</label>
+                            <textarea id="driMeasure" rows="2" placeholder="안전 대책 입력" style="width:100%; padding:10px; border:1px solid #bbdefb; border-radius:6px;"></textarea>
+                        </div>
+                    </div>
+                    <button class="submit-btn" style="background:#d32f2f; width:100%; height:45px; font-size:16px;" onclick="submitDri()">🚀 위험작업 등록하기</button>
+                </div>
+
+                <!-- 3. 검색 및 목록 -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px;">
+                    <h3 style="font-size:16px; margin:0; color:#333;">📋 등록된 DRI 내역</h3>
+                    <input type="text" id="adminDriSearch" placeholder="🔍 날짜, 부서, 작업내용 검색..." style="padding:8px 15px; border:2px solid #d32f2f; border-radius:20px; width:300px; outline:none;" onkeyup="loadAdminDriList(1)">
                 </div>
                 <div id="adminDriAccordionContainer"></div>
                 <div id="adminDriPagination" style="display:flex; justify-content:center; gap:5px; margin-top:20px;"></div>
@@ -507,7 +589,7 @@
                 '산업안전보건위원회': "switchPanel('tab9', this); renderAdminCommittee();",
                 '비상대응 매뉴얼': "switchPanel('tab10', this); renderAdminEmergency();",
                 '비상연락망': "switchPanel('tab11', this); renderAdminContact();",
-                "Today's DRI": "switchPanel('tab7', this);",
+                "Today's DRI": "switchPanel('tab7', this);renderDriDepts(); loadAdminDriList(1);",
                 '화학물질 자료실 / MSDS': "switchPanel('tab6', this);",
                 '화학물질 자료실': "switchPanel('tab6', this);",
                 'MSDS 자료 관리': "switchPanel('tab6', this);",

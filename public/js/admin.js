@@ -119,48 +119,122 @@ function changeAdminPassword() {
 }
 
 // ============================================
-// 🚨 DRI 관리 연동 (날짜는 최신순, 같은 날짜 안에서는 처음 등록한 순서대로 위에서부터!)
+// 🚨 DRI 관리 연동 (부서 드롭다운, 시작/종료시간, 수정기능, 검색기능 추가)
 // ============================================
+async function renderDriDepts() {
+    const db = await fetchAdminDB();
+    let depts = db['esol_dri_depts'] ? JSON.parse(db['esol_dri_depts']) : [];
+    
+    // 부서 태그 그리기
+    const tagsContainer = document.getElementById('adminDriDeptTags');
+    if (tagsContainer) {
+        tagsContainer.innerHTML = depts.map(d => 
+            `<span style="background:#f8f5fc; border:1px solid #4a0082; color:#4a0082; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:bold;">
+                ${d} <button onclick="deleteDriDept('${d}')" style="border:none; background:none; color:#d32f2f; cursor:pointer;">✕</button>
+            </span>`
+        ).join('');
+    }
+    // 등록 폼 드롭다운 그리기
+    const selectEl = document.getElementById('driDept');
+    if (selectEl) {
+        selectEl.innerHTML = depts.length > 0 ? depts.map(d => `<option value="${d}">${d}</option>`).join('') : `<option value="">부서를 먼저 추가해주세요</option>`;
+    }
+}
+
+async function addDriDept() {
+    const val = document.getElementById('newDriDeptInput').value.trim();
+    if (!val) return;
+    const db = await fetchAdminDB();
+    let depts = db['esol_dri_depts'] ? JSON.parse(db['esol_dri_depts']) : [];
+    if (depts.includes(val)) return alert('이미 등록된 부서입니다.');
+    depts.push(val);
+    await saveAdminDB('esol_dri_depts', depts);
+    document.getElementById('newDriDeptInput').value = '';
+    renderDriDepts();
+}
+
+async function deleteDriDept(dept) {
+    if (!confirm(`'${dept}' 부서를 삭제하시겠습니까? (기존에 작성된 DRI 내역은 보존됩니다)`)) return;
+    const db = await fetchAdminDB();
+    let depts = db['esol_dri_depts'] ? JSON.parse(db['esol_dri_depts']) : [];
+    depts = depts.filter(d => d !== dept);
+    await saveAdminDB('esol_dri_depts', depts);
+    renderDriDepts();
+}
+
+// DRI 신규 등록
 async function submitDri() {
     const date = document.getElementById('driDate').value;
-    const dept = document.getElementById('driDept').value.trim();
+    const dept = document.getElementById('driDept').value;
+    const startTime = document.getElementById('driStartTime').value;
+    const endTime = document.getElementById('driEndTime').value;
     const location = document.getElementById('driLocation').value.trim();
-    const time = document.getElementById('driTime').value.trim();
     const task = document.getElementById('driTask').value.trim();
     const risk = document.getElementById('driRisk').value.trim();
     const measure = document.getElementById('driMeasure').value.trim();
 
     if (!date || !dept || !location || !task || !risk || !measure) {
-        return alert('모든 DRI 항목을 빠짐없이 입력해 주세요.');
+        return alert('작업시간을 제외한 모든 항목을 빠짐없이 입력해 주세요.');
     }
 
     const db = await fetchAdminDB();
     let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
     
-    // 데이터를 배열에 넣습니다. (어차피 정렬할 거라서 push 사용)
-    list.push({ id: Date.now(), date, dept, location, time, task, risk, measure });
-    
-    // 💡 핵심 정렬 로직 (이것 때문에 순서가 완벽해집니다)
-    list.sort((a, b) => {
-        if (a.date === b.date) {
-            return a.id - b.id; // 같은 날짜인 경우: 먼저 등록한 것(id가 작은 것)이 위로 오게 고정 (오름차순)
-        }
-        return new Date(b.date) - new Date(a.date); // 날짜가 다를 경우: 최신 날짜가 무조건 위로 오게 (내림차순)
-    });
+    list.push({ id: Date.now(), date, dept, startTime, endTime, location, task, risk, measure });
     
     await saveAdminDB('esol_dri_data', list);
     
+    document.getElementById('driStartTime').value = '';
+    document.getElementById('driEndTime').value = '';
     document.getElementById('driLocation').value = '';
-    document.getElementById('driTime').value = '';
     document.getElementById('driTask').value = '';
     document.getElementById('driRisk').value = '';
     document.getElementById('driMeasure').value = '';
     
     alert('위험작업(DRI)이 등록되었습니다!');
-    document.getElementById('driLocation').focus();
     loadAdminDriList(1);
 }
 
+/* 💡 (신규) 위/아래 순서 변경 기능 */
+async function moveDriOrder(id, direction) {
+    const db = await fetchAdminDB();
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
+
+    const idx = list.findIndex(d => d.id === id);
+    if (idx === -1) return;
+
+    const targetDate = list[idx].date;
+    let dateItems = list.filter(d => d.date === targetDate);
+    const subIdx = dateItems.findIndex(d => d.id === id);
+
+    if (direction === 'up' && subIdx > 0) {
+        let temp = dateItems[subIdx - 1];
+        dateItems[subIdx - 1] = dateItems[subIdx];
+        dateItems[subIdx] = temp;
+    } else if (direction === 'down' && subIdx < dateItems.length - 1) {
+        let temp = dateItems[subIdx + 1];
+        dateItems[subIdx + 1] = dateItems[subIdx];
+        dateItems[subIdx] = temp;
+    } else {
+        return; 
+    }
+
+    const grouped = {};
+    list.forEach(d => {
+        if(!grouped[d.date]) grouped[d.date] = [];
+        if(d.date !== targetDate) grouped[d.date].push(d); 
+    });
+    grouped[targetDate] = dateItems; 
+
+    const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
+    let newList = [];
+    sortedDates.forEach(date => { newList = newList.concat(grouped[date]); });
+
+    await saveAdminDB('esol_dri_data', newList);
+    loadAdminDriList(adminDriCurrentPage);
+}
+
+/* 검색 및 리스트 로드 (관리자용) */
 let adminDriCurrentPage = 1;
 const adminDriPerPage = 5;
 
@@ -169,23 +243,19 @@ async function loadAdminDriList(page = 1) {
     const db = await fetchAdminDB();
     let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
     
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    list = list.filter(d => new Date(d.date) >= oneYearAgo);
-
-    // 💡 화면에 렌더링할 때도 동일한 정렬 규칙을 강제로 먹여서 그립니다.
-    list.sort((a, b) => {
-        if (a.date === b.date) {
-            return a.id - b.id; 
-        }
-        return new Date(b.date) - new Date(a.date); 
-    });
+    const keyword = document.getElementById('adminDriSearch') ? document.getElementById('adminDriSearch').value.trim().toLowerCase() : '';
+    if (keyword) {
+        list = list.filter(d => 
+            d.date.includes(keyword) || d.dept.toLowerCase().includes(keyword) || 
+            d.task.toLowerCase().includes(keyword) || d.location.toLowerCase().includes(keyword)
+        );
+    }
 
     const container = document.getElementById('adminDriAccordionContainer');
     const paginationContainer = document.getElementById('adminDriPagination');
     
     if (list.length === 0) { 
-        container.innerHTML = `<div style="text-align:center; color:#999; padding:25px; background:#fff; border-radius:8px; border:1px solid #ddd;">최근 1년간 등록된 DRI가 없습니다.</div>`; 
+        container.innerHTML = `<div style="text-align:center; padding:25px; background:#fff; border-radius:8px; border:1px solid #ddd;">등록된 DRI 내역이 없습니다.</div>`; 
         paginationContainer.innerHTML = '';
         return; 
     }
@@ -193,32 +263,26 @@ async function loadAdminDriList(page = 1) {
     const grouped = {};
     list.forEach(d => {
         if(!grouped[d.date]) grouped[d.date] = [];
-        grouped[d.date].push(d); // 여기서 쏙쏙 담길 때 이미 정렬된 순서대로 담깁니다.
+        grouped[d.date].push(d);
     });
 
     const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
     const totalPages = Math.ceil(sortedDates.length / adminDriPerPage);
-    
     if (adminDriCurrentPage > totalPages) adminDriCurrentPage = totalPages;
-    if (adminDriCurrentPage < 1) adminDriCurrentPage = 1;
-
-    const startIndex = (adminDriCurrentPage - 1) * adminDriPerPage;
-    const currentDates = sortedDates.slice(startIndex, startIndex + adminDriPerPage);
+    const currentDates = sortedDates.slice((adminDriCurrentPage - 1) * adminDriPerPage, adminDriCurrentPage * adminDriPerPage);
 
     container.innerHTML = currentDates.map((date, index) => {
         const isExpanded = (index === 0 && adminDriCurrentPage === 1);
         const items = grouped[date];
-        const activeItems = items.filter(d => d.task && d.task.trim() !== '없음');
-        const noneItems = items.filter(d => !d.task || d.task.trim() === '없음');
 
         return `
             <div style="margin-bottom:12px; border:2px solid ${isExpanded ? '#b0268d' : '#eae2f0'}; border-radius:12px; overflow:hidden; background:#fff;">
                 <div style="background:${isExpanded ? '#f8f5fc' : '#faf8fc'}; padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleAdminDriDate('${date}')">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <h4 style="color:${isExpanded ? '#b0268d' : '#4a0082'}; font-size:16px; margin:0;">📅 ${date} 등록 내역</h4>
-                        <span style="background:#e0e0e0; color:#555; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">총 ${items.length}건</span>
+                        <span style="background:#e0e0e0; color:#555; padding:4px 8px; border-radius:12px; font-size:12px;">총 ${items.length}건</span>
                     </div>
-                    <span id="admin-icon-${date}" style="font-size:14px; font-weight:bold; color:#888;">${isExpanded ? '▲ 접기' : '▼ 펴기'}</span>
+                    <span id="admin-icon-${date}" style="color:#888;">${isExpanded ? '▲ 접기' : '▼ 펴기'}</span>
                 </div>
                 
                 <div id="admin-table-${date}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eae2f0;">
@@ -227,37 +291,35 @@ async function loadAdminDriList(page = 1) {
                             <tr>
                                 <th style="width: 10%;">부서</th>
                                 <th style="width: 12%;">장소(설비)</th>
-                                <th style="width: 10%;">작업시간</th>
-                                <th style="width: 20%;">작업 내용</th>
-                                <th style="width: 18%;">위험 요소</th>
-                                <th style="width: 18%;">안전 대책</th>
-                                <th>관리</th>
+                                <th style="width: 12%;">작업시간</th>
+                                <th style="width: 15%;">작업 내용</th>
+                                <th style="width: 15%;">위험 요소</th>
+                                <th style="width: 15%;">안전 대책</th>
+                                <th style="width: 21%; text-align:center;">관리 (순서/수정/삭제)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${activeItems.map(d => {
-                                const riskTags = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `<div style="background:#ffebee; color:#c62828; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:3px;">${t}</div>`).join('') : '';
-                                const measureTags = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음').map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:3px;">${t}</div>`).join('') : '';
-
+                            ${items.map(d => {
+                                const displayTime = (d.startTime && d.endTime) ? `${d.startTime} ~ ${d.endTime}` : (d.time || '-');
+                                const isNone = (d.task.trim() === '없음');
+                                
                                 return `
-                                    <tr style="background-color: #fff; border-bottom: 1px solid #eee;">
-                                        <td style="vertical-align:top;"><strong>${d.dept}</strong></td>
-                                        <td style="vertical-align:top;">${d.location || '-'}</td>
-                                        <td style="vertical-align:top; color:#555;">${d.time || '-'}</td>
-                                        <td style="vertical-align:top; line-height:1.5;">${d.task.replace(/\n/g, '<br>')}</td>
-                                        <td style="vertical-align:top;">${riskTags || '<span style="color:#999; font-style:italic;">N/A</span>'}</td>
-                                        <td style="vertical-align:top;">${measureTags || '<span style="color:#999; font-style:italic;">N/A</span>'}</td>
-                                        <td style="vertical-align:top;"><button class="btn-sm btn-del" onclick="deleteDri(${d.id})">🗑️ 삭제</button></td>
+                                    <tr style="background-color: ${isNone ? '#fafafa' : '#fff'}; border-bottom: 1px solid #eee; color:${isNone ? '#888' : '#333'};">
+                                        <td style="vertical-align:middle;"><strong>${d.dept}</strong></td>
+                                        <td style="vertical-align:middle;">${d.location || '-'}</td>
+                                        <td style="vertical-align:middle; color:${isNone ? '#888' : '#006064'}; font-weight:bold;">${displayTime}</td>
+                                        <td style="vertical-align:middle; line-height:1.5;">${d.task.replace(/\n/g, '<br>')}</td>
+                                        <td style="vertical-align:middle;">${d.risk || '-'}</td>
+                                        <td style="vertical-align:middle;">${d.measure || '-'}</td>
+                                        <td style="vertical-align:middle; text-align:center; white-space:nowrap;">
+                                            <button class="btn-sm" style="background:#f4f5f9; color:#555; border:1px solid #ccc; padding:5px 8px; font-size:12px; border-radius:4px;" onclick="moveDriOrder(${d.id}, 'up')">▲</button>
+                                            <button class="btn-sm" style="background:#f4f5f9; color:#555; border:1px solid #ccc; padding:5px 8px; font-size:12px; border-radius:4px; margin-right:5px;" onclick="moveDriOrder(${d.id}, 'down')">▼</button>
+                                            <button class="btn-sm" style="background:#ff9800; color:#fff;" onclick="openDriEditModal(${d.id})">✏️ 수정</button>
+                                            <button class="btn-sm btn-del" onclick="deleteDri(${d.id})">🗑️ 삭제</button>
+                                        </td>
                                     </tr>
                                 `;
                             }).join('')}
-                            ${noneItems.length > 0 ? `
-                                <tr>
-                                    <td colspan="7" style="background:#fafafa; color:#777; padding:10px; font-size:13px; text-align:left;">
-                                        💤 <strong>특이사항(작업) 없음 부서:</strong> ${noneItems.map(n => n.dept).join(', ')}
-                                    </td>
-                                </tr>
-                            ` : ''}
                         </tbody>
                     </table>
                 </div>
@@ -267,34 +329,94 @@ async function loadAdminDriList(page = 1) {
 
     let pageHtml = '';
     for (let i = 1; i <= totalPages; i++) {
-        pageHtml += `
-            <button onclick="loadAdminDriList(${i})" style="padding:6px 12px; border:1px solid #4a0082; background:${i === adminDriCurrentPage ? '#4a0082' : '#fff'}; color:${i === adminDriCurrentPage ? '#fff' : '#4a0082'}; border-radius:6px; cursor:pointer; font-weight:bold;">
-                ${i}
-            </button>
-        `;
+        pageHtml += `<button onclick="loadAdminDriList(${i})" style="padding:6px 12px; border:1px solid #4a0082; background:${i === adminDriCurrentPage ? '#4a0082' : '#fff'}; color:${i === adminDriCurrentPage ? '#fff' : '#4a0082'}; border-radius:6px; cursor:pointer; font-weight:bold;">${i}</button>`;
     }
     paginationContainer.innerHTML = pageHtml;
 }
 
+/* DRI 수정 저장 */
+async function saveDriEdit() {
+    const id = parseInt(document.getElementById('editDriId').value);
+    const db = await fetchAdminDB();
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
+    const idx = list.findIndex(d => d.id === id);
+    if (idx === -1) return;
+
+    list[idx].date = document.getElementById('editDriDate').value;
+    list[idx].dept = document.getElementById('editDriDeptSelect').value;
+    list[idx].startTime = document.getElementById('editDriStartTime').value;
+    list[idx].endTime = document.getElementById('editDriEndTime').value;
+    list[idx].location = document.getElementById('editDriLocation').value.trim();
+    list[idx].task = document.getElementById('editDriTask').value.trim();
+    list[idx].risk = document.getElementById('editDriRisk').value.trim();
+    list[idx].measure = document.getElementById('editDriMeasure').value.trim();
+
+    await saveAdminDB('esol_dri_data', list);
+    document.getElementById('driEditModal').style.display = 'none';
+    alert('성공적으로 수정되었습니다.');
+    loadAdminDriList(adminDriCurrentPage);
+}
+/* ============================================
+   💡 (복구) DRI 삭제 및 수정 창 열기 기능
+   ============================================ */
+
+/* DRI 삭제 기능 */
+async function deleteDri(id) {
+    if (!confirm('이 항목을 정말 삭제하시겠습니까?')) return;
+    const db = await fetchAdminDB();
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
+    list = list.filter(d => d.id !== id);
+    await saveAdminDB('esol_dri_data', list);
+    loadAdminDriList(adminDriCurrentPage);
+}
+
+/* DRI 수정 팝업 열기 */
+async function openDriEditModal(id) {
+    const db = await fetchAdminDB();
+    const list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
+    const item = list.find(d => d.id === id);
+    if (!item) return;
+
+    // 부서 드롭다운 세팅 (과거 데이터 호환)
+    const depts = db['esol_dri_depts'] ? JSON.parse(db['esol_dri_depts']) : [];
+    const selectEl = document.getElementById('editDriDeptSelect');
+    if (!depts.includes(item.dept)) depts.push(item.dept); // 목록에 없는 예전 부서면 임시 추가
+    selectEl.innerHTML = depts.map(d => `<option value="${d}" ${d === item.dept ? 'selected' : ''}>${d}</option>`).join('');
+
+    // 기존 데이터 팝업창에 채워넣기
+    document.getElementById('editDriId').value = id;
+    document.getElementById('editDriDate').value = item.date;
+    document.getElementById('editDriStartTime').value = item.startTime || '';
+    document.getElementById('editDriEndTime').value = item.endTime || '';
+    document.getElementById('editDriLocation').value = item.location || '';
+    document.getElementById('editDriTask').value = item.task || '';
+    document.getElementById('editDriRisk').value = item.risk || '';
+    document.getElementById('editDriMeasure').value = item.measure || '';
+
+    // 팝업창 띄우기
+    document.getElementById('driEditModal').style.display = 'flex';
+}
+// 💡 특이사항(작업) 없음 원클릭 자동 입력 함수
+function fillNoWork() {
+    document.getElementById('driStartTime').value = ''; // 시간 비우기
+    document.getElementById('driEndTime').value = '';   // 시간 비우기
+    document.getElementById('driLocation').value = '해당없음';
+    document.getElementById('driTask').value = '없음';  // 메인화면에서 '없음'으로 인식하는 핵심 키워드!
+    document.getElementById('driRisk').value = '해당없음';
+    document.getElementById('driMeasure').value = '해당없음';
+    alert('작업 없음 상태로 자동 입력되었습니다. 날짜와 부서를 확인 후 등록해주세요!');
+}
+// 💡 관리자용 DRI 목록 접기/펴기 스위치
 function toggleAdminDriDate(date) {
     const tableDiv = document.getElementById(`admin-table-${date}`);
     const icon = document.getElementById(`admin-icon-${date}`);
-    if(tableDiv.style.display === 'none') {
+    if (tableDiv.style.display === 'none') {
         tableDiv.style.display = 'block';
         icon.innerText = '▲ 접기';
     } else {
         tableDiv.style.display = 'none';
         icon.innerText = '▼ 펴기';
     }
-}
-
-async function deleteDri(id) {
-    if (!confirm('해당 위험작업 기록을 삭제하시겠습니까?')) return;
-    const db = await fetchAdminDB();
-    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
-    list = list.filter(d => d.id !== id);
-    await saveAdminDB('esol_dri_data', list);
-    loadAdminDriList(1);
 }
 
 // ============================================
