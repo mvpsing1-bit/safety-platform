@@ -37,16 +37,16 @@
 
     <div class="container">
         <div class="page-title">
-            <h2>🧪 MSDS (물질안전보건자료) 즉시 조회</h2>
+            <h2>🧪 MSDS 및 공정별 관리요령 즉시 조회</h2>
             <div class="search-box">
                 <span style="font-size:20px; color:#b0268d;">🔍</span><input type="text" id="msdsSearchInput" placeholder="물질명, CAS No, 유해성 태그 검색..." onkeyup="renderMsdsList()">
             </div>
         </div>
 
-        <p style="font-size:14px; color:#666; margin-bottom:20px;">현장에서 취급하는 화학물질의 MSDS를 즉시 검색하고 열람할 수 있습니다. <br>물질명이나 CAS 번호를 검색창에 입력하세요.</p>
+        <p style="font-size:14px; color:#666; margin-bottom:20px;">현장에서 취급하는 화학물질의 <strong>MSDS</strong> 및 <strong>공정별 관리요령</strong>을 즉시 검색하고 열람할 수 있습니다. <br>물질명이나 CAS 번호를 검색창에 입력하세요.</p>
 
         <table class="doc-table">
-            <thead><tr><th style="width: 20%;">화학물질명</th><th style="width: 15%;">CAS No.</th><th style="width: 15%;">공급업체</th><th style="width: 35%;">주요 유해·위험성 태그</th><th style="width: 15%;">자료 열람</th></tr></thead>
+            <thead><tr><th style="width: 15%;">화학물질명</th><th style="width: 12%;">CAS No.</th><th style="width: 13%;">공급업체</th><th style="width: 30%;">주요 유해·위험성 태그</th><th style="width: 30%;">자료 열람 (선택)</th></tr></thead>
             <tbody id="msdsListBody"></tbody>
         </table>
 
@@ -84,11 +84,25 @@
             
             tbody.innerHTML = list.map(m => {
                 const tagsHtml = m.tags.map(t => `<span class="tag-badge">⚠️ ${t}</span>`).join('');
+                
+                // 💡 파일 유무에 따라 버튼을 각각 생성합니다.
+                const btnMsds = m.fileUrl ? `<button class="btn-action btn-view" style="margin-bottom:4px; padding:6px 12px;" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS')">📄 MSDS 보기</button>` : '';
+                const btnGuide = m.guideUrl ? `<button class="btn-action" style="background:#ff9800; color:#fff; padding:6px 12px;" onclick="previewPdf('${m.guideUrl}', '${m.name} 공정별 관리요령')">📋 공정별 관리요령 보기</button>` : '';
+
                 return `
                 <tr>
-                    <td><strong>${m.name}</strong></td><td>${m.cas}</td><td>${m.supplier || '-'}</td><td>${tagsHtml}</td>
-                    <td><button class="btn-action btn-view" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS')">📄 PDF 열람</button></td>
-                </tr>`}).join('');
+                    <td><strong>${m.name}</strong></td>
+                    <td>${m.cas}</td>
+                    <td>${m.supplier || '-'}</td>
+                    <td>${tagsHtml}</td>
+                    <td>
+                        <div style="display:flex; gap:8px;">
+                            ${btnMsds}
+                            ${btnGuide}
+                        </div>
+                    </td>
+                </tr>`
+            }).join('');
         }
 
         function previewPdf(fileUrl, docTitle) {

@@ -109,8 +109,8 @@
                 <div class="msds-info">
                     <div class="icon">🧪</div>
                     <div>
-                        <h3>MSDS 즉시조회</h3>
-                        <p>등록된 화학물질 물질안전보건자료(MSDS) 즉시 열람</p>
+                        <h3>MSDS 및 관리요령 즉시 조회</h3>
+                        <p>등록된 화학물질 물질안전보건자료(MSDS) 및 공정별 관리요령 즉시 열람</p>
                     </div>
                 </div>
                 <div class="msds-badge">PDF 열람 ➔</div>
@@ -184,8 +184,7 @@
                 { title: 'TBM', desc: 'Tool Box Meeting', icon: '📄' }
             ],
             '보건': [
-                { title: '화학물질 자료실', desc: '화학물질 관련 자료', icon: '🧪' },
-                { title: '공정별 화학물질 관리요령', desc: '화학물질 관리요령', icon: '🧪' },
+                { title: 'MSDS 및 관리요령 즉시조회', desc: 'MSDS 및 공정별 관리요령 검색 열람', icon: '🧪' },
                 { title: '작업환경 측정결과', desc: '유해인자 측정 보고서', icon: '📊' },
                 { title: '근로자 건강관리', desc: '특수/일반 건강검진 안내', icon: '🏥' },
                 { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
@@ -308,7 +307,13 @@
                 const targetEl = document.getElementById(mapping[key].id);
                 if (!targetEl) continue;
                 const items = menus[key] || [];
-                targetEl.innerHTML = items.map(item => `
+                
+                // 💡 여기서 filter를 사용해 MSDS/관리요령 관련 메뉴는 메인 화면에서 뺍니다!
+                const filteredItems = items.filter(item => 
+                    !item.title.includes('MSDS') && !item.title.includes('관리요령')
+                );
+
+                targetEl.innerHTML = filteredItems.map(item => `
                     <div class="card ${mapping[key].class}" data-title="${encodeURIComponent(item.title)}" onclick="goDetail(decodeURIComponent(this.getAttribute('data-title')))">
                         <div class="icon">${item.icon || '📄'}</div><h3>${item.title}</h3><p>${item.desc || '환경안전보건 항목'}</p>
                     </div>

@@ -55,8 +55,7 @@ const defaultMenus = {
         { title: 'TBM', desc: 'Tool Box Meeting', icon: '📄' }
     ],
     '보건': [
-        { title: '화학물질 자료실', desc: '화학물질 관련 자료', icon: '🧪' },
-        { title: '공정별 화학물질 관리요령', desc: '화학물질 관리요령', icon: '🧪' },
+        { title: 'MSDS 및 관리요령 즉시조회', desc: 'MSDS 및 공정별 관리요령 검색 열람', icon: '🧪' },
         { title: '작업환경 측정결과', desc: '유해인자 측정 보고서', icon: '📊' },
         { title: '근로자 건강관리', desc: '특수/일반 건강검진 안내', icon: '🏥' },
         { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
@@ -839,64 +838,84 @@ async function deleteUserAccount(id) {
 }
 
 // ============================================
-// 🧪 MSDS 관리 연동
+// 🧪 MSDS 및 관리요령 연동
 // ============================================
 async function uploadMsds() {
     const name = document.getElementById('msdsName').value.trim();
     const cas = document.getElementById('msdsCas').value.trim();
     const supplier = document.getElementById('msdsSupplier').value.trim();
     const tagsInput = document.getElementById('msdsTags').value.trim();
-    const fileInput = document.getElementById('msdsFile');
     
-    if (!name || !cas || fileInput.files.length === 0) return alert('필수 항목을 입력하세요.');
+    const msdsFileInput = document.getElementById('msdsFile');
+    const guideFileInput = document.getElementById('guideFile'); // 💡 새로 추가된 관리요령 파일
+    
+    if (!name || !cas || msdsFileInput.files.length === 0 || guideFileInput.files.length === 0) {
+        return alert('물질명, CAS No, 그리고 2개의 파일(MSDS, 관리요령)을 모두 등록해주세요.');
+    }
     
     const btn = document.getElementById('msdsSubmitBtn');
-    btn.innerText = '업로드 중...';
+    btn.innerText = '자료 2개 업로드 중...';
     btn.disabled = true;
     
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    
     try {
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-        const uploadData = await uploadRes.json();
-        
-        if (uploadData.error) throw new Error(uploadData.error);
+        // 1. MSDS 파일 먼저 서버로 전송
+        const msdsFormData = new FormData();
+        msdsFormData.append('file', msdsFileInput.files[0]);
+        const msdsRes = await fetch('/api/upload', { method: 'POST', body: msdsFormData });
+        const msdsData = await msdsRes.json();
+        if (msdsData.error) throw new Error(msdsData.error);
+
+        // 2. 관리요령 파일도 서버로 전송
+        const guideFormData = new FormData();
+        guideFormData.append('file', guideFileInput.files[0]);
+        const guideRes = await fetch('/api/upload', { method: 'POST', body: guideFormData });
+        const guideData = await guideRes.json();
+        if (guideData.error) throw new Error(guideData.error);
         
         const tagsArray = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
-        const newMsds = { id: Date.now(), name: name, cas: cas, supplier: supplier, tags: tagsArray, fileUrl: uploadData.fileUrl };
+        
+        // 3. 파일 URL 2개를 묶어서 DB에 저장
+        const newMsds = { 
+            id: Date.now(), 
+            name: name, 
+            cas: cas, 
+            supplier: supplier, 
+            tags: tagsArray, 
+            fileUrl: msdsData.fileUrl,      // MSDS 링크
+            guideUrl: guideData.fileUrl     // 관리요령 링크
+        };
         
         const db = await fetchAdminDB();
         let existingData = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
-        existingData.push(newMsds);
+        existingData.unshift(newMsds); // 💡 보기 편하게 최신 자료가 위로 올라오도록 unshift 사용
         await saveAdminDB('esol_msds_data', existingData);
         
-        // 일반 문서실에도 MSDS 추가
+        // (참고) 일반 문서실에도 MSDS만 하나 복사해둡니다.
         let allDocs = db['esol_safety_docs_v2'] ? JSON.parse(db['esol_safety_docs_v2']) : {};
         if (!allDocs['MSDS 자료실']) allDocs['MSDS 자료실'] = []; 
-        
         allDocs['MSDS 자료실'].unshift({
             id: newMsds.id,
             title: name + ' (' + cas + ') MSDS',
-            fileUrl: uploadData.fileUrl,
+            fileUrl: msdsData.fileUrl,
             date: new Date().toISOString().split('T')[0]
         });
         await saveAdminDB('esol_safety_docs_v2', allDocs);
         
-        alert('등록되었습니다!');
+        alert('MSDS 및 관리요령 세트가 등록되었습니다!');
         loadAdminMsdsList();
     } catch (err) {
-        alert('업로드 실패');
+        alert('업로드 실패: 용량이 너무 크거나 네트워크 에러입니다.');
     } finally {
-        btn.innerText = '+ MSDS 등록하기';
+        btn.innerText = '+ MSDS 및 관리요령 세트 등록하기';
         btn.disabled = false;
         
-        // 입력창 초기화
+        // 입력창 모두 초기화
         document.getElementById('msdsName').value = '';
         document.getElementById('msdsCas').value = '';
         document.getElementById('msdsSupplier').value = '';
         document.getElementById('msdsTags').value = '';
         document.getElementById('msdsFile').value = '';
+        document.getElementById('guideFile').value = '';
     }
 }
 
@@ -906,7 +925,7 @@ async function loadAdminMsdsList() {
     const tbody = document.getElementById('adminMsdsListBody');
     
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:25px;">등록된 MSDS 자료가 없습니다.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:25px;">등록된 물질 자료가 없습니다.</td></tr>`;
         return;
     }
     
@@ -915,7 +934,7 @@ async function loadAdminMsdsList() {
             <td><strong>${m.name}</strong></td>
             <td>${m.cas}</td>
             <td>${m.supplier || '-'}</td>
-            <td>${m.tags.join(', ')}</td>
+            <td><span style="font-size:13px; color:#4a0082; font-weight:bold;">${m.fileUrl ? '✅ MSDS' : ''}<br>${m.guideUrl ? '✅ 관리요령' : ''}</span></td>
             <td>
                 <button class="btn-sm btn-del" onclick="deleteMsds(${m.id})">삭제</button>
             </td>
