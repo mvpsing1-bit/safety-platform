@@ -434,6 +434,11 @@
             <div id="tab6" class="panel">
                 <h2>🧪 MSDS 및 공정별 관리요령 관리</h2>
                 <div style="background:#f0e6f6; border:1px solid #b0268d; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <!-- 💡 수정 중일 때 표시될 안내 문구 -->
+                    <div id="msdsFormTitle" style="font-weight:bold; color:#4a0082; margin-bottom:10px; font-size:16px;">➕ 신규 MSDS 및 관리요령 등록</div>
+                    
+                    <input type="hidden" id="editMsdsId" value=""> <!-- 수정할 때 사용할 아이디 저장소 -->
+
                     <div style="display:flex; gap:10px; margin-bottom:10px;">
                         <input type="text" id="msdsName" placeholder="화학물질명" style="flex:1.5; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="text" id="msdsCas" placeholder="CAS No." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
@@ -442,21 +447,25 @@
                     <div style="margin-bottom:12px;">
                         <input type="text" id="msdsTags" placeholder="주요 유해·위험성 태그 (쉼표 구분)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
                     </div>
-                    <!-- 💡 1+1 업로드를 위해 파일 첨부칸을 두 개로 분리! -->
+                    
                     <div style="display:flex; gap:10px; margin-bottom:15px;">
                         <div style="flex:1;">
-                            <label style="font-size:13px; font-weight:bold; color:#4a0082; display:block; margin-bottom:4px;">📄 1. MSDS 파일 첨부 (필수)</label>
+                            <label style="font-size:13px; font-weight:bold; color:#4a0082; display:block; margin-bottom:4px;">📄 1. MSDS 파일 첨부 (수정 시 미첨부면 기존 유지)</label>
                             <input type="file" id="msdsFile" accept=".pdf, image/jpeg, image/png" style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         </div>
                         <div style="flex:1;">
-                            <label style="font-size:13px; font-weight:bold; color:#4a0082; display:block; margin-bottom:4px;">📄 2. 관리요령 파일 첨부 (필수)</label>
+                            <label style="font-size:13px; font-weight:bold; color:#4a0082; display:block; margin-bottom:4px;">📄 2. 관리요령 파일 첨부 (수정 시 미첨부면 기존 유지)</label>
                             <input type="file" id="guideFile" accept=".pdf, image/jpeg, image/png" style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
                         </div>
                     </div>
-                    <button id="msdsSubmitBtn" class="submit-btn" style="width:100%; padding:12px; font-size:15px;" onclick="uploadMsds()">+ MSDS 및 관리요령 세트 등록하기</button>
+                    
+                    <div style="display:flex; gap:10px;">
+                        <button id="msdsSubmitBtn" class="submit-btn" style="flex:1; padding:12px; font-size:15px;" onclick="uploadMsds()">+ MSDS 및 관리요령 세트 등록하기</button>
+                        <button id="msdsCancelBtn" style="display:none; background:#6c757d; color:#fff; border:none; padding:12px 20px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="cancelEditMsds()">수정 취소</button>
+                    </div>
                 </div>
                 <table>
-                    <thead><tr><th style="width: 25%;">물질명</th><th style="width: 15%;">CAS No.</th><th style="width: 20%;">공급업체</th><th style="width: 25%;">첨부 상태</th><th>관리</th></tr></thead>
+                    <thead><tr><th style="width: 20%;">물질명</th><th style="width: 15%;">CAS No.</th><th style="width: 15%;">공급업체</th><th style="width: 20%;">첨부 상태</th><th style="width: 30%;">관리</th></tr></thead>
                     <tbody id="adminMsdsListBody"></tbody>
                 </table>
             </div>
