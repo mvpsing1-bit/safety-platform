@@ -898,7 +898,6 @@ async function uploadMsds() {
         const tagsArray = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
 
         if (editId && targetMsds) {
-            // 기존 데이터 업데이트
             targetMsds.name = name;
             targetMsds.cas = cas;
             targetMsds.supplier = supplier;
@@ -908,21 +907,18 @@ async function uploadMsds() {
             
             alert('MSDS 및 관리요령 정보가 수정되었습니다!');
         } else {
-            // 신규 등록 모드
-            if (!msdsUrl || !guideUrl) {
-                throw new Error('신규 등록 시 MSDS와 관리요령 파일을 모두 첨부해야 합니다.');
-            }
+            // 신규 등록 모드 (필수 체크 로직 삭제 완료!)
             const newMsds = { 
                 id: Date.now(), 
                 name: name, 
                 cas: cas, 
                 supplier: supplier, 
                 tags: tagsArray, 
-                fileUrl: msdsUrl,
-                guideUrl: guideUrl
+                fileUrl: msdsUrl || '',     // 파일이 없으면 빈 값으로 저장
+                guideUrl: guideUrl || ''   // 파일이 없으면 빈 값으로 저장
             };
-            existingData.unshift(newMsds);
-            alert('MSDS 및 관리요령 세트가 등록되었습니다!');
+            existingData.push(newMsds);
+            alert('물질이 등록되었습니다!');
         }
         
         await saveAdminDB('esol_msds_data', existingData);

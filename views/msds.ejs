@@ -60,7 +60,6 @@
     </div>
 
     <script>
-        // 💡 서버 연동 함수
         async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
 
         async function renderMsdsList() {
@@ -83,16 +82,18 @@
             }
             
             tbody.innerHTML = list.map(m => {
-                const tagsHtml = m.tags.map(t => `<span class="tag-badge">⚠️ ${t}</span>`).join('');
+                const tagsHtml = m.tags ? m.tags.map(t => `<span class="tag-badge">⚠️ ${t}</span>`).join('') : '';
                 
-                // 💡 파일 유무에 따라 버튼을 각각 생성합니다.
+                // 💡 CAS 번호에 쉼표가 있으면 줄바꿈 처리 (안전한 방식)
+                const formattedCas = m.cas ? m.cas.split(' ').join(' <br>') : '-';
+
                 const btnMsds = m.fileUrl ? `<button class="btn-action btn-view" style="margin-bottom:4px; padding:6px 12px;" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS')">📄 MSDS 보기</button>` : '';
                 const btnGuide = m.guideUrl ? `<button class="btn-action" style="background:#ff9800; color:#fff; padding:6px 12px;" onclick="previewPdf('${m.guideUrl}', '${m.name} 공정별 관리요령')">📋 공정별 관리요령 보기</button>` : '';
 
                 return `
                 <tr>
                     <td><strong>${m.name}</strong></td>
-                    <td>${m.cas}</td>
+                    <td>${formattedCas}</td>
                     <td>${m.supplier || '-'}</td>
                     <td>${tagsHtml}</td>
                     <td>
