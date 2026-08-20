@@ -53,6 +53,7 @@ app.get('/notice', (req, res) => res.render('notice'));
 app.get('/policy', (req, res) => res.render('policy'));
 app.get('/law', (req, res) => res.render('law'));
 app.get('/cert', (req, res) => res.render('cert'));
+app.get('/health', (req, res) => res.render('health'));
 app.get('/org', (req, res) => res.render('org')); // 안전보건 조직도 전용 페이지
 app.get('/committee', (req, res) => {
     res.render('committee'); 

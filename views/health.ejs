@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>특수건강검진 수검 및 결과 조회 - ESOL 환경안전보건</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #b0268d; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; }
+        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); text-align: center; }
+        .user-greeting { font-size: 24px; color: #4a0082; margin-bottom: 10px; font-weight: bold; }
+        .user-dept { font-size: 16px; color: #666; margin-bottom: 30px; }
+        
+        .info-card { background: #faf8fc; border: 2px solid #b0268d; border-radius: 12px; padding: 30px; text-align: left; margin-bottom: 20px; }
+        .info-row { display: flex; flex-direction: column; padding: 16px 0; border-bottom: 1px solid #eae2f0; }
+        .info-row.flex-row { flex-direction: row; justify-content: space-between; align-items: center; }
+        .info-row:last-child { border-bottom: none; }
+        .info-title { font-weight: bold; color: #555; font-size: 16px; margin-bottom: 8px; }
+        .info-value { font-size: 16px; color: #222; font-weight: bold; line-height: 1.5; white-space: pre-wrap; }
+        
+        .due-date-box { background: #ffebee; border-radius: 12px; padding: 25px; text-align: center; margin-top: 20px; border: 2px dashed #e53935; }
+        .due-date-title { font-size: 18px; color: #d32f2f; font-weight: bold; margin-bottom: 10px; }
+        .due-date-val { font-size: 28px; color: #b71c1c; font-weight: 900; }
+        
+        /* 💡 소견 전용 박스 스타일 */
+        .result-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; font-size: 15px; font-weight: normal; margin-top: 5px; color: #444; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand-title">ESOL <span>특수건강검진 수검 조회</span></div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container" id="loadingArea">
+        <h2 style="color:#999; margin: 50px 0;">데이터를 불러오는 중입니다... ⏳</h2>
+    </div>
+
+    <div class="container" id="resultArea" style="display:none;">
+        <div class="user-greeting">🩺 <span id="displayUserName"></span>님, 특수건강검진 정보</div>
+        <div class="user-dept" id="displayUserDept"></div>
+
+        <div id="noDataArea" style="display:none; padding:40px; color:#888; background:#f9f9f9; border-radius:12px;">
+            <h3>현재 등록된 특수건강검진 대상자 정보가 없습니다.</h3>
+            <p style="margin-top:10px; font-size:14px;">보건관리자에게 문의해 주세요.</p>
+        </div>
+
+        <div id="dataCardArea" style="display:none;">
+            <!-- 1. 기본 검진 정보 영역 -->
+            <div class="info-card">
+                <div class="info-row flex-row"><span class="info-title" style="margin:0;">⚠️ 취급 유해인자</span><span class="info-value" id="valHazard" style="color:#b0268d;"></span></div>
+                <div class="info-row flex-row"><span class="info-title" style="margin:0;">📅 최초 검진일 (배치전)</span><span class="info-value" id="valFirstDate"></span></div>
+                <div class="info-row flex-row" style="border-bottom:none;"><span class="info-title" style="margin:0;">📅 마지막 검진일</span><span class="info-value" id="valLastDate"></span></div>
+            </div>
+
+            <!-- 💡 2. 소견 및 사후관리 영역 추가 -->
+            <div class="info-card" style="border-color:#4a0082; background:#f8f5fc;">
+                <h3 style="color:#4a0082; border-bottom:2px solid #eae2f0; padding-bottom:12px; margin-bottom:10px;">📋 이전 검진 결과 및 사후관리 안내</h3>
+                
+                <div class="info-row">
+                    <span class="info-title">🩺 건강검진 소견</span>
+                    <div class="result-box" id="valCheckupResult"></div>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-title">💊 사후관리 소견 (조치사항)</span>
+                    <div class="result-box" id="valFollowUp"></div>
+                </div>
+
+                <div class="info-row flex-row" style="border-bottom:none; margin-top:10px;">
+                    <span class="info-title" style="margin:0;">💬 건강상담 대상 여부</span>
+                    <span class="info-value" id="valCounseling"></span>
+                </div>
+            </div>
+
+            <!-- 3. 다음 도래일 영역 -->
+            <div class="due-date-box">
+                <div class="due-date-title" id="dueDateTitle">🚨 다음 특수건강검진 도래일</div>
+                <div class="due-date-val" id="valDueDate"></div>
+                <p style="margin-top:10px; font-size:14px; color:#555;" id="valDday"></p>
+            </div>
+        </div>
+        <button class="back-btn" style="margin-top:20px; display:inline-block;" onclick="location.href='/'">확인 완료 (메인으로)</button>
+    </div>
+
+    <script>
+        async function loadHealthData() {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get('userId');
+            if (!userId) { alert('잘못된 접근입니다.'); window.location.href = '/'; return; }
+
+            const db = await fetch(window.location.origin + '/api/db').then(r => r.json());
+            const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
+            const me = users.find(u => u.empNo === userId);
+            
+            if (me) {
+                document.getElementById('displayUserName').innerText = me.name;
+                document.getElementById('displayUserDept').innerText = `${me.dept} (사번: ${me.empNo})`;
+            }
+
+            const healthData = db['esol_special_health'] ? JSON.parse(db['esol_special_health']) : [];
+            const myHealth = healthData.find(h => h.empNo === userId);
+
+            document.getElementById('loadingArea').style.display = 'none';
+            document.getElementById('resultArea').style.display = 'block';
+
+            if (myHealth) {
+                document.getElementById('dataCardArea').style.display = 'block';
+                document.getElementById('valHazard').innerText = myHealth.hazard;
+                document.getElementById('valFirstDate').innerText = myHealth.firstDate || '-';
+                document.getElementById('valLastDate').innerText = myHealth.lastDate || '진행 이력 없음';
+
+                // 💡 추가된 소견 데이터 바인딩 (없을 경우 기본 문구 표시)
+                document.getElementById('valCheckupResult').innerText = myHealth.checkupResult || '등록된 소견이 없습니다.';
+                document.getElementById('valFollowUp').innerText = myHealth.followUp || '등록된 사후관리 내용이 없습니다.';
+
+                // 💡 상담 대상 여부 강조 효과
+                if (myHealth.counseling === '대상') {
+                    document.getElementById('valCounseling').innerHTML = '<span style="color:#d32f2f; font-weight:bold;">대상 (O) - 보건관리자 상담 요망</span>';
+                } else if (myHealth.counseling === '비대상') {
+                    document.getElementById('valCounseling').innerHTML = '<span style="color:#2e7d32; font-weight:bold;">비대상 (X)</span>';
+                } else {
+                    document.getElementById('valCounseling').innerHTML = '<span style="color:#888;">미정</span>';
+                }
+
+                let baseDate = null;
+                let dueType = '';
+
+                // 6개월 / 1년 판단 로직
+                if (myHealth.lastDate) {
+                    baseDate = new Date(myHealth.lastDate);
+                    baseDate.setFullYear(baseDate.getFullYear() + 1);
+                    dueType = '정기 특수검진 (1년 주기)';
+                    document.getElementById('dueDateTitle').innerText = '🚨 다음 특수건강검진 도래일 (정기)';
+                } else if (myHealth.firstDate) {
+                    baseDate = new Date(myHealth.firstDate);
+                    baseDate.setMonth(baseDate.getMonth() + 6);
+                    dueType = '배치 후 건강검진 (6개월 이내)';
+                    document.getElementById('dueDateTitle').innerText = '🚨 다음 특수건강검진 도래일 (배치 후)';
+                }
+
+                if(baseDate) {
+                    const dueStr = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
+                    document.getElementById('valDueDate').innerHTML = `${dueStr}<br><span style="font-size:14px; color:#d32f2f;">[${dueType}]</span>`;
+
+                    const diffDays = Math.ceil((baseDate - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diffDays < 0) {
+                        document.getElementById('valDday').innerHTML = `<strong style="color:red;">검진 기한이 ${Math.abs(diffDays)}일 지났습니다! 신속히 수검하세요.</strong>`;
+                    } else {
+                        document.getElementById('valDday').innerHTML = `다음 검진 기한까지 <strong>D-${diffDays}</strong> 남았습니다.`;
+                    }
+                } else {
+                    document.getElementById('valDueDate').innerText = '검진일 정보 없음';
+                }
+            } else {
+                document.getElementById('noDataArea').style.display = 'block';
+            }
+        }
+        window.onload = loadHealthData;
+    </script>
+</body>
+</html>

@@ -27,6 +27,10 @@
         .btn-view { background: #b0268d; color: white; }
 
         .tag-badge { background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 6px; border: 1px solid #ffcdd2; display: inline-block; margin-bottom: 4px; }
+
+        /* 💡 추가된 인라인 뷰어용 스타일 */
+        .inline-viewer-row { background: #faf8fc; }
+        .inline-viewer-container { padding: 15px; border: 2px solid #b0268d; border-radius: 8px; background: #2a2a2e; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -49,14 +53,8 @@
             <thead><tr><th style="width: 15%;">화학물질명</th><th style="width: 12%;">CAS No.</th><th style="width: 13%;">공급업체</th><th style="width: 30%;">주요 유해·위험성 태그</th><th style="width: 30%;">자료 열람 (선택)</th></tr></thead>
             <tbody id="msdsListBody"></tbody>
         </table>
-
-        <div id="pdfViewerArea" style="display:none; background:#2a2a2e; padding:20px; border-radius:12px; margin-top:20px;">
-            <div style="display:flex; justify-content:space-between; color:#fff; margin-bottom:10px;">
-                <h3 id="viewingDocTitle" style="color:#fee500;">📄 MSDS 뷰어</h3>
-                <button onclick="closeViewer()" style="background:#e53935; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">✕ 닫기</button>
-            </div>
-            <iframe id="pdfFrame" style="width:100%; height:850px; border:none; background:#fff; border-radius:8px;"></iframe>
-        </div>
+        
+        <!-- 💡 기존에 맨 밑에 있던 pdfViewerArea는 삭제했습니다. -->
     </div>
 
     <script>
@@ -84,11 +82,12 @@
             tbody.innerHTML = list.map(m => {
                 const tagsHtml = m.tags ? m.tags.map(t => `<span class="tag-badge">⚠️ ${t}</span>`).join('') : '';
                 
-                // 💡 CAS 번호에 쉼표가 있으면 줄바꿈 처리 (안전한 방식)
+                // CAS 번호 줄바꿈 처리
                 const formattedCas = m.cas ? m.cas.split(' ').join(' <br>') : '-';
 
-                const btnMsds = m.fileUrl ? `<button class="btn-action btn-view" style="margin-bottom:4px; padding:6px 12px;" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS')">📄 MSDS 보기</button>` : '';
-                const btnGuide = m.guideUrl ? `<button class="btn-action" style="background:#ff9800; color:#fff; padding:6px 12px;" onclick="previewPdf('${m.guideUrl}', '${m.name} 공정별 관리요령')">📋 공정별 관리요령 보기</button>` : '';
+                // 💡 버튼에 this를 추가하여 현재 클릭한 요소를 함수로 전달합니다!
+                const btnMsds = m.fileUrl ? `<button class="btn-action btn-view" style="margin-bottom:4px; padding:6px 12px;" onclick="previewPdf('${m.fileUrl}', '${m.name} MSDS', this)">📄 MSDS 보기</button>` : '';
+                const btnGuide = m.guideUrl ? `<button class="btn-action" style="background:#ff9800; color:#fff; padding:6px 12px;" onclick="previewPdf('${m.guideUrl}', '${m.name} 공정별 관리요령', this)">📋 공정별 관리요령 보기</button>` : '';
 
                 return `
                 <tr>
@@ -106,14 +105,39 @@
             }).join('');
         }
 
-        function previewPdf(fileUrl, docTitle) {
-            document.getElementById('viewingDocTitle').innerText = '📄 ' + docTitle;
-            document.getElementById('pdfFrame').src = fileUrl;
-            document.getElementById('pdfViewerArea').style.display = 'block';
-            setTimeout(() => { window.scrollTo({ top: document.getElementById('pdfViewerArea').offsetTop - 50, behavior: 'smooth' }); }, 100);
+        // 💡 클릭한 항목 바로 밑에 뷰어를 생성하는 새로운 함수
+        function previewPdf(fileUrl, docTitle, buttonElement) {
+            // 이미 열려있는 다른 인라인 뷰어가 있다면 닫기
+            const existingViewer = document.getElementById('dynamicInlineViewer');
+            if (existingViewer) existingViewer.remove();
+
+            // 클릭한 버튼이 있는 현재 행(tr) 찾기
+            const currentRow = buttonElement.closest('tr');
+
+            // 바로 아래에 삽입할 뷰어 행(tr) 생성
+            const viewerRow = document.createElement('tr');
+            viewerRow.id = 'dynamicInlineViewer';
+            viewerRow.className = 'inline-viewer-row';
+            viewerRow.innerHTML = `
+                <td colspan="5">
+                    <div class="inline-viewer-container">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h3 style="color:#fee500; margin:0;">📄 ${docTitle}</h3>
+                            <button onclick="closeViewer()" style="background:#e53935; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">✕ 닫기</button>
+                        </div>
+                        <iframe src="${fileUrl}" style="width:100%; height:850px; border:none; background:#fff; border-radius:8px;"></iframe>
+                    </div>
+                </td>
+            `;
+
+            // 클릭한 행 바로 다음에 뷰어 행 끼워넣기 (화면 강제 스크롤 없음!)
+            currentRow.parentNode.insertBefore(viewerRow, currentRow.nextSibling);
         }
-        function closeViewer() { 
-            document.getElementById('pdfViewerArea').style.display = 'none'; document.getElementById('pdfFrame').src = ''; 
+
+        // 💡 인라인 뷰어 닫기 함수
+        function closeViewer() {
+            const viewer = document.getElementById('dynamicInlineViewer');
+            if (viewer) viewer.remove();
         }
 
         window.onload = renderMsdsList;

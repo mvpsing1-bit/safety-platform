@@ -161,6 +161,24 @@
         </div>
     </div>
 
+    <!-- 💡 건강검진 로그인 팝업창 -->
+    <div id="healthLoginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:#fff; padding:40px; border-radius:16px; width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2); border-top:8px solid #b0268d; position:relative;">
+            <button onclick="closeHealthLogin()" style="position:absolute; top:15px; right:20px; background:none; border:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+            <h2 style="color:#b0268d; margin-bottom:10px;">🩺 건강검진 대상 조회</h2>
+            <p style="font-size:14px; color:#666; margin-bottom:24px;">개인정보 보호를 위해 로그인이 필요합니다.</p>
+            <div style="text-align:left; margin-bottom:15px;">
+                <label style="font-size:13px; font-weight:bold; color:#333; display:block; margin-bottom:5px;">사번 (ID)</label>
+                <input type="text" id="healthUserId" placeholder="사번을 입력하세요" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; font-size:15px;">
+            </div>
+            <div style="text-align:left; margin-bottom:25px;">
+                <label style="font-size:13px; font-weight:bold; color:#333; display:block; margin-bottom:5px;">비밀번호</label>
+                <input type="password" id="healthUserPw" placeholder="비밀번호를 입력하세요" style="width:100%; padding:12px; border:1px solid #ccc; border-radius:8px; font-size:15px;" onkeypress="if(event.key==='Enter') attemptHealthLogin()">
+            </div>
+            <button onclick="attemptHealthLogin()" style="width:100%; background:#b0268d; color:#fff; border:none; padding:14px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;">조회하기</button>
+        </div>
+    </div>
+
     <script>
         async function fetchDB() {
             try { const res = await fetch('/api/db'); return await res.json(); } 
@@ -170,7 +188,7 @@
             await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null }) });
         }
 
-        // 💡 [완벽 복원] 사진에 있는 커스텀 메뉴 100% 일치 적용!
+        // 💡 수정됨: 진짜 시스템 기본 메뉴 세팅 (안전인증서, Leak monitoring 포함 / 작업환경 측정결과 제외)
         const customMenus = {
             '안전': [
                 { title: '안전보건 경영방침', desc: '대표이사 경영방침 및 목표', icon: '📜' },
@@ -181,19 +199,20 @@
                 { title: '위험성평가표', desc: '공정별 위험요인 평가 내역', icon: '⚠️' },
                 { title: '비상연락망', desc: '사내/사외 비상 연락처', icon: '📞' },
                 { title: "Today's DRI", desc: '위험작업 확인', icon: '📄' },
-                { title: 'TBM', desc: 'Tool Box Meeting', icon: '📄' }
+                { title: 'TBM', desc: 'Tool Box Meeting', icon: '📄' },
+                { title: '안전인증서', desc: '안전인증서 열람 및 관리', icon: '📜' }
             ],
             '보건': [
                 { title: 'MSDS 및 관리요령 즉시조회', desc: 'MSDS 및 공정별 관리요령 검색 열람', icon: '🧪' },
-                { title: '작업환경 측정결과', desc: '유해인자 측정 보고서', icon: '📊' },
-                { title: '근로자 건강관리', desc: '특수/일반 건강검진 안내', icon: '🏥' },
+                { title: '근로자 건강관리 (건강검진)', desc: '건강검진 대상 여부 확인', icon: '🏥' },
                 { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
             ],
             '환경': [
                 { title: '환경경영방침', desc: '사내 환경 방침 및 목표', icon: '🌿' },
                 { title: '온실가스 및 배출량', desc: '탄소 배출 및 에너지 관리', icon: '🏭' },
                 { title: '대기·수질 오염관리', desc: '방지시설 모니터링 및 인허가', icon: '💧' },
-                { title: '폐기물 성상별 관리', desc: '지정/일반 폐기물 처리 절차', icon: '♻️' }
+                { title: '폐기물 성상별 관리', desc: '지정/일반 폐기물 처리 절차', icon: '♻️' },
+                { title: 'Leak monitoring', desc: '누출 모니터링 시스템', icon: '🔍' }
             ],
             '교육': [
                 { title: '안전보건 교육영상', desc: '작업 전 시청하는 교육 영상', icon: '🎬' },
@@ -219,41 +238,24 @@
         function goDetail(catTitle) {
             if (!catTitle) return;
             
-            if (catTitle.includes('경영방침')) {
-                location.href = '/policy';
-            } 
-            else if (catTitle.includes('법령')) {
-                location.href = '/law';
-            } 
-            // 💡 [여기가 추가된 부분입니다!] 위험성평가 메뉴 클릭 시 완벽하게 risk.ejs로 이동!
-            else if (catTitle.includes('위험성평가')) {
-                location.href = '/risk';
-            }
-            else if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) { 
-                location.href = '/notice';  
-            } else if (catTitle === '보호구 관리') { 
-                location.href = '/ppe';     
-            } else if (catTitle.toUpperCase().includes('DRI') || catTitle.includes("Today's DRI")) { 
-                location.href = '/dri';     
-            } else if (catTitle.includes('조직도') || catTitle.includes('안전보건 조직도')) { 
-                location.href = '/org';     
-            } else if (catTitle.includes('위원회') || catTitle.includes('산업안전보건위원회')) { 
-                location.href = '/committee'; 
-            } else if (catTitle.includes('연락망')) { 
-                location.href = '/contact'; 
-            } else if (catTitle.includes('비상대응') || catTitle === '비상 매뉴얼') { 
-                location.href = '/emergency'; 
-            } else if (catTitle.includes('인증서')) {
-                location.href = '/cert';   
-            } else { 
-                location.href = '/view?cat=' + encodeURIComponent(catTitle); 
-            }
+            if (catTitle.includes('경영방침')) { location.href = '/policy'; } 
+            else if (catTitle.includes('법령')) { location.href = '/law'; } 
+            else if (catTitle.includes('위험성평가')) { location.href = '/risk'; }
+            else if (catTitle === '안전 공지사항' || catTitle.includes('공지사항')) { location.href = '/notice'; }
+            else if (catTitle === '보호구 관리') { location.href = '/ppe'; }
+            else if (catTitle.toUpperCase().includes('DRI') || catTitle.includes("Today's DRI")) { location.href = '/dri'; }
+            else if (catTitle.includes('조직도') || catTitle.includes('안전보건 조직도')) { location.href = '/org'; }
+            else if (catTitle.includes('위원회') || catTitle.includes('산업안전보건위원회')) { location.href = '/committee'; }
+            else if (catTitle.includes('연락망')) { location.href = '/contact'; }
+            else if (catTitle.includes('비상대응') || catTitle === '비상 매뉴얼') { location.href = '/emergency'; }
+            else if (catTitle.includes('인증서')) { location.href = '/cert'; }
+            else if (catTitle.includes('건강관리') || catTitle.includes('건강검진')) { openHealthLogin(); }
+            else { location.href = '/view?cat=' + encodeURIComponent(catTitle); }
         }
 
         async function renderDashboardMenus() {
             const db = await fetchDB();
 
-            // 1. 사이트 텍스트 세팅
             const savedText = db['esol_site_texts'];
             if (savedText) {
                 const config = JSON.parse(savedText);
@@ -264,7 +266,6 @@
                 if (config.subText) document.getElementById('headerSubText').innerText = config.subText;
             }
 
-            // 2. 공지사항 세팅
             const noticeSaved = db['esol_notices'];
             const noticeList = noticeSaved ? JSON.parse(noticeSaved) : defaultNotices;
             const noticeContainer = document.getElementById('mainNoticeList');
@@ -280,7 +281,7 @@
                 `).join('');
             }
 
-            // 3. 메뉴 데이터 및 자동 복구 로직
+            // 💡 수정됨: 강제로 메뉴를 덮어씌우는 악성 로직(TBM 유무 체크 등) 완전 제거
             let menusStr = db['esol_menu_structure'];
             let menus;
             if (!menusStr) {
@@ -288,11 +289,6 @@
                 menus = customMenus;
             } else {
                 menus = JSON.parse(menusStr);
-                // 💡 만약 사용자의 TBM 메뉴가 날아갔다면 사진 버전으로 덮어써서 복원해줍니다!
-                if (!menus['안전'].some(m => m.title === 'TBM')) {
-                    menus = customMenus;
-                    await saveDB('esol_menu_structure', menus);
-                }
             }
 
             const mapping = {
@@ -308,7 +304,6 @@
                 if (!targetEl) continue;
                 const items = menus[key] || [];
                 
-                // 💡 여기서 filter를 사용해 MSDS/관리요령 관련 메뉴는 메인 화면에서 뺍니다!
                 const filteredItems = items.filter(item => 
                     !item.title.includes('MSDS') && !item.title.includes('관리요령')
                 );
@@ -321,6 +316,35 @@
             }
         }
 
+        // 💡 건강검진 로그인 팝업 관련 함수
+        function openHealthLogin() {
+            document.getElementById('healthUserId').value = '';
+            document.getElementById('healthUserPw').value = '';
+            document.getElementById('healthLoginModal').style.display = 'flex';
+        }
+
+        function closeHealthLogin() {
+            document.getElementById('healthLoginModal').style.display = 'none';
+        }
+
+        async function attemptHealthLogin() {
+            const id = document.getElementById('healthUserId').value.trim();
+            const pw = document.getElementById('healthUserPw').value.trim();
+            
+            if(!id || !pw) return alert('사번과 비밀번호를 모두 입력해주세요.');
+
+            const db = await fetchDB();
+            const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
+            const matchedUser = users.find(u => u.empNo === id && u.pw === pw);
+
+            if (matchedUser) {
+                window.location.href = `/health?userId=${id}`; 
+            } else {
+                alert('사번 또는 비밀번호가 일치하지 않습니다.');
+            }
+        }
+
+        // 🤖 AI 챗봇 스크립트
         function toggleAiChat(initialQuestion = '') {
             const win = document.getElementById('aiChatWindow');
             if (win.style.display === 'flex' && !initialQuestion) { win.style.display = 'none'; } 

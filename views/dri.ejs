@@ -159,6 +159,7 @@
             else { tableDiv.style.display = 'none'; icon.innerText = '▼ 펴기'; }
         }
 
+        // 💡 [핵심 교체] HTTP 사내망 환경에서도 서식을 유지하며 복사하는 강력한 2단 우회 함수!
         async function copyDriEmailByDate(targetDate) {
             const db = await fetchDB();
             const list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
@@ -178,7 +179,7 @@
 
             const emailHtml = `
                 <div style="font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 10pt; color: #333;">
-                    <p>안녕하세요.<br>환경안전팀 입니다.</p>
+                    <p>안녕하세요.<br>환경안전부서 입니다.</p>
                     <p>각 부서별 DRI(Daily Risk Inspection) 회의 결과, <strong>[${targetDate}]</strong> 위험작업 공유드립니다.<br>이후 돌발작업 발생 시 환경안전으로 연락 부탁드립니다.</p><br>
                     <table style="width: auto; max-width: 100%; border-collapse: collapse; font-size: 10pt;">
                         <thead style="background-color: #f4f5f9;"><tr><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">일시</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">부서</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">장소(설비)</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업시간</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업내용</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">위험요소</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">안전대책</th></tr></thead>
@@ -188,12 +189,66 @@
                 </div>
             `;
 
-            const blob = new Blob([emailHtml], { type: 'text/html' });
-            const clipboardItem = new ClipboardItem({ 'text/html': blob });
+            // [1] 최신 API가 지원되고 (HTTPS/Localhost), 클립보드 아이템 기능이 있는 경우
+            if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== 'undefined') {
+                try {
+                    const blob = new Blob([emailHtml], { type: 'text/html' });
+                    const clipboardItem = new ClipboardItem({ 'text/html': blob });
+                    
+                    await navigator.clipboard.write([clipboardItem]);
+                    alert(`📧 ${targetDate} 기준의 메일 양식이 클립보드에 완벽하게 복사되었습니다! (Ctrl+V 로 붙여넣기 하세요)`);
+                    return; // 성공 시 여기서 종료
+                } catch (err) {
+                    console.log('최신 복사 방식 실패, 우회 방식 시도', err);
+                    // 실패 시 아래 구형 방식으로 떨어짐
+                }
+            }
             
-            navigator.clipboard.write([clipboardItem]).then(() => {
-                alert(`📧 ${targetDate} 기준의 메일 양식이 클립보드에 완벽하게 복사되었습니다!`);
-            }).catch(err => { alert('복사 권한 오류가 발생했습니다.'); });
+            // [2] 사내망 HTTP 환경이거나 최신 API가 막힌 경우 동작하는 구형 우회 방식 (Fallback)
+            fallbackCopyRichText(emailHtml, targetDate);
+        }
+
+        // 💡 서식(테이블, 글자색)을 그대로 유지하면서 배경색 찌꺼기를 없앤 완벽한 우회 함수!
+        function fallbackCopyRichText(htmlContent, targetDate) {
+            // 1. 화면 밖 안 보이는 곳에 아주 작은 임시 영역 생성 (복사 이벤트를 발생시키기 위한 미끼)
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = "copy"; 
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            document.body.appendChild(tempDiv);
+
+            // 2. 해당 영역을 선택(드래그) 상태로 만듦
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(tempDiv);
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            // 💡 3. 핵심! 브라우저가 멋대로 화면(배경색)을 복사하려는 순간 낚아채서, 깨끗한 HTML만 클립보드에 꽂아 넣음!
+            function copyHandler(event) {
+                event.clipboardData.setData('text/html', htmlContent);
+                event.preventDefault(); // 기본 복사 동작(배경색이 묻어가는 현상)을 완벽 차단
+            }
+
+            // 복사 이벤트 낚아채기 시작
+            document.addEventListener('copy', copyHandler);
+
+            try {
+                // 강제 복사 명령 실행 (이 순간 위의 copyHandler가 작동하며 깨끗한 내용만 복사됨)
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert(`📧 ${targetDate} 기준의 메일 양식이 복사되었습니다!\n아웃룩이나 메일에 붙여넣기(Ctrl+V) 하세요.`);
+                } else {
+                    alert('복사에 실패했습니다. 브라우저 보안 설정을 확인해 주세요.');
+                }
+            } catch (err) {
+                alert('복사 기능을 지원하지 않는 브라우저입니다.');
+            } finally {
+                // 4. 작업이 끝나면 낚아채기 종료 및 임시 박스 흔적 지우기
+                document.removeEventListener('copy', copyHandler);
+                selection.removeAllRanges();
+                document.body.removeChild(tempDiv);
+            }
         }
 
         window.onload = () => renderDriSection(1);

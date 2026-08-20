@@ -13,7 +13,7 @@
         .container { max-width: 1500px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
         .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; }
         .doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px; }
-        .doc-table th, .doc-table td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; font-size: 15px; vertical-align: middle; }
+        .doc-table th, .doc-table td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; vertical-align: middle; }
         .doc-table th { background: #f8f5fc; color: #4a0082; font-weight: bold; }
         .btn-action { padding: 8px 14px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-right: 6px; transition: 0.2s; }
         .btn-action:hover { opacity: 0.9; }
@@ -32,7 +32,8 @@
         .user-auth-inputs { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
         .user-auth-inputs input { padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
         .ppe-form-box { background: #faf8fc; border-radius: 12px; padding: 24px; margin-bottom: 30px; border: 1px solid #eae2f0; }
-        .ppe-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+        /* 💡 4칸 -> 5칸으로 비율 조정 */
+        .ppe-form-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr 2fr 1.5fr; gap: 10px; margin-bottom: 14px; }
         .ppe-form-grid input, .ppe-form-grid select { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
         .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 3000; }
         .signature-box { background: #fff; padding: 24px; border-radius: 16px; text-align: center; width: 420px; }
@@ -42,7 +43,7 @@
             body { background: #fff; padding: 0; margin: 0; font-size: 12pt; }
             .container { box-shadow: none; max-width: 100%; padding: 0; border: none; }
             .doc-table { border: 1px solid #000; margin-top: 15px; }
-            .doc-table th, .doc-table td { border: 1px solid #000 !important; padding: 8px; text-align: center; }
+            .doc-table th, .doc-table td { border: 1px solid #000 !important; padding: 8px; text-align: center; font-size: 11pt; }
             .doc-table th { background-color: #f0f0f0 !important; color: #000 !important; }
             .sign-img-print { display: block !important; max-height: 35px; margin: 0 auto; }
         }
@@ -68,8 +69,8 @@
         <div class="user-auth-box no-print">
             <div id="authStatusText"></div>
             <div class="user-auth-inputs" id="authInputGroup">
-                <input type="text" id="loginName" placeholder="성명 (ID)" style="width:150px;">
-                <input type="password" id="loginPw" placeholder="비밀번호" style="width:200px;">
+                <input type="text" id="loginId" placeholder="사번 (ID)" style="width:150px;" onkeypress="if(event.key==='Enter') userLogin()">
+                <input type="password" id="loginPw" placeholder="비밀번호" style="width:200px;" onkeypress="if(event.key==='Enter') userLogin()">
                 <button class="btn-action btn-view" onclick="userLogin()" style="margin:0; padding:10px 18px;">로그인</button>
             </div>
             <div id="logoutBtnArea" style="display:none; margin-top:10px;"><button class="btn-action btn-delete" onclick="userLogout()">로그아웃</button></div>
@@ -78,12 +79,17 @@
         <div class="ppe-form-box no-print">
             <h3 style="color:#4a0082; margin-bottom:12px;">📝 2. 보호구 신청서 작성</h3>
             <div class="ppe-form-grid">
-                <input type="text" id="ppeDept" placeholder="부서명 (자동입력)" readonly style="background:#eee;">
-                <input type="text" id="ppeName" placeholder="신청자 성명 (자동입력)" readonly style="background:#eee;">
+                <input type="text" id="ppeDept" placeholder="부서명 (자동)" readonly style="background:#eee;">
+                <input type="text" id="ppeName" placeholder="성명 (자동)" readonly style="background:#eee;">
                 <select id="ppeType"></select>
                 <input type="text" id="ppePurpose" placeholder="신청 목적 (예: 노후 교체 / 신규 입사)">
+                <!-- 💡 사이즈 등 비고 입력란 추가 -->
+                <input type="text" id="ppeRemark" placeholder="비고 (사이즈 등 기입)">
             </div>
             <button class="btn-action btn-view" style="width:100%; height:45px; font-size:15px; background:#b0268d;" onclick="submitPpeRequest()">+ 보호구 신청서 제출하기</button>
+            <p style="text-align:center; font-size:13px; color:#d32f2f; margin-top:10px; font-weight:bold;">
+                💡 개인정보 보호를 위해 보호구 신청 완료 후 꼭 로그아웃 해주세요.
+            </p>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -94,12 +100,12 @@
             </div>
         </div>
         <table class="doc-table">
-            <thead><tr><th style="width:15%;">신청일시</th><th style="width:12%;">부서명</th><th style="width:15%;">신청자(사번)</th><th style="width:15%;">보호구 종류</th><th style="width:18%;">신청 목적</th><th style="width:10%;">지급 상태</th><th style="width:15%;">수령 확인 서명</th></tr></thead>
+            <!-- 💡 비고(사이즈) 열 추가 -->
+            <thead><tr><th style="width:12%;">신청일시</th><th style="width:10%;">부서명</th><th style="width:12%;">신청자(사번)</th><th style="width:14%;">보호구 종류</th><th style="width:16%;">신청 목적</th><th style="width:12%;">비고(사이즈)</th><th style="width:10%;">지급 상태</th><th style="width:14%;">수령 확인 서명</th></tr></thead>
             <tbody id="ppeListBody"></tbody>
         </table>
     </div>
 
-    <!-- 팝업 모달들 -->
     <div class="ppe-modal" id="ppeGuideModal">
         <div class="ppe-modal-box">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #4a0082; padding-bottom:12px;">
@@ -125,43 +131,40 @@
     </div>
 
     <script>
-        // 💡 서버 연동 함수
         async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
         async function saveDB(key, value) {
             await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null }) });
         }
 
-        const defaultPpeGuides = [
-            { process: '🧪 유해화학물질 취급공정', items: '보안경, 방독마스크, 내화학 장갑, 불침투성 보호복' },
-            { process: '🔥 용접 / 절단 작업', items: '용접면, 방진마스크, 용접용 가죽장갑, 안전화' },
-            { process: '🏗️ 고소작업 / 크레인', items: '안전모(ABEC종), 전체식 안전대(그네식), 안전화' }
-        ];
         const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
 
-        function openPpeGuideModal() { document.getElementById('ppeGuideModal').style.display = 'flex'; }
+        async function openPpeGuideModal() { 
+            await renderPpeGuides(); 
+            document.getElementById('ppeGuideModal').style.display = 'flex'; 
+        }
         function closePpeGuideModal() { document.getElementById('ppeGuideModal').style.display = 'none'; }
 
         async function renderPpeGuides() {
             const db = await fetchDB();
-            const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : defaultPpeGuides;
-            document.getElementById('ppeGuideContainer').innerHTML = guides.map(g => `<div class="ppe-card"><h4>${g.process}</h4><p><strong>필수 착용 지정 항목:</strong><br>${g.items}</p></div>`).join('');
+            const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [];
+            const container = document.getElementById('ppeGuideContainer');
+            if (guides.length === 0) {
+                container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; color:#888;">등록된 공정별 보호구 지침이 없습니다.</div>';
+            } else {
+                container.innerHTML = guides.map(g => `<div class="ppe-card"><h4>${g.process}</h4><p><strong>필수 착용 지정 항목:</strong><br>${g.items}</p></div>`).join('');
+            }
         }
 
         async function renderPpeSelectOptions() {
             const db = await fetchDB();
-            const options = db['esol_ppe_options'] ? JSON.parse(db['esol_ppe_options']) : defaultPpeOptions;
+            const options = db['esol_ppe_types'] ? JSON.parse(db['esol_ppe_types']) : defaultPpeOptions;
             let html = '<option value="">보호구 종류 선택</option>';
             options.forEach(opt => { html += `<option value="${opt}">${opt}</option>`; });
             document.getElementById('ppeType').innerHTML = html;
         }
 
-        async function getRegisteredUsers() {
-            const db = await fetchDB();
-            return db['esol_registered_users'] ? JSON.parse(db['esol_registered_users']) : [];
-        }
-
         function getUserSession() {
-            return JSON.parse(localStorage.getItem('esol_user_session') || 'null'); // 세션은 각자의 브라우저(컴퓨터)에 유지
+            return JSON.parse(localStorage.getItem('esol_user_session') || 'null'); 
         }
 
         function checkUserAuth() {
@@ -175,23 +178,25 @@
                 authGroup.style.display = 'none'; logoutArea.style.display = 'block';
                 document.getElementById('ppeDept').value = user.dept; document.getElementById('ppeName').value = user.name;
             } else {
-                statusText.innerHTML = `<h4 style="color:#4a0082; font-size:16px;">🔑 사용자 로그인</h4><p style="font-size:12px; color:#666; margin-top:2px;">아이디는 <strong>성명</strong>, 비밀번호를 입력하세요.</p>`;
+                statusText.innerHTML = `<h4 style="color:#4a0082; font-size:16px;">🔑 사용자 로그인</h4><p style="font-size:12px; color:#666; margin-top:2px;">사번(ID)과 비밀번호를 입력하세요.</p>`;
                 authGroup.style.display = 'flex'; logoutArea.style.display = 'none';
                 document.getElementById('ppeDept').value = ''; document.getElementById('ppeName').value = '';
             }
         }
 
         async function userLogin() {
-            const nameInput = document.getElementById('loginName').value.trim();
+            const idInput = document.getElementById('loginId').value.trim();
             const pwInput = document.getElementById('loginPw').value.trim();
-            if (!nameInput || !pwInput) return alert('입력해 주세요.');
+            if (!idInput || !pwInput) return alert('입력해 주세요.');
 
-            const users = await getRegisteredUsers();
-            const matchedUser = users.find(u => u.name === nameInput && u.pw === pwInput);
-            if (!matchedUser) return alert('등록되지 않은 계정이거나 비밀번호가 불일치합니다.');
+            const db = await fetchDB();
+            const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
+            const matchedUser = users.find(u => u.empNo === idInput && u.pw === pwInput);
+            
+            if (!matchedUser) return alert('등록되지 않은 사번이거나 비밀번호가 불일치합니다.');
 
             localStorage.setItem('esol_user_session', JSON.stringify({ dept: matchedUser.dept, name: matchedUser.name, empNo: matchedUser.empNo }));
-            document.getElementById('loginName').value = ''; document.getElementById('loginPw').value = '';
+            document.getElementById('loginId').value = ''; document.getElementById('loginPw').value = '';
             alert(`${matchedUser.name}님 로그인 성공!`); checkUserAuth();
         }
 
@@ -216,6 +221,8 @@
 
             const type = document.getElementById('ppeType').value;
             const purpose = document.getElementById('ppePurpose').value.trim();
+            const remark = document.getElementById('ppeRemark').value.trim(); // 💡 비고(사이즈) 값 가져오기
+
             if (!type || !purpose) return alert('보호구 종류와 신청 목적을 입력하세요.');
 
             const db = await fetchDB();
@@ -223,10 +230,13 @@
             const now = new Date();
             const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-            requests.unshift({ id: Date.now(), date: dateStr, month: dateStr.substring(0, 7), dept: user.dept, name: user.name, empNo: user.empNo, type: type, purpose: purpose, status: '지급 대기', signature: null });
+            // 💡 DB에 저장할 때 remark(비고) 항목 추가
+            requests.unshift({ id: Date.now(), date: dateStr, month: dateStr.substring(0, 7), dept: user.dept, name: user.name, empNo: user.empNo, type: type, purpose: purpose, remark: remark, status: '지급 대기', signature: null });
             await saveDB('esol_ppe_requests', requests);
             
-            document.getElementById('ppeType').value = ''; document.getElementById('ppePurpose').value = '';
+            document.getElementById('ppeType').value = ''; 
+            document.getElementById('ppePurpose').value = '';
+            document.getElementById('ppeRemark').value = ''; // 작성칸 비우기
             alert('보호구 신청이 완료되었습니다.'); renderPpeList();
         }
 
@@ -238,18 +248,19 @@
             const filtered = requests.filter(r => r.month === selectedMonth);
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999; padding:25px;">해당 월에 신청/지급된 내역이 없습니다.</td></tr>`; return;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#999; padding:25px;">해당 월에 신청/지급된 내역이 없습니다.</td></tr>`; return;
             }
 
+            // 💡 테이블에 비고(사이즈) 데이터 출력 추가
             tbody.innerHTML = filtered.map(r => `
                 <tr>
                     <td>${r.date}</td><td><strong>${r.dept}</strong></td><td>${r.name} (${r.empNo || '사번없음'})</td><td><span style="color:#b0268d; font-weight:bold;">${r.type}</span></td><td>${r.purpose}</td>
+                    <td style="color:#555; font-weight:bold;">${r.remark || '-'}</td>
                     <td>${r.status === '지급 완료' ? '<span style="color:green; font-weight:bold;">✅ 지급 완료</span>' : '<span style="color:#ff9800; font-weight:bold;">⏳ 지급 대기중</span>'}</td>
                     <td>${r.signature ? `<img src="${r.signature}" class="sign-img-print" style="height:35px; border:1px solid #ccc; border-radius:4px;">` : `<button class="btn-action btn-edit no-print" onclick="openSignModal(${r.id})">✍️ 수령 서명하기</button>`}</td>
                 </tr>`).join('');
         }
 
-        // 서명 캔버스 로직
         let currentSignId = null;
         const canvas = document.getElementById('signCanvas');
         const ctx = canvas.getContext('2d');
