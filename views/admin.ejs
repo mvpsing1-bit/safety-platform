@@ -966,7 +966,7 @@
             await renderDynamicSidebar();
         };
 
-        // 💡 [특수건강검진] 자동 계산 및 리스트 출력 로직 (소견 추가)
+        // 💡 [특수건강검진] 자동 계산 및 리스트 출력 로직 (아코디언 방식 적용)
         async function loadAdminHealthData() {
             const db = await fetchDB();
             const list = db['esol_special_health'] ? JSON.parse(db['esol_special_health']) : [];
@@ -1005,23 +1005,62 @@
                     dueDateStr += `<br><span style="font-size:11px; color:#888; background:#eee; padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${checkupLabel}</span>`;
                 }
 
-                const counselBadge = h.counseling === '대상' ? '<span style="color:#d32f2f; font-weight:bold;">대상</span>' : '<span style="color:#888;">-</span>';
+                let counselBadge = '<span style="color:#888;">-</span>';
+                if (h.counseling === '대상') {
+                    counselBadge = '<span style="color:#d32f2f; font-weight:bold;">대상</span>';
+                } else if (h.counseling === '비대상') {
+                    counselBadge = '<span style="color:#2e7d32; font-weight:bold;">비대상</span>';
+                }
+
+                // 줄바꿈이 있는 장문 텍스트를 화면에 예쁘게 출력하기 위한 처리
+                const safeCheckup = h.checkupResult ? h.checkupResult.replace(/\n/g, '<br>') : '<span style="color:#999; font-style:italic;">등록된 검진 소견이 없습니다.</span>';
+                const safeFollowUp = h.followUp ? h.followUp.replace(/\n/g, '<br>') : '<span style="color:#999; font-style:italic;">등록된 사후관리 조치사항이 없습니다.</span>';
 
                 return `
-                <tr>
+                <!-- 💡 메인 리스트 줄 (클릭 시 아코디언 작동) -->
+                <tr style="cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='transparent'" onclick="toggleHealthDetail('${h.id}')">
                     <td>${h.empNo}</td>
-                    <td style="font-weight:bold;">${h.name}</td>
+                    <td style="font-weight:bold; color:#4a0082;">${h.name} <span id="icon-health-${h.id}" style="font-size:11px; color:#888; margin-left:4px;">▼</span></td>
                     <td style="color:#b0268d;">${h.hazard}</td>
                     <td>${h.firstDate || '-'}</td>
                     <td>${h.lastDate || '-'}</td>
                     <td style="font-weight:bold; color:${dueColor}; line-height:1.4;">${dueDateStr}</td>
                     <td style="text-align:center;">${counselBadge}</td>
-                    <td style="text-align:center;">
+                    <td style="text-align:center;" onclick="event.stopPropagation();"> <!-- 클릭 이벤트 겹침 방지 -->
                         <button class="submit-btn" style="background:#ff9800; padding:4px 8px; font-size:12px;" onclick="editSpecialHealth('${h.id}')">수정</button>
                         <button class="submit-btn" style="background:#e53935; padding:4px 8px; font-size:12px;" onclick="deleteSpecialHealth('${h.id}')">삭제</button>
                     </td>
+                </tr>
+                <!-- 💡 숨겨진 상세 소견 아코디언 영역 -->
+                <tr id="detail-health-${h.id}" style="display:none; background:#faf8fc;">
+                    <td colspan="8" style="padding:20px; border-bottom:2px solid #eae2f0;">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; text-align:left;">
+                            <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                <h4 style="color:#4a0082; margin-bottom:8px; font-size:14px; border-bottom:1px solid #eee; padding-bottom:6px;">🩺 건강검진 소견</h4>
+                                <div style="font-size:13px; color:#444; line-height:1.6;">${safeCheckup}</div>
+                            </div>
+                            <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                                <h4 style="color:#2e7d32; margin-bottom:8px; font-size:14px; border-bottom:1px solid #eee; padding-bottom:6px;">💊 사후관리 소견 (조치사항)</h4>
+                                <div style="font-size:13px; color:#444; line-height:1.6;">${safeFollowUp}</div>
+                            </div>
+                        </div>
+                    </td>
                 </tr>`;
             }).join('');
+        }
+
+        // 💡 아코디언 열고 닫는 스위치 함수
+        function toggleHealthDetail(id) {
+            const detailRow = document.getElementById(`detail-health-${id}`);
+            const icon = document.getElementById(`icon-health-${id}`);
+            
+            if (detailRow.style.display === 'none') {
+                detailRow.style.display = 'table-row';
+                icon.innerText = '▲';
+            } else {
+                detailRow.style.display = 'none';
+                icon.innerText = '▼';
+            }
         }
 
         async function saveSpecialHealth() {
