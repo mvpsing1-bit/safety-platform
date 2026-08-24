@@ -74,12 +74,15 @@
 
     <header>
         <div class="logo-area">
-            <div class="brand-title" id="headerTitle">ESOL <span>환경안전보건 플랫폼</span></div>
+            <!-- 💡 이 줄이 변경되었습니다! (ESOL 글자 대신 로고 이미지 삽입) -->
+            <div class="brand-title" id="headerTitle" style="display: flex; align-items: center; gap: 12px;">
+                <img src="/esol_logo.png" alt="ESOL Logo" style="height: 38px;">
+                <span>환경안전보건 플랫폼</span>
+            </div>
         </div>
         <div style="display: flex; align-items: center; gap: 20px;">
             <div class="header-btns">
                 <button class="admin-btn" onclick="location.href='/admin'">⚙️ 관리자 페이지</button>
-                <button class="alarm-btn" onclick="alert('카톡 비상 알림 전송')">💬 비상 카톡 알림</button>
             </div>
             <div style="text-align: right; color: #666;">
                 <div style="font-size: 20px; font-weight: bold; color: #4a0082;" id="clock"></div>
@@ -261,7 +264,7 @@
                 const config = JSON.parse(savedText);
                 if (config.title) {
                     document.getElementById('sitePageTitle').innerText = config.title;
-                    document.getElementById('headerTitle').innerHTML = `ESOL <span>${config.title.replace('ESOL ', '')}</span>`;
+                    document.getElementById('headerTitle').innerHTML = `<img src="/esol_logo.png" alt="ESOL Logo" style="height:38px;"> <span>${config.title.replace(/ESOL\s?/g, '')}</span>`;
                 }
                 if (config.subText) document.getElementById('headerSubText').innerText = config.subText;
             }

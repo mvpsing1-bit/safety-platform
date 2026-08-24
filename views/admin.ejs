@@ -17,7 +17,11 @@
     </div>
 
     <header>
-        <h1>⚙️ ESOL 환경안전보건 플랫폼 관리자 시스템</h1>
+        <h1 style="display:flex; align-items:center; gap:12px;">
+            <!-- 💡 filter 속성을 추가해서 보라색 로고를 순백색으로 마법처럼 반전시킵니다! -->
+            <img src="/esol_logo.png" alt="ESOL Logo" style="height:35px; filter: brightness(0) invert(1);"> 
+            환경안전보건 플랫폼 관리자 시스템
+        </h1>
         <a href="/" class="back-btn">🖥️ 메인 화면으로 돌아가기</a>
     </header>
 
@@ -87,12 +91,16 @@
                             <option value="교육">🎓 교육 (Education)</option>
                             <option value="기타">📂 기타 (Others)</option>
                         </select>
-                        <select id="addMenuIcon" style="width:100px; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;">
+                        <select id="addMenuIcon" style="width:110px; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;">
                             <option value="📄">📄 문서</option><option value="📜">📜 방침</option><option value="⚖️">⚖️ 법령</option><option value="👥">👥 조직</option>
                             <option value="🚨">🚨 비상</option><option value="⚠️">⚠️ 위험</option><option value="📞">📞 연락</option><option value="📊">📊 통계</option>
                             <option value="🏥">🏥 보건</option><option value="🥽">🥽 보호구</option><option value="🌿">🌿 환경</option><option value="🏭">🏭 배출</option>
                             <option value="💧">💧 수계</option><option value="♻️">♻️ 폐기물</option><option value="🎬">🎬 영상</option><option value="📚">📚 교육</option>
                             <option value="📁">📁 폴더</option><option value="💡">💡 아이디어</option><option value="🧪">🧪 화학물질</option><option value="🔥">🔥 화기</option><option value="🏗️">🏗️ 공사</option>
+                            <option value="🔍">🔍 검색/관찰</option><option value="⚙️">⚙️ 설정/시스템</option><option value="🛠️">🛠️ 도구/관리</option><option value="🩺">🩺 진단/검진</option>
+                            <option value="💊">💊 사후/치료</option><option value="🧯">🧯 소방/소화기</option><option value="📢">📢 공지/알림</option><option value="💬">💬 소통/상담</option>
+                            <option value="🗓️">🗓️ 일정/달력</option><option value="⚡">⚡ 전기/감전</option><option value="🚧">🚧 주의/차단</option><option value="🔊">🔊 소음/진동</option>
+                            <option value="🛡️">🛡️ 방어/안전</option><option value="🗑️">🗑️ 삭제/휴지통</option>
                         </select>
                         <input type="text" id="addMenuTitle" placeholder="메뉴 이름" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="text" id="addMenuDesc" placeholder="설명 문구" style="width:250px; padding:10px; border:1px solid #ccc; border-radius:6px;">
@@ -632,7 +640,20 @@
         <div class="custom-modal-box">
             <div class="custom-modal-header"><h3 id="menuEditModalTitle">✏️ 메뉴 정보 수정</h3><button onclick="closeMenuEditModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
             <input type="hidden" id="editMenuCat" value=""><input type="hidden" id="editMenuIndex" value="-1">
-            <div class="form-group"><label>아이콘 선택</label><select id="editMenuIcon" style="width:100%; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;"><option value="📄">📄 문서</option></select></div>
+            <div class="form-group">
+                <label>아이콘 선택</label>
+                <select id="editMenuIcon" style="width:100%; padding:10px; font-size:14px; border:1px solid #ccc; border-radius:6px;">
+                    <option value="📄">📄 문서</option><option value="📜">📜 방침</option><option value="⚖️">⚖️ 법령</option><option value="👥">👥 조직</option>
+                    <option value="🚨">🚨 비상</option><option value="⚠️">⚠️ 위험</option><option value="📞">📞 연락</option><option value="📊">📊 통계</option>
+                    <option value="🏥">🏥 보건</option><option value="🥽">🥽 보호구</option><option value="🌿">🌿 환경</option><option value="🏭">🏭 배출</option>
+                    <option value="💧">💧 수계</option><option value="♻️">♻️ 폐기물</option><option value="🎬">🎬 영상</option><option value="📚">📚 교육</option>
+                    <option value="📁">📁 폴더</option><option value="💡">💡 아이디어</option><option value="🧪">🧪 화학물질</option><option value="🔥">🔥 화기</option><option value="🏗️">🏗️ 공사</option>
+                    <option value="🔍">🔍 검색/관찰</option><option value="⚙️">⚙️ 설정/시스템</option><option value="🛠️">🛠️ 도구/관리</option><option value="🩺">🩺 진단/검진</option>
+                    <option value="💊">💊 사후/치료</option><option value="🧯">🧯 소방/소화기</option><option value="📢">📢 공지/알림</option><option value="💬">💬 소통/상담</option>
+                    <option value="🗓️">🗓️ 일정/달력</option><option value="⚡">⚡ 전기/감전</option><option value="🚧">🚧 주의/차단</option><option value="🔊">🔊 소음/진동</option>
+                    <option value="🛡️">🛡️ 방어/안전</option><option value="🗑️">🗑️ 삭제/휴지통</option>
+                </select>
+            </div>
             <div class="form-group"><label>메뉴 이름</label><input type="text" id="editMenuTitleInput"></div>
             <div class="form-group"><label>설명 문구</label><input type="text" id="editMenuDescInput"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;"><button class="submit-btn" style="background:#888;" onclick="closeMenuEditModal()">취소</button><button class="submit-btn" onclick="saveMenuEditModal()">💾 저장</button></div>
@@ -774,7 +795,7 @@
         }
 
         async function deleteUserAccount(id) {
-            if (!confirm('이 계정을 삭제하시겠습니까?')) return;
+            if (!confirm('이 계문을 삭제하시겠습니까?')) return;
             const db = await fetchDB();
             let users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
             users = users.filter(u => u.id !== id);
@@ -1079,6 +1100,16 @@
             if (!empNo || !name || !hazard || !firstDate) return alert('사번, 이름, 유해인자, 최초 검진일은 필수 입력 사항입니다.');
 
             const db = await fetchDB();
+
+            // 💡 [핵심 추가] 구성원 계정 존재 여부 검사 로직
+            const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
+            const isUserExists = users.some(u => u.empNo === empNo);
+            
+            if (!isUserExists) {
+                return alert('⚠️ 등록된 계정이 없는 사번입니다!\n[👤 구성원 계정 관리] 메뉴에서 해당 인원의 계정을 먼저 생성해 주세요.');
+            }
+
+            // 계정이 확인되면 기존대로 저장 진행
             let list = db['esol_special_health'] ? JSON.parse(db['esol_special_health']) : [];
 
             if (editId) {
@@ -1095,7 +1126,7 @@
             await saveDB('esol_special_health', list);
             cancelSpHealthEdit();
             loadAdminHealthData();
-            alert('저장되었습니다.');
+            alert('특수건강검진 정보가 저장되었습니다.');
         }
 
         async function editSpecialHealth(id) {
