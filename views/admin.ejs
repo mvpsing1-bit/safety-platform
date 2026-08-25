@@ -4,6 +4,35 @@
     <meta charset="UTF-8">
     <title>ESOL 환경안전보건 플랫폼 - 관리자 시스템</title>
     <link rel="stylesheet" href="/css/admin.css">
+    <style>
+        /* 🔒 관리자 페이지 읽기 전용(Viewer) 모드 */
+        body.readonly-mode .btn-edit,
+        body.readonly-mode .btn-del,
+        body.readonly-mode .btn-move,
+        body.readonly-mode .submit-btn {
+            display: none !important;
+        }
+
+        /* onclick 속성에 저장, 삭제, 추가, 업로드 등이 들어간 버튼 강제 숨김 */
+        body.readonly-mode button[onclick*="save"],
+        body.readonly-mode button[onclick*="delete"],
+        body.readonly-mode button[onclick*="add"],
+        body.readonly-mode button[onclick*="upload"],
+        body.readonly-mode button[onclick*="move"],
+        body.readonly-mode button[onclick*="open"],
+        body.readonly-mode span[onclick*="fillNoWork"] {
+            display: none !important;
+        }
+
+        /* 검색창(#adminDriSearch)을 제외한 모든 입력창과 선택창 마우스 클릭(수정) 차단 */
+        body.readonly-mode input:not(#adminDriSearch),
+        body.readonly-mode textarea,
+        body.readonly-mode select {
+            pointer-events: none !important;
+            background-color: #f0f0f0 !important;
+            opacity: 0.7;
+        }
+    </style>
 </head>
 <body>
 
@@ -11,14 +40,13 @@
         <div class="login-box">
             <h2>⚙️ 관리자 인증</h2>
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">관리자 전용 비밀번호를 입력하세요.</p>
-            <input type="password" id="adminPw" placeholder="비밀번호 입력 (초기: 1234)" onkeypress="if(event.key==='Enter') checkPassword()">
+            <input type="password" id="adminPw" placeholder="비밀번호 입력" onkeypress="if(event.key==='Enter') checkPassword()">
             <button onclick="checkPassword()">로그인</button>
         </div>
     </div>
 
     <header>
         <h1 style="display:flex; align-items:center; gap:12px;">
-            <!-- 💡 filter 속성을 추가해서 보라색 로고를 순백색으로 마법처럼 반전시킵니다! -->
             <img src="/esol_logo.png" alt="ESOL Logo" style="height:35px; filter: brightness(0) invert(1);"> 
             환경안전보건 플랫폼 관리자 시스템
         </h1>
@@ -46,13 +74,55 @@
             </div>
 
             <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">장소(설비)</label><input type="text" id="editDriLocation" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></div>
-            <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">작업 내용</label><textarea id="editDriTask" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea></div>
+            
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:bold;">작업 내용 및 위험도</label>
+                <div style="display:flex; gap:8px; align-items:flex-start; margin-top:4px;">
+                    <textarea id="editDriTask" rows="2" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px; resize:vertical;"></textarea>
+                    <select id="editDriLevel" style="width:105px; padding:8px; height:51px; border:1px solid #ffcdd2; border-radius:6px; font-weight:bold; background:#fffbee; color:#d32f2f;">
+                        <option value="저위험">🟢 저위험</option>
+                        <option value="중위험">🟡 중위험</option>
+                        <option value="고위험">🔴 고위험</option>
+                    </select>
+                </div>
+            </div>
+
             <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">위험 요소</label><textarea id="editDriRisk" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea></div>
             <div style="margin-bottom:20px;"><label style="font-size:12px; font-weight:bold;">안전 대책</label><textarea id="editDriMeasure" rows="2" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea></div>
             
             <div style="display:flex; gap:10px;">
                 <button class="submit-btn" style="flex:1; background:#888;" onclick="document.getElementById('driEditModal').style.display='none'">취소</button>
                 <button class="submit-btn" style="flex:1; background:#4a0082;" onclick="saveDriEdit()">수정 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💡 안전인증서 전용 수정 팝업창 -->
+    <div class="custom-modal-overlay" id="certEditModal">
+        <div class="custom-modal" style="max-width: 500px;">
+            <h3 style="color:#00838f; border-bottom:2px solid #e0f7fa; padding-bottom:10px; margin-bottom:20px;">🪪 안전인증서 내용 수정</h3>
+            <input type="hidden" id="editCertId">
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1;"><label style="font-size:12px; font-weight:bold;">분류</label><select id="editCertCat" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></select></div>
+                <div style="flex:2;"><label style="font-size:12px; font-weight:bold;">제목</label><input type="text" id="editCertTitle" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></div>
+            </div>
+            
+            <div style="margin-bottom:15px;"><label style="font-size:12px; font-weight:bold;">등록일</label><input type="date" id="editCertDate" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></div>
+            
+            <div style="margin-bottom:15px; padding:10px; background:#f4f5f9; border-radius:8px;">
+                <label style="font-size:12px; font-weight:bold; color:#00838f;">📄 새로운 인증서 첨부 (선택 시 기존 파일 덮어쓰기)</label>
+                <input type="file" id="editCertFile" multiple style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px; margin-top:5px;">
+            </div>
+
+            <div style="margin-bottom:20px; padding:10px; background:#f4f5f9; border-radius:8px;">
+                <label style="font-size:12px; font-weight:bold; color:#e65100;">📸 새로운 제품 사진 (선택 시 기존 사진 덮어쓰기)</label>
+                <input type="file" id="editCertPhoto" accept="image/*" style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px; margin-top:5px;">
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <button class="submit-btn" style="flex:1; background:#888;" onclick="document.getElementById('certEditModal').style.display='none'">취소</button>
+                <button class="submit-btn" style="flex:1; background:#00838f;" onclick="saveCertEdit()">수정 저장</button>
             </div>
         </div>
     </div>
@@ -112,6 +182,67 @@
                     <thead><tr><th style="width: 12%;">소속 구획</th><th style="width: 8%; text-align:center;">아이콘</th><th style="width: 20%;">메뉴 이름</th><th style="width: 25%;">메뉴 설명 문구</th><th style="width: 15%;">순서 변경</th><th style="width: 10%;">구획 이동</th><th>관리</th></tr></thead>
                     <tbody id="adminMenuListBody"></tbody>
                 </table>
+            </div>
+
+            <!-- ✨ 탭17: 안전 TalkTalk 관리 -->
+            <div id="tab17" class="panel">
+                <h2 style="color:#009688; border-bottom: 2px solid #e0f2f1; margin-bottom: 20px;">💬 안전 TalkTalk (아차사고/제안) 관리</h2>
+                
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 접수된 TalkTalk 목록</h3>
+                <table>
+                    <thead><tr><th style="width:15%;">부서/성명</th><th style="width:35%;">내용</th><th style="width:15%;">등록 일시</th><th style="width:10%;">상태</th><th style="width:25%; text-align:center;">관리 및 조치달기</th></tr></thead>
+                    <tbody id="adminTalkListBody"></tbody>
+                </table>
+
+                <div class="custom-modal-overlay" id="talkEditModal">
+                    <div class="custom-modal" style="max-width: 500px;">
+                        <h3 style="color:#4a0082; border-bottom:2px solid #eae2f0; padding-bottom:10px; margin-bottom:20px;">✏️ 원본 게시글 수정</h3>
+                        <input type="hidden" id="editOriginalTalkId">
+                        
+                        <div style="display:flex; gap:10px; margin-bottom:15px;">
+                            <div><label style="font-size:12px; font-weight:bold;">부서</label><input type="text" id="editOriginalDept" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div><label style="font-size:12px; font-weight:bold;">성명</label><input type="text" id="editOriginalName" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        </div>
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:12px; font-weight:bold;">본문 내용</label>
+                            <textarea id="editOriginalContent" rows="4" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; resize:vertical;"></textarea>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <button class="submit-btn" style="flex:1; background:#888;" onclick="document.getElementById('talkEditModal').style.display='none'">취소</button>
+                            <button class="submit-btn" style="flex:1; background:#4a0082;" onclick="saveTalkEdit()">💾 수정 사항 저장</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-modal-overlay" id="talkReplyModal">
+                    <div class="custom-modal" style="max-width: 500px;">
+                        <h3 style="color:#009688; border-bottom:2px solid #e0f2f1; padding-bottom:10px; margin-bottom:20px;">🛠️ 조치 결과 (댓글) 등록</h3>
+                        <input type="hidden" id="replyTalkId">
+                        
+                        <div style="margin-bottom:15px;">
+                            <label style="font-size:12px; font-weight:bold;">진행 상태 변경 (3단계)</label>
+                            <select id="replyStatus" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-weight:bold;">
+                                <option value="조치 전">🚨 조치 전(대기)</option>
+                                <option value="조치 완료">✅ 조치 완료</option>
+                                <option value="해당없음">➖ 해당없음</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom:15px;">
+                            <label style="font-size:12px; font-weight:bold;">조치 내용 작성 (댓글)</label>
+                            <textarea id="replyContent" rows="3" placeholder="예: 해당 내용에 대하여 안전조치 완료하였습니다." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; resize:vertical;"></textarea>
+                        </div>
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:12px; font-weight:bold;">조치 결과 사진 첨부 (여러 장 가능)</label>
+                            <input type="file" id="replyFile" accept="image/*" multiple style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; background:#fff;">
+                        </div>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <button class="submit-btn" style="flex:1; background:#888;" onclick="document.getElementById('talkReplyModal').style.display='none'">취소</button>
+                            <button class="submit-btn" style="flex:1; background:#009688;" onclick="saveTalkReply()">💾 결과 등록</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 탭12: 경영방침 관리 -->
@@ -196,49 +327,64 @@
                 </table>
             </div>
 
-            <!-- 탭15: 안전인증서 관리 -->
+            <!-- 💡 복구 및 업그레이드 완료된 탭15: 안전인증서 관리 -->
             <div id="tab15" class="panel">
-                <h2 style="color:#00838f; border-bottom: 2px solid #e0f7fa; margin-bottom: 20px;">📜 안전인증서 관리 (다중 첨부 및 분류)</h2>
+                <h2 style="color:#00838f; border-bottom: 2px solid #e0f7fa; margin-bottom: 20px;">🪪 안전인증서 관리</h2>
                 
-                <div style="background:#e0f7fa; border:1px solid #00838f; padding:20px; border-radius:12px; margin-bottom:24px;">
-                    <h3 style="color:#00838f; font-size:16px; margin-bottom:12px;">📂 1. 인증서 분류(섹션) 관리</h3>
-                    <div style="display:flex; gap:10px; margin-bottom:15px; max-width:400px;">
-                        <input type="text" id="newCertCatInput" placeholder="새로운 분류 입력 (예: 방호장치)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
-                        <button class="submit-btn" style="background:#00838f;" onclick="addCertCategory()">+ 분류 추가</button>
+                <div style="background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-bottom:25px; border:1px solid #eae2f0;">
+                    <h3 style="font-size:16px; margin-bottom:15px; color:#333;">📌 분류 카테고리 관리</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <input type="text" id="newCertCatInput" placeholder="새로운 분류명 입력 (예: 보호구, 방호장치)" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <button class="submit-btn" style="background:#00838f; padding:10px 20px;" onclick="addCertCategory()">분류 추가</button>
                     </div>
-                    <div id="adminCertCatTags" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                    <div id="adminCertCatTags" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
                 </div>
 
-                <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
-                    <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📤 2. 신규 안전인증서 등록</h3>
-                    <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:10px;">
+                <div style="background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-bottom:25px; border:1px solid #eae2f0;">
+                    <h3 style="font-size:16px; margin-bottom:15px; color:#333;">➕ 신규 안전인증서 등록</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr 1fr; gap:15px; margin-bottom:15px;">
                         <div>
-                            <label style="font-size:12px; font-weight:bold; color:#666;">분류 선택</label>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">분류</label>
                             <select id="certRevCat" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></select>
                         </div>
                         <div>
-                            <label style="font-size:12px; font-weight:bold; color:#666;">인증서명(제목)</label>
-                            <input type="text" id="certRevTitle" placeholder="예: KCs 안전인증서 (안전모)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                            <label style="font-size:12px; font-weight:bold; color:#666;">제목 (인증서명)</label>
+                            <input type="text" id="certRevTitle" placeholder="예: 안전모 (A형)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         </div>
-                    </div>
-                    <div style="display:grid; grid-template-columns: 1fr 2fr auto; gap:10px; align-items:end;">
                         <div>
-                            <label style="font-size:12px; font-weight:bold; color:#666;">등록(발급) 일자</label>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">등록 일자</label>
                             <input type="date" id="certRevDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         </div>
-                        <div>
-                            <label style="font-size:12px; font-weight:bold; color:#666;">첨부파일 (다중 선택 가능 - PDF, 이미지)</label>
-                            <input type="file" id="certRevFile" accept=".pdf, image/jpeg, image/png" multiple style="width:100%; padding:8px; background:#fff; border:1px solid #ccc; border-radius:6px;">
-                        </div>
-                        <button class="submit-btn" style="padding:10px 30px; height:40px; background:#333;" onclick="uploadCertRevision()">+ 자료 등록</button>
                     </div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:15px;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">📄 인증서 파일 첨부 (여러장 가능)</label>
+                            <input type="file" id="certRevFile" multiple style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#666;">📸 제품 사진 첨부 (선택 사항)</label>
+                            <input type="file" id="certRevPhoto" accept="image/*" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+                    </div>
+                    <button class="submit-btn" style="background:#00838f; width:100%; height:45px; font-size:16px;" onclick="uploadCertRevision()">🚀 인증서 및 제품 사진 등록하기</button>
                 </div>
 
-                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 안전인증서 목록</h3>
-                <table>
-                    <thead><tr><th style="width: 15%;">분류</th><th style="width: 35%;">인증서명(제목)</th><th style="width: 15%;">등록 일자</th><th style="width: 15%;">첨부 파일</th><th style="width: 20%; text-align:center;">관리</th></tr></thead>
-                    <tbody id="adminCertHistoryBody"></tbody>
-                </table>
+                <div style="background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05); border:1px solid #eae2f0;">
+                    <h3 style="font-size:16px; margin-bottom:15px; color:#333;">📑 등록된 안전인증서 목록</h3>
+                    <table style="width:100%; border-collapse:collapse; text-align:center;">
+                        <thead style="background:#f8f5fc;">
+                            <tr>
+                                <th style="padding:10px; border-bottom:2px solid #eae2f0; width:15%;">분류</th>
+                                <th style="padding:10px; border-bottom:2px solid #eae2f0; width:35%;">인증서명(제목)</th>
+                                <th style="padding:10px; border-bottom:2px solid #eae2f0; width:15%;">등록 일자</th>
+                                <th style="padding:10px; border-bottom:2px solid #eae2f0; width:15%;">첨부 파일</th>
+                                <th style="padding:10px; border-bottom:2px solid #eae2f0; width:20%;">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCertHistoryBody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- 탭8: 조직도 관리 -->
@@ -385,10 +531,17 @@
                         </div>
                         <div>
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <label style="font-size:12px; font-weight:bold; color:#666; margin:0;">작업 내용</label>
+                                <label style="font-size:12px; font-weight:bold; color:#666; margin:0;">작업 내용 및 위험도</label>
                                 <span style="font-size:11px; color:#fff; background:#1976d2; padding:3px 8px; border-radius:12px; cursor:pointer; font-weight:bold;" onclick="fillNoWork()">💤 특이사항(작업) 없음 일괄 입력</span>
                             </div>
-                            <input type="text" id="driTask" placeholder="작업 내용 (특이사항 없을 시 '없음')" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="driTask" placeholder="작업 내용 (특이사항 없을 시 '없음')" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                                <select id="driLevel" style="width:105px; padding:10px; border:1px solid #ffcdd2; border-radius:6px; font-weight:bold; background:#fffbee; color:#d32f2f;">
+                                    <option value="저위험">🟢 저위험</option>
+                                    <option value="중위험">🟡 중위험</option>
+                                    <option value="고위험">🔴 고위험</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom:15px;">
@@ -469,13 +622,12 @@
                 </table>
             </div>
 
-            <!-- 💡 탭4: 계정 관리 (수정 기능 완벽 적용) -->
+            <!-- 💡 탭4: 계정 관리 -->
             <div id="tab4" class="panel">
                 <h2>👤 현장 구성원 계정 관리</h2>
                 <div class="form-group" style="background:#f8f5fc; padding:20px; border-radius:10px;">
                     <div id="userFormTitle" style="font-weight:bold; color:#4a0082; margin-bottom:10px; font-size:15px;">➕ 신규 계정 등록</div>
                     
-                    <!-- 수정에 사용할 숨겨진 ID 값 -->
                     <input type="hidden" id="editUserTargetId" value="">
                     
                     <div style="display:flex; gap:10px;">
@@ -542,7 +694,7 @@
                 </div>
             </div>
 
-            <!-- 💡 탭16: 특수건강검진 관리 (도래일 자동 계산 및 소견 관리) -->
+            <!-- 💡 복구 완료된 탭16: 특수건강검진 관리 -->
             <div id="tab16" class="panel">
                 <h2 style="color:#2e7d32; border-bottom: 2px solid #e8f5e9; margin-bottom: 20px;">🏥 특수건강검진 대상자 및 수검 주기 관리</h2>
                 
@@ -556,7 +708,6 @@
                         <div><label style="font-size:12px; font-weight:bold; color:#555;">취급 유해인자</label><input type="text" id="spHazard" placeholder="예: 소음, 분진, 톨루엔" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
                     </div>
 
-                    <!-- 💡 추가된 소견 작성 영역 -->
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
                         <div>
                             <label style="font-size:12px; font-weight:bold; color:#555;">건강검진 소견 (단문/장문)</label>
@@ -578,7 +729,6 @@
                             <input type="date" id="spLastDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         </div>
                         <div>
-                            <!-- 💡 추가된 건강상담 여부 -->
                             <label style="font-size:12px; font-weight:bold; color:#555;">건강상담 대상 여부</label>
                             <select id="spCounseling" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
                                 <option value="-">선택 안함</option>
@@ -606,7 +756,7 @@
         </main>
     </div>
 
-    <!-- 모달 영역 생략 없이 그대로 유지 -->
+    <!-- 모달 영역 -->
     <div class="custom-modal-overlay" id="historyEditModal">
         <div class="custom-modal-box">
             <div class="custom-modal-header"><h3 id="historyEditModalTitle">📝 내역 수정</h3><button onclick="closeHistoryEditModal()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button></div>
@@ -683,7 +833,7 @@
                 '비상대응 매뉴얼': "switchPanel('tab10', this); renderAdminEmergency();",
                 '비상연락망': "switchPanel('tab11', this); renderAdminContact();",
                 "Today's DRI": "switchPanel('tab7', this);renderDriDepts(); loadAdminDriList(1);",
-                'MSDS 및 공정별 관리요령 관리': "switchPanel('tab6', this); loadAdminMsdsList();",
+                'MSDS 및 관리요령 즉시조회': "switchPanel('tab6', this); loadAdminMsdsList();",
                 '보호구 지급/설정': "switchPanel('tab3', this); loadAdminPpeManagement();",
                 '보호구 관리 및 지급대장': "switchPanel('tab3', this); loadAdminPpeManagement();",
                 '보호구 관리': "switchPanel('tab3', this); loadAdminPpeManagement();",
@@ -692,8 +842,8 @@
                 '부서별 위험성평가': "switchPanel('tab14', this); renderAdminRisk();",
                 '안전인증서': "switchPanel('tab15', this); renderAdminCert();",
                 '위험성평가 관리': "switchPanel('tab14', this); renderAdminRisk();",
-                // 💡 특수건강검진 연결
-                '근로자 건강관리 (건강검진)': "switchPanel('tab16', this); loadAdminHealthData();" 
+                '근로자 건강관리 (건강검진)': "switchPanel('tab16', this); loadAdminHealthData();" ,
+                '안전 TalkTalk': "switchPanel('tab17', this); loadAdminTalkTalk();"
             };
 
             let html = '';
@@ -711,7 +861,6 @@
             container.innerHTML = html;
         }
 
-        // 💡 [탭4: 계정 관리 - 등록/수정/삭제 로직]
         async function loadAdminUserList() {
             const db = await fetchDB();
             const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
@@ -795,17 +944,13 @@
         }
 
         async function deleteUserAccount(id) {
-            if (!confirm('이 계문을 삭제하시겠습니까?')) return;
+            if (!confirm('이 계정을 삭제하시겠습니까?')) return;
             const db = await fetchDB();
             let users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
             users = users.filter(u => u.id !== id);
             await saveDB('esol_users_data', users);
             loadAdminUserList();
         }
-
-        // ==========================================
-        // 기존 공통 이력 관리 로직 유지
-        // ==========================================
 
         async function openHistoryEditModal(dbKey, id) {
             const db = await fetchDB();
@@ -945,7 +1090,6 @@
             tbody.innerHTML = requests.map((r, idx) => {
                 let signDisplay = `<span style="color:#d32f2f; font-size:12px;">미서명</span>`; if (r.signature) signDisplay = `<img src="${r.signature}" style="height:30px; border:1px solid #ccc; background:#fff;" alt="서명">`;
                 let statusColor = r.status === '지급 완료' ? '#2e7d32' : '#e65100';
-                // 💡 r.remark(비고) 값 출력 추가
                 return `<tr><td>${r.date || '-'}</td><td style="font-weight:bold;">${r.dept}</td><td>${r.name} (${r.empNo})</td><td>${r.type}</td><td>${r.purpose}</td><td style="color:#555; font-weight:bold;">${r.remark || '-'}</td><td style="text-align:center; font-weight:bold; color:${statusColor};">${r.status || '지급 대기'}</td><td style="text-align:center;">${signDisplay}</td><td style="text-align:center;"><div style="display:flex; gap:5px; justify-content:center;"><button class="submit-btn" style="background:#512da8; padding:5px 10px; font-size:12px;" onclick="togglePpeStatus(${idx})">상태변경</button><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePpeRequest(${idx})">삭제</button></div></td></tr>`;
             }).join('');
         }
@@ -1033,12 +1177,10 @@
                     counselBadge = '<span style="color:#2e7d32; font-weight:bold;">비대상</span>';
                 }
 
-                // 줄바꿈이 있는 장문 텍스트를 화면에 예쁘게 출력하기 위한 처리
                 const safeCheckup = h.checkupResult ? h.checkupResult.replace(/\n/g, '<br>') : '<span style="color:#999; font-style:italic;">등록된 검진 소견이 없습니다.</span>';
                 const safeFollowUp = h.followUp ? h.followUp.replace(/\n/g, '<br>') : '<span style="color:#999; font-style:italic;">등록된 사후관리 조치사항이 없습니다.</span>';
 
                 return `
-                <!-- 💡 메인 리스트 줄 (클릭 시 아코디언 작동) -->
                 <tr style="cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='transparent'" onclick="toggleHealthDetail('${h.id}')">
                     <td>${h.empNo}</td>
                     <td style="font-weight:bold; color:#4a0082;">${h.name} <span id="icon-health-${h.id}" style="font-size:11px; color:#888; margin-left:4px;">▼</span></td>
@@ -1047,12 +1189,11 @@
                     <td>${h.lastDate || '-'}</td>
                     <td style="font-weight:bold; color:${dueColor}; line-height:1.4;">${dueDateStr}</td>
                     <td style="text-align:center;">${counselBadge}</td>
-                    <td style="text-align:center;" onclick="event.stopPropagation();"> <!-- 클릭 이벤트 겹침 방지 -->
+                    <td style="text-align:center;" onclick="event.stopPropagation();">
                         <button class="submit-btn" style="background:#ff9800; padding:4px 8px; font-size:12px;" onclick="editSpecialHealth('${h.id}')">수정</button>
                         <button class="submit-btn" style="background:#e53935; padding:4px 8px; font-size:12px;" onclick="deleteSpecialHealth('${h.id}')">삭제</button>
                     </td>
                 </tr>
-                <!-- 💡 숨겨진 상세 소견 아코디언 영역 -->
                 <tr id="detail-health-${h.id}" style="display:none; background:#faf8fc;">
                     <td colspan="8" style="padding:20px; border-bottom:2px solid #eae2f0;">
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; text-align:left;">
@@ -1070,7 +1211,6 @@
             }).join('');
         }
 
-        // 💡 아코디언 열고 닫는 스위치 함수
         function toggleHealthDetail(id) {
             const detailRow = document.getElementById(`detail-health-${id}`);
             const icon = document.getElementById(`icon-health-${id}`);
@@ -1100,8 +1240,6 @@
             if (!empNo || !name || !hazard || !firstDate) return alert('사번, 이름, 유해인자, 최초 검진일은 필수 입력 사항입니다.');
 
             const db = await fetchDB();
-
-            // 💡 [핵심 추가] 구성원 계정 존재 여부 검사 로직
             const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
             const isUserExists = users.some(u => u.empNo === empNo);
             
@@ -1109,7 +1247,6 @@
                 return alert('⚠️ 등록된 계정이 없는 사번입니다!\n[👤 구성원 계정 관리] 메뉴에서 해당 인원의 계정을 먼저 생성해 주세요.');
             }
 
-            // 계정이 확인되면 기존대로 저장 진행
             let list = db['esol_special_health'] ? JSON.parse(db['esol_special_health']) : [];
 
             if (editId) {
@@ -1177,6 +1314,128 @@
             loadAdminHealthData();
         }
 
+        async function loadAdminTalkTalk() {
+            const db = await fetchDB();
+            const list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            const tbody = document.getElementById('adminTalkListBody');
+            if(!tbody) return;
+            
+            if (list.length === 0) return tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#888;">접수된 내역이 없습니다.</td></tr>`;
+            
+            tbody.innerHTML = list.map(t => {
+                let statusHtml = '';
+                if (t.status === '조치 완료') statusHtml = '<span style="color:#2e7d32; font-weight:bold; background:#e8f5e9; padding:4px 8px; border-radius:12px;">✅ 조치 완료</span>';
+                else if (t.status === '해당없음') statusHtml = '<span style="color:#616161; font-weight:bold; background:#f5f5f5; padding:4px 8px; border-radius:12px;">➖ 해당없음</span>';
+                else statusHtml = '<span style="color:#c62828; font-weight:bold; background:#ffebee; padding:4px 8px; border-radius:12px;">🚨 조치 전</span>';
+
+                let shortContent = t.content.length > 25 ? t.content.substring(0, 25) + '...' : t.content;
+                let replyBtnText = t.adminComment ? '조치수정' : '조치달기';
+                
+                return `<tr>
+                    <td><b>${t.dept}</b><br><span style="font-size:13px; color:#555;">${t.name}</span></td>
+                    <td style="font-size:14px;">${shortContent}</td>
+                    <td style="font-size:13px; color:#666;">${t.date}</td>
+                    <td>${statusHtml}</td>
+                    <td style="text-align:center;">
+                        <button class="submit-btn" style="background:#4a0082; padding:5px 8px; font-size:11px; margin-right:4px;" onclick="openTalkEdit('${t.id}')">✏️ 글수정</button>
+                        <button class="submit-btn" style="background:#009688; padding:5px 8px; font-size:11px; margin-right:4px;" onclick="openTalkReply('${t.id}')">💬 ${replyBtnText}</button>
+                        <button class="submit-btn" style="background:#d32f2f; padding:5px 8px; font-size:11px;" onclick="deleteTalk('${t.id}')">삭제</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function openTalkEdit(id) {
+            const db = await fetchDB();
+            const list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            const item = list.find(t => t.id === id);
+            if(!item) return;
+
+            document.getElementById('editOriginalTalkId').value = item.id;
+            document.getElementById('editOriginalDept').value = item.dept;
+            document.getElementById('editOriginalName').value = item.name;
+            document.getElementById('editOriginalContent').value = item.content;
+            
+            document.getElementById('talkEditModal').style.display = 'flex';
+        }
+
+        async function saveTalkEdit() {
+            const id = document.getElementById('editOriginalTalkId').value;
+            const dept = document.getElementById('editOriginalDept').value.trim();
+            const name = document.getElementById('editOriginalName').value.trim();
+            const content = document.getElementById('editOriginalContent').value.trim();
+
+            if (!dept || !name || !content) return alert('모든 내용을 입력해 주세요.');
+
+            const db = await fetchDB();
+            let list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            const idx = list.findIndex(t => t.id === id);
+            if (idx === -1) return;
+
+            list[idx].dept = dept;
+            list[idx].name = name;
+            list[idx].content = content;
+
+            await saveDB('esol_talktalk', list);
+            document.getElementById('talkEditModal').style.display = 'none';
+            loadAdminTalkTalk();
+            alert('원본 게시글이 수정되었습니다.');
+        }
+
+        async function openTalkReply(id) {
+            const db = await fetchDB();
+            const list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            const item = list.find(t => t.id === id);
+            if(!item) return;
+
+            document.getElementById('replyTalkId').value = item.id;
+            document.getElementById('replyStatus').value = item.status || '조치 전';
+            document.getElementById('replyContent').value = item.adminComment || '';
+            document.getElementById('replyFile').value = '';
+            
+            document.getElementById('talkReplyModal').style.display = 'flex';
+        }
+
+        async function saveTalkReply() {
+            const id = document.getElementById('replyTalkId').value;
+            const status = document.getElementById('replyStatus').value;
+            const content = document.getElementById('replyContent').value.trim();
+            const fileInput = document.getElementById('replyFile');
+
+            if (!content) return alert('조치 내용을 작성해주세요.');
+
+            const db = await fetchDB();
+            let list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            const idx = list.findIndex(t => t.id === id);
+            if (idx === -1) return;
+
+            list[idx].status = status;
+            list[idx].adminComment = content;
+            list[idx].adminName = '환경안전'; 
+            
+            const now = new Date();
+            list[idx].adminDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            if (fileInput.files.length > 0) {
+                const files = Array.from(fileInput.files);
+                list[idx].adminPhotoUrls = await Promise.all(files.map(f => readAsDataURL(f)));
+            }
+
+            await saveDB('esol_talktalk', list);
+            document.getElementById('talkReplyModal').style.display = 'none';
+            loadAdminTalkTalk();
+            alert('조치 결과가 등록/변경 되었습니다.');
+        }
+
+        async function deleteTalk(id) {
+            if (!confirm('이 게시글(사진 및 댓글 포함)을 영구 삭제하시겠습니까?')) return;
+            const db = await fetchDB();
+            let list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            list = list.filter(t => t.id !== id);
+            await saveDB('esol_talktalk', list);
+            loadAdminTalkTalk();
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             renderDynamicSidebar();
             if (document.getElementById('tab4') && document.getElementById('tab4').classList.contains('active')) loadAdminUserList();
@@ -1188,7 +1447,6 @@
             if (document.getElementById('tab12') && document.getElementById('tab12').classList.contains('active')) renderAdminPolicy();
             if (document.getElementById('tab13') && document.getElementById('tab13').classList.contains('active')) renderAdminLaw();
             if (document.getElementById('tab14') && document.getElementById('tab14').classList.contains('active')) renderAdminRisk();
-            // 💡 추가: 탭 16 활성화 시 데이터 로드
             if (document.getElementById('tab16') && document.getElementById('tab16').classList.contains('active')) loadAdminHealthData();
         });
     </script>

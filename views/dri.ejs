@@ -120,12 +120,29 @@
                     
                     <div id="table-${date}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eae2f0;">
                         <table class="dri-table">
-                            <thead><tr><th style="width: 12%;">부서</th><th style="width: 12%;">장소(설비)</th><th style="width: 12%;">작업시간</th><th style="width: 22%;">작업내용</th><th style="width: 20%;">위험요소</th><th style="width: 22%;">안전대책</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">부서</th>
+                                    <th style="width: 10%;">장소(설비)</th>
+                                    <th style="width: 10%;">작업시간</th>
+                                    <th style="width: 20%;">작업내용</th>
+                                    <!-- 💡 위험도 전용 칸 추가 -->
+                                    <th style="width: 10%;">위험도</th>
+                                    <th style="width: 20%;">위험요소</th>
+                                    <th style="width: 20%;">안전대책</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 ${items.map(d => {
                                     const displayTime = (d.startTime && d.endTime) ? `${d.startTime} ~ ${d.endTime}` : (d.time || '-');
-                                    const isNone = (d.task.trim() === '없음'); // 작업 없음 여부 확인
+                                    const isNone = (d.task.trim() === '없음');
                                     
+                                    // 💡 줄바꿈(<br>) 제거
+                                    let levelBadge = '';
+                                    if (d.level === '고위험') levelBadge = '<span style="display:inline-block; background:#ffebee; color:#c62828; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; border:1px solid #ffcdd2;">🔴 고위험</span>';
+                                    else if (d.level === '중위험') levelBadge = '<span style="display:inline-block; background:#fff8e1; color:#f57f17; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; border:1px solid #ffe082;">🟡 중위험</span>';
+                                    else if (d.level === '저위험') levelBadge = '<span style="display:inline-block; background:#e8f5e9; color:#2e7d32; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; border:1px solid #a5d6a7;">🟢 저위험</span>';
+
                                     const riskTags = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `<div style="background:#ffebee; color:#c62828; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #ffcdd2; margin-right:3px;">${t}</div>`).join('') : '';
                                     const measureTags = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `<div style="background:#e3f2fd; color:#1565c0; padding:3px 6px; border-radius:4px; margin-bottom:3px; font-size:12px; display:inline-block; border:1px solid #bbdefb; margin-right:3px;">${t}</div>`).join('') : '';
                                     
@@ -135,6 +152,8 @@
                                         <td style="vertical-align:middle;">${d.location || '-'}</td>
                                         <td style="vertical-align:middle; font-weight:bold; color:${isNone ? '#888' : '#006064'};">${displayTime}</td>
                                         <td style="text-align:left; vertical-align:middle; font-weight:${isNone ? 'normal' : 'bold'}; color:${isNone ? '#888' : '#222'};">${d.task.replace(/\n/g, '<br>')}</td>
+                                        <!-- 💡 분리된 위험도 칸 -->
+                                        <td style="text-align:center; vertical-align:middle;">${!isNone ? levelBadge : '-'}</td>
                                         <td style="text-align:left; vertical-align:middle;">${riskTags || '<span style="color:#999; font-style:italic;">-</span>'}</td>
                                         <td style="text-align:left; vertical-align:middle;">${measureTags || '<span style="color:#999; font-style:italic;">-</span>'}</td>
                                     </tr>`;
@@ -174,7 +193,23 @@
                 const emailRisks = d.risk ? d.risk.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `- ${t}`).join('<br>') : '';
                 const emailMeasures = d.measure ? d.measure.split(/[,\n]+/).map(t => t.trim()).filter(t => t && t !== '없음' && t !== '해당없음').map(t => `- ${t}`).join('<br>') : '';
                 
-                return `<tr style="${isNone ? 'color:#777;' : ''}"><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.date}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;"><strong>${d.dept}</strong></td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.location || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap; font-weight:${isNone ? 'normal' : 'bold'};">${displayTime}</td><td style="border: 1px solid #bbb; padding: 6px 8px; vertical-align:middle;">${d.task.replace(/\n/g, '<br>')}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:${isNone ? '#777' : '#d32f2f'}; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailRisks || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:${isNone ? '#777' : '#1976d2'}; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailMeasures || '-'}</td></tr>`;
+                // 메일용 텍스트 위험도
+                const rawLevel = d.level || '저위험';
+                let emailLevel = '';
+                let levelColor = '';
+                
+                if (rawLevel === '고위험') {
+                    emailLevel = '🔴 고위험';
+                    levelColor = '#c62828'; // 강렬한 빨강
+                } else if (rawLevel === '중위험') {
+                    emailLevel = '🟡 중위험';
+                    levelColor = '#e65100'; // 눈에 잘 띄는 짙은 주황
+                } else {
+                    emailLevel = '🟢 저위험';
+                    levelColor = '#2e7d32'; // 안정적인 초록
+                }
+                
+                return `<tr style="${isNone ? 'color:#777;' : ''}"><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.date}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;"><strong>${d.dept}</strong></td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap;">${d.location || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; white-space:nowrap; font-weight:${isNone ? 'normal' : 'bold'};">${displayTime}</td><td style="border: 1px solid #bbb; padding: 6px 8px; vertical-align:middle;">${d.task.replace(/\n/g, '<br>')}</td><td style="border: 1px solid #bbb; padding: 6px 8px; text-align:center; vertical-align:middle; font-weight:bold; color:${!isNone ? levelColor : '#777'}; white-space:nowrap;">${!isNone ? emailLevel : '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:${isNone ? '#777' : '#d32f2f'}; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailRisks || '-'}</td><td style="border: 1px solid #bbb; padding: 6px 8px; color:${isNone ? '#777' : '#1976d2'}; font-weight:bold; vertical-align:middle; font-size:9pt;">${emailMeasures || '-'}</td></tr>`;
             }).join('');
 
             const emailHtml = `
@@ -182,7 +217,7 @@
                     <p>안녕하세요.<br>환경안전부서 입니다.</p>
                     <p>각 부서별 DRI(Daily Risk Inspection) 회의 결과, <strong>[${targetDate}]</strong> 위험작업 공유드립니다.<br>이후 돌발작업 발생 시 환경안전으로 연락 부탁드립니다.</p><br>
                     <table style="width: auto; max-width: 100%; border-collapse: collapse; font-size: 10pt;">
-                        <thead style="background-color: #f4f5f9;"><tr><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">일시</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">부서</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">장소(설비)</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업시간</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업내용</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">위험요소</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">안전대책</th></tr></thead>
+                        <thead style="background-color: #f4f5f9;"><tr><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">일시</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">부서</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">장소(설비)</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업시간</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">작업내용</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">위험도</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">위험요소</th><th style="border: 1px solid #bbb; padding: 8px; white-space: nowrap;">안전대책</th></tr></thead>
                         <tbody>${tableRows}</tbody>
                     </table>
                     <br><p>감사합니다.</p>

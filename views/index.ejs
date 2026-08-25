@@ -15,6 +15,8 @@
         .header-btns { display: flex; align-items: center; gap: 12px; }
         .admin-btn { background: #4a0082; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .admin-btn:hover { opacity: 0.9; }
+        .talk-btn { background: #009688; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 8px rgba(0, 150, 136, 0.3); }
+        .talk-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .alarm-btn { background: #fee500; color: #191919; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
         .top-notice-section { background: #ffffff; border-radius: 16px; padding: 20px 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 24px; border-top: 4px solid #4a0082; }
@@ -82,18 +84,20 @@
         </div>
         <div style="display: flex; align-items: center; gap: 20px;">
             <div class="header-btns">
+                <!-- 💡 관리자 버튼 바로 왼쪽에 톡톡 버튼 추가! -->
+                <button class="talk-btn" onclick="location.href='/talktalk'">💬 안전 TalkTalk</button>
                 <button class="admin-btn" onclick="location.href='/admin'">⚙️ 관리자 페이지</button>
             </div>
             <div style="text-align: right; color: #666;">
                 <div style="font-size: 20px; font-weight: bold; color: #4a0082;" id="clock"></div>
                 <span style="font-size: 13px;" id="headerSubText">화면을 터치하여 항목을 선택하세요</span>
             </div>
-        </div>
+        </div> 
     </header>
 
     <div class="top-notice-section">
         <div class="top-notice-header">
-            <h2>📢 최근 주요 환경안전보건 공지</h2>
+            <h2>📢 최근 주요 공지</h2>
             <span style="font-size:13px; color:#4a0082; font-weight:bold; cursor:pointer;" onclick="goDetail('공지사항')">전체보기 ➔</span>
         </div>
         <ul class="notice-list" id="mainNoticeList"></ul>
@@ -253,6 +257,7 @@
             else if (catTitle.includes('비상대응') || catTitle === '비상 매뉴얼') { location.href = '/emergency'; }
             else if (catTitle.includes('인증서')) { location.href = '/cert'; }
             else if (catTitle.includes('건강관리') || catTitle.includes('건강검진')) { openHealthLogin(); }
+            else if (catTitle.includes('TalkTalk') || catTitle.includes('톡톡')) { location.href = '/talktalk'; }
             else { location.href = '/view?cat=' + encodeURIComponent(catTitle); }
         }
 

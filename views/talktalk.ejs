@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>안전 TalkTalk - ESOL EHS 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 24px; border-left: 8px solid #009688; }
+        .back-btn { background: #009688; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .back-btn:hover { opacity: 0.8; }
+        
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* 게시판 안내 헤더 */
+        .board-header { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 20px; border: 1px solid #eae2f0; }
+        .board-title { font-size: 22px; font-weight: bold; color: #009688; margin-bottom: 10px; }
+        .board-desc { font-size: 14px; color: #666; line-height: 1.6; }
+        
+        /* 입력 폼 */
+        .post-form { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .form-inputs { display: flex; gap: 10px; margin-bottom: 10px; }
+        .post-form input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .post-form textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #ccc; border-radius: 4px; resize: none; margin-bottom: 10px; font-family: inherit; }
+        .form-actions { display: flex; justify-content: space-between; align-items: center; }
+        .submit-btn { background: #009688; color: #fff; border: none; padding: 10px 24px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .submit-btn:hover { background: #00796b; }
+        
+        /* 💡 아코디언 피드 목록 */
+        .feed-item { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); overflow: hidden; }
+        .feed-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; cursor: pointer; transition: background 0.2s; }
+        .feed-header:hover { background: #fdfdfd; }
+        .profile-area { display: flex; align-items: center; gap: 12px; }
+        .profile-icon { width: 40px; height: 40px; background: #e0f2f1; color: #009688; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; }
+        .feed-author { display: flex; flex-direction: column; justify-content: center; }
+        .feed-date { font-size: 12px; color: #888; margin-top: 4px; }
+        .feed-summary { font-size: 14px; color: #555; margin-left: 20px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* 아코디언 내부 본문 */
+        .feed-body { padding: 20px; border-top: 1px solid #eee; display: none; background: #fafafa; }
+        .feed-content { font-size: 15px; color: #333; line-height: 1.6; margin-bottom: 15px; white-space: pre-wrap; background:#fff; padding:15px; border-radius:8px; border:1px solid #eee; }
+        .feed-img-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        .feed-img { max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 댓글 (관리자 조치) 영역 */
+        .comment-section { background: #fff; border: 1px solid #80cbc4; border-left: 5px solid #009688; padding: 15px; border-radius: 4px; margin-top: 20px; }
+        
+        /* 💡 3가지 상태 배지 */
+        .status-badge { display: inline-block; padding: 5px 12px; font-size: 12px; font-weight: bold; border-radius: 12px; display:flex; align-items:center; gap:5px; }
+        .status-wait { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .status-done { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .status-none { background: #f5f5f5; color: #616161; border: 1px solid #e0e0e0; }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <img src="/esol_logo.png" alt="ESOL Logo" style="height:38px;"> 
+            <span style="font-size:20px; font-weight:bold; color:#009688;">안전 TalkTalk</span>
+        </div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container">
+        <!-- 게시판 안내 -->
+        <div class="board-header">
+            <div class="board-title">📢 안전 TalkTalk</div>
+            <div class="board-desc">
+                아차사고 발굴, 안전 개선요청사항, 안전 제안서를 편하게 등록해 주시면 검토 후 빠르게 개선하도록 하겠습니다.<br>
+                <span style="color:#009688; font-weight:bold;">- 우수사례 발굴 시 시상 예정!</span>
+            </div>
+        </div>
+
+        <!-- 💡 등록 폼 (다중 첨부 가능) -->
+        <div class="post-form">
+            <div class="form-inputs">
+                <input type="text" id="talkDept" placeholder="소속 부서" style="width:150px;">
+                <input type="text" id="talkName" placeholder="성명 및 직급 (예: 홍성주 대리)" style="flex:1;">
+            </div>
+            <textarea id="talkContent" placeholder="새로운 정보, 기분 좋은 소식이나 현장의 위험 요소를 부서원들과 공유하세요."></textarea>
+            <div class="form-actions">
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <label style="font-size:12px; font-weight:bold; color:#666;">📸 현장 사진 첨부 (여러 장 선택 가능)</label>
+                    <input type="file" id="talkFile" accept="image/*" multiple style="font-size: 13px;">
+                </div>
+                <button class="submit-btn" onclick="submitTalk()">🚀 이야기 하기</button>
+            </div>
+        </div>
+
+        <!-- 피드 목록 -->
+        <div id="talkFeedContainer">
+            <div style="text-align:center; padding:40px; color:#888;">데이터를 불러오는 중입니다...</div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
+        async function saveDB(key, value) { await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: JSON.stringify(value) }) }); }
+        
+        const readAsDataURL = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.onerror = (e) => reject(e); reader.readAsDataURL(file);
+        });
+
+        function getFormattedDate() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        }
+
+        async function loadTalkFeed() {
+            const db = await fetchDB();
+            const list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+            const container = document.getElementById('talkFeedContainer');
+
+            if (list.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#888; background:#fff; border-radius:8px; border:1px solid #ddd;">아직 등록된 TalkTalk이 없습니다. 첫 번째 이야기를 남겨보세요!</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map((item, idx) => {
+                // 상태별 배지 디자인
+                let badge = '';
+                if (item.status === '조치 완료') badge = `<div class="status-badge status-done"><span>✅</span> 조치 완료</div>`;
+                else if (item.status === '해당없음') badge = `<div class="status-badge status-none"><span>➖</span> 해당없음</div>`;
+                else badge = `<div class="status-badge status-wait"><span>🚨</span> 조치 전 (대기)</div>`;
+                
+                // 다중 이미지 렌더링
+                let userPhotos = item.photoUrls || (item.photoUrl ? [item.photoUrl] : []);
+                let imgHtml = userPhotos.length > 0 ? `<div class="feed-img-grid">` + userPhotos.map(url => `<img src="${url}" class="feed-img">`).join('') + `</div>` : '';
+                
+                // 관리자 댓글(조치) 렌더링
+                let commentHtml = '';
+                if (item.adminComment) {
+                    let adminPhotos = item.adminPhotoUrls || (item.adminPhotoUrl ? [item.adminPhotoUrl] : []);
+                    let cmtImgHtml = adminPhotos.length > 0 ? `<div class="feed-img-grid" style="margin-top:10px;">` + adminPhotos.map(url => `<img src="${url}" class="feed-img" style="max-height:200px;">`).join('') + `</div>` : '';
+                    
+                    commentHtml = `
+                        <div class="comment-section">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <div style="font-weight:bold; font-size:14px; color:#009688;">${item.adminName || '환경안전'} 📢</div>
+                                    <div class="feed-date" style="margin-top:0;">${item.adminDate}</div>
+                                </div>
+                                <span style="font-size:11px; color:#888;">[조치결과]</span>
+                            </div>
+                            <div style="font-size:14px; color:#333; white-space:pre-wrap; background:#f0fbfb; padding:10px; border-radius:6px;">${item.adminComment}</div>
+                            ${cmtImgHtml}
+                        </div>`;
+                }
+
+                // 텍스트 말줄임표 처리 (아코디언 닫혀있을 때)
+                const shortContent = item.content.length > 25 ? item.content.substring(0, 25) + '...' : item.content;
+
+                return `
+                    <div class="feed-item">
+                        <div class="feed-header" onclick="toggleAccordion('${item.id}')">
+                            <div class="profile-area">
+                                <div class="profile-icon">${item.name.charAt(0)}</div>
+                                <div>
+                                    <!-- 💡 [수정] 부서명과 이름을 두 줄로 깔끔하게 분리! -->
+                                    <div class="feed-author">
+                                        <div style="font-size: 12px; color: #666; font-weight: normal;">${item.dept}</div>
+                                        <div style="font-size: 15px; color: #222; font-weight: bold;">${item.name}</div>
+                                    </div>
+                                    <div class="feed-date">${item.date}</div>
+                                </div>
+                            </div>
+                            <div class="feed-summary" id="summary-${item.id}">${shortContent}</div>
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                ${badge}
+                                <span id="icon-${item.id}" style="color:#888; font-size:12px; font-weight:bold;">▼ 펼치기</span>
+                            </div>
+                        </div>
+                        <div class="feed-body" id="body-${item.id}">
+                            <div class="feed-content">${item.content}</div>
+                            ${imgHtml}
+                            ${commentHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 아코디언 토글 로직
+        window.toggleAccordion = function(id) {
+            const body = document.getElementById('body-' + id);
+            const icon = document.getElementById('icon-' + id);
+            const summary = document.getElementById('summary-' + id);
+            
+            if (body.style.display === 'block') {
+                body.style.display = 'none';
+                icon.innerText = '▼ 펼치기';
+                summary.style.display = 'block';
+            } else {
+                body.style.display = 'block';
+                icon.innerText = '▲ 접기';
+                summary.style.display = 'none';
+            }
+        };
+
+        async function submitTalk() {
+            const dept = document.getElementById('talkDept').value.trim();
+            const name = document.getElementById('talkName').value.trim();
+            const content = document.getElementById('talkContent').value.trim();
+            const fileInput = document.getElementById('talkFile');
+
+            if (!dept || !name || !content) return alert('부서, 성명, 내용을 모두 입력해 주세요.');
+
+            try {
+                // 다중 파일 변환 로직
+                let photoUrls = [];
+                if (fileInput.files.length > 0) {
+                    const files = Array.from(fileInput.files);
+                    photoUrls = await Promise.all(files.map(f => readAsDataURL(f)));
+                }
+
+                const db = await fetchDB();
+                const list = db['esol_talktalk'] ? JSON.parse(db['esol_talktalk']) : [];
+
+                list.unshift({
+                    id: Date.now().toString(),
+                    dept, name, content, photoUrls, date: getFormattedDate(), status: '조치 전'
+                });
+
+                await saveDB('esol_talktalk', list);
+                
+                alert('게시글이 성공적으로 등록되었습니다!');
+                document.getElementById('talkDept').value = '';
+                document.getElementById('talkName').value = '';
+                document.getElementById('talkContent').value = '';
+                fileInput.value = '';
+                loadTalkFeed();
+
+            } catch (err) { alert('등록 중 오류가 발생했습니다.'); console.error(err); }
+        }
+
+        window.onload = loadTalkFeed;
+    </script>
+</body>
+</html>

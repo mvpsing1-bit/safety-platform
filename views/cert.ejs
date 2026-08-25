@@ -17,15 +17,16 @@
         .btn-download:hover { opacity: 0.9; }
         .empty-state { padding: 40px; text-align: center; color: #888; font-size: 15px; background: #fafafa; border-radius: 10px; border: 1px dashed #ccc; }
         
-        .cat-card {
-            margin-bottom: 16px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; transition: all 0.2s ease-in-out;
-        }
-        .cat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 131, 143, 0.12);
-            border-color: #4dd0e1;
-        }
+        .cat-card { margin-bottom: 16px; background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); overflow: hidden; transition: all 0.2s ease-in-out; }
+        .cat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 131, 143, 0.12); border-color: #4dd0e1; }
+        
+        /* 💡 추가된 탭 메뉴 스타일 */
+        .tab-menu { display: flex; border-bottom: 1px solid #ccc; background: #fff; border-radius:8px 8px 0 0; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-size: 14px; font-weight: bold; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .tab-btn.active { color: #00838f; border-bottom: 3px solid #00838f; background: #f4fbfb; }
+        .tab-btn:hover:not(.active) { background: #f9f9f9; }
+        .tab-content { display: none; padding: 15px 0; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -36,7 +37,7 @@
     
     <div class="container">
         <div class="page-title"><h2>📜 분야별 안전인증서 보관함</h2></div>
-        <p style="font-size:14px; color:#666; margin-bottom:40px; line-height:1.6;">보호구, 방호장치 등 안전인증 및 검사 합격 증명서 모음입니다. 분류를 클릭하여 자료를 확인하세요.</p>
+        <p style="font-size:14px; color:#666; margin-bottom:40px; line-height:1.6;">보호구, 방호장치 등 안전인증 및 검사 합격 증명서 모음입니다. 분류를 클릭하여 <b>인증서와 제품 사진</b>을 확인하세요.</p>
         
         <div id="certContainer"></div>
     </div>
@@ -62,7 +63,6 @@
                 return;
             }
 
-            // 게시글 최신 등록순 정렬
             historyList.sort((a, b) => b.id - a.id);
 
             const groupedData = {};
@@ -101,8 +101,9 @@
                     html += `<div style="text-align:center; color:#999; font-size:14px; padding:20px; background:#fff; border-radius:8px; border:1px dashed #ddd;">등록된 내역이 없습니다.</div>`;
                 } else {
                     html += catItems.map((m, idx) => {
-                        const isExpanded = true;
+                        const isExpanded = false; // 기본적으로 게시글은 닫아둠
                         
+                        // 💡 1. 인증서 파일들 HTML 생성
                         let fileList = [];
                         if (m.files && m.files.length > 0) fileList = m.files;
                         else if (m.fileUrl) fileList = [{ fileName: m.fileName || '첨부파일', fileUrl: m.fileUrl }];
@@ -112,9 +113,8 @@
                             filesHtml = fileList.map((f, fIdx) => {
                                 const fileId = `${m.id}-${fIdx}`;
                                 const isPdf = f.fileName.toLowerCase().endsWith('.pdf');
-                                const isFileExpanded = false;
+                                const isFileExpanded = true; // 열었을 때 바로 보이게
                                 
-                                // 💡 불필요한 자체 버튼 없는 100% 뷰어
                                 let previewHtml = `<div style="width:100%; height:85vh; background:#525659; border-radius:8px; border:1px solid #ccc; overflow:hidden;">`;
                                 if (isPdf) { 
                                     previewHtml += `<iframe data-src="${f.fileUrl}" style="width:100%; height:100%; border:none; display:block;"></iframe>`; 
@@ -123,23 +123,18 @@
                                 }
                                 previewHtml += `</div>`;
                                 
-                                return `
-                                    <div style="margin-top:12px; border:1px solid #b2ebf2; border-radius:8px; overflow:hidden;">
-                                        <div style="background:${isFileExpanded ? '#b2ebf2' : '#e0f7fa'}; padding:12px 15px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-bottom:1px solid #b2ebf2;" onclick="toggleFile('${fileId}')">
-                                            <div style="display:flex; align-items:center; gap:10px;">
-                                                <span style="background:#00838f; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:6px;">첨부 ${fIdx + 1}</span>
-                                                <span style="font-weight:bold; color:#333; font-size:14px;">📎 ${f.fileName}</span>
-                                            </div>
-                                            <div style="display:flex; align-items:center; gap:15px;">
-                                                <span id="file-icon-${fileId}" style="color:#888; font-size:13px; font-weight:bold;">${isFileExpanded ? '▲ 접기' : '▼ 펼쳐보기'}</span>
-                                            </div>
-                                        </div>
-                                        <div id="file-body-${fileId}" style="display:${isFileExpanded ? 'block' : 'none'}; padding:15px; background:#fff;">${previewHtml}</div>
-                                    </div>
-                                `;
+                                return `<div style="margin-top:10px;">${previewHtml}</div>`;
                             }).join('');
+                        } else {
+                            filesHtml = `<div style="padding:20px; text-align:center; color:#888;">등록된 인증서 파일이 없습니다.</div>`;
                         }
 
+                        // 💡 2. 제품 사진 HTML 생성
+                        const photoHtml = m.photoUrl 
+                            ? `<div style="text-align:center; padding:10px;"><img src="${m.photoUrl}" style="max-width:100%; max-height:600px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.1);"></div>`
+                            : `<div style="padding:40px; text-align:center; color:#999; border:1px dashed #ccc; border-radius:8px;">등록된 제품 사진이 없습니다. 📭</div>`;
+
+                        // 💡 3. 게시글 바디 조립 (탭 메뉴 포함)
                         return `
                             <div style="margin-bottom:16px; border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
                                 <div style="padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s;" onmouseover="this.style.background='#fdfdfd'" onmouseout="this.style.background='#fff'" onclick="togglePost('${m.id}')">
@@ -150,7 +145,17 @@
                                     <span id="post-icon-${m.id}" style="color:#888; font-size:13px; font-weight:bold;">${isExpanded ? '▲ 게시글 접기' : '▼ 게시글 펼치기'}</span>
                                 </div>
                                 <div id="post-body-${m.id}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eee; background:#fafafa;">
-                                    ${filesHtml}
+                                    
+                                    <!-- 💡 탭 메뉴 영역 -->
+                                    <div class="tab-menu">
+                                        <button class="tab-btn active" id="tabBtn-cert-${m.id}" onclick="switchTab('${m.id}', 'cert')">📄 안전 인증서 보기</button>
+                                        <button class="tab-btn" id="tabBtn-photo-${m.id}" onclick="switchTab('${m.id}', 'photo')">📸 제품 현품 사진</button>
+                                    </div>
+                                    
+                                    <!-- 💡 탭 내용 영역 -->
+                                    <div class="tab-content active" id="content-cert-${m.id}">${filesHtml}</div>
+                                    <div class="tab-content" id="content-photo-${m.id}">${photoHtml}</div>
+
                                 </div>
                             </div>
                         `;
@@ -161,6 +166,7 @@
             }
             container.innerHTML = html;
             
+            // PDF 렌더링을 위한 후처리
             document.querySelectorAll('iframe[data-src]').forEach(iframe => {
                 const base64Data = iframe.getAttribute('data-src');
                 if (base64Data && base64Data.startsWith('data:application/pdf')) {
@@ -181,6 +187,7 @@
             });
         }
 
+        // 폴더 열기/닫기
         function toggleCat(catId) {
             const body = document.getElementById(`body-${catId}`);
             const icon = document.getElementById(`icon-${catId}`);
@@ -193,6 +200,7 @@
             }
         }
 
+        // 게시글 열기/닫기
         function togglePost(id) {
             const body = document.getElementById(`post-body-${id}`);
             const icon = document.getElementById(`post-icon-${id}`);
@@ -200,12 +208,16 @@
             else { body.style.display = 'none'; icon.innerText = '▼ 게시글 펼치기'; }
         }
 
-        function toggleFile(fileId) {
-            const body = document.getElementById(`file-body-${fileId}`);
-            const icon = document.getElementById(`file-icon-${fileId}`);
-            if (body.style.display === 'none') { body.style.display = 'block'; icon.innerText = '▲ 접기'; icon.parentElement.parentElement.style.background = '#b2ebf2';} 
-            else { body.style.display = 'none'; icon.innerText = '▼ 펼쳐보기'; icon.parentElement.parentElement.style.background = '#e0f7fa';}
-        }
+        // 💡 탭(인증서 <-> 사진) 전환 함수
+        window.switchTab = function(id, type) {
+            document.getElementById(`tabBtn-cert-${id}`).classList.remove('active');
+            document.getElementById(`tabBtn-photo-${id}`).classList.remove('active');
+            document.getElementById(`tabBtn-${type}-${id}`).classList.add('active');
+            
+            document.getElementById(`content-cert-${id}`).classList.remove('active');
+            document.getElementById(`content-photo-${id}`).classList.remove('active');
+            document.getElementById(`content-${type}-${id}`).classList.add('active');
+        };
 
         window.onload = renderCert;
     </script>

@@ -161,7 +161,7 @@ async function deleteDriDept(dept) {
     renderDriDepts();
 }
 
-// DRI 신규 등록
+// 💡 DRI 신규 등록 (위험도(level) 추가됨!)
 async function submitDri() {
     const date = document.getElementById('driDate').value;
     const dept = document.getElementById('driDept').value;
@@ -171,6 +171,7 @@ async function submitDri() {
     const task = document.getElementById('driTask').value.trim();
     const risk = document.getElementById('driRisk').value.trim();
     const measure = document.getElementById('driMeasure').value.trim();
+    const level = document.getElementById('driLevel').value; // 💡 새롭게 추가된 위험도 값
 
     if (!date || !dept || !location || !task || !risk || !measure) {
         return alert('작업시간을 제외한 모든 항목을 빠짐없이 입력해 주세요.');
@@ -179,7 +180,8 @@ async function submitDri() {
     const db = await fetchAdminDB();
     let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
     
-    list.push({ id: Date.now(), date, dept, startTime, endTime, location, task, risk, measure });
+    // 💡 level 함께 저장!
+    list.push({ id: Date.now(), date, dept, startTime, endTime, location, task, risk, measure, level }); 
     
     await saveAdminDB('esol_dri_data', list);
     
@@ -189,12 +191,13 @@ async function submitDri() {
     document.getElementById('driTask').value = '';
     document.getElementById('driRisk').value = '';
     document.getElementById('driMeasure').value = '';
+    document.getElementById('driLevel').value = '저위험'; // 💡 입력 후 초기화
     
     alert('위험작업(DRI)이 등록되었습니다!');
     loadAdminDriList(1);
 }
 
-/* 💡 (신규) 위/아래 순서 변경 기능 */
+/* 💡 위/아래 순서 변경 기능 */
 async function moveDriOrder(id, direction) {
     const db = await fetchAdminDB();
     let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
@@ -233,7 +236,7 @@ async function moveDriOrder(id, direction) {
     loadAdminDriList(adminDriCurrentPage);
 }
 
-/* 검색 및 리스트 로드 (관리자용) */
+/* 💡 검색 및 리스트 로드 (관리자용) - 배지 추가 완료! */
 let adminDriCurrentPage = 1;
 const adminDriPerPage = 5;
 
@@ -286,15 +289,18 @@ async function loadAdminDriList(page = 1) {
                 
                 <div id="admin-table-${date}" style="display:${isExpanded ? 'block' : 'none'}; padding:20px; border-top:1px solid #eae2f0;">
                     <table>
+                        <table style="width: 100%; border-collapse: collapse; text-align: center;">
                         <thead>
-                            <tr>
-                                <th style="width: 10%;">부서</th>
-                                <th style="width: 12%;">장소(설비)</th>
-                                <th style="width: 12%;">작업시간</th>
-                                <th style="width: 15%;">작업 내용</th>
-                                <th style="width: 15%;">위험 요소</th>
-                                <th style="width: 15%;">안전 대책</th>
-                                <th style="width: 21%; text-align:center;">관리 (순서/수정/삭제)</th>
+                            <tr style="background:#f8f5fc;">
+                                <th style="width: 10%; padding:10px; border:1px solid #eae2f0;">부서</th>
+                                <th style="width: 12%; padding:10px; border:1px solid #eae2f0;">장소(설비)</th>
+                                <th style="width: 12%; padding:10px; border:1px solid #eae2f0;">작업시간</th>
+                                <th style="width: 16%; padding:10px; border:1px solid #eae2f0;">작업 내용</th>
+                                <!-- 💡 위험도 전용 칸 추가 -->
+                                <th style="width: 9%; padding:10px; border:1px solid #eae2f0;">위험도</th>
+                                <th style="width: 12%; padding:10px; border:1px solid #eae2f0;">위험 요소</th>
+                                <th style="width: 12%; padding:10px; border:1px solid #eae2f0;">안전 대책</th>
+                                <th style="width: 17%; padding:10px; border:1px solid #eae2f0;">관리</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -302,15 +308,24 @@ async function loadAdminDriList(page = 1) {
                                 const displayTime = (d.startTime && d.endTime) ? `${d.startTime} ~ ${d.endTime}` : (d.time || '-');
                                 const isNone = (d.task.trim() === '없음');
                                 
+                                // 💡 줄바꿈(<br>) 제거 및 배지 정렬
+                                let levelBadge = '';
+                                if (d.level === '고위험') levelBadge = '<span style="display:inline-block; background:#ffebee; color:#c62828; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; border:1px solid #ffcdd2;">🔴 고위험</span>';
+                                else if (d.level === '중위험') levelBadge = '<span style="display:inline-block; background:#fff8e1; color:#f57f17; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; border:1px solid #ffe082;">🟡 중위험</span>';
+                                else if (d.level === '저위험') levelBadge = '<span style="display:inline-block; background:#e8f5e9; color:#2e7d32; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; border:1px solid #a5d6a7;">🟢 저위험</span>';
+
                                 return `
                                     <tr style="background-color: ${isNone ? '#fafafa' : '#fff'}; border-bottom: 1px solid #eee; color:${isNone ? '#888' : '#333'};">
-                                        <td style="vertical-align:middle;"><strong>${d.dept}</strong></td>
-                                        <td style="vertical-align:middle;">${d.location || '-'}</td>
-                                        <td style="vertical-align:middle; color:${isNone ? '#888' : '#006064'}; font-weight:bold;">${displayTime}</td>
-                                        <td style="vertical-align:middle; line-height:1.5;">${d.task.replace(/\n/g, '<br>')}</td>
-                                        <td style="vertical-align:middle;">${d.risk || '-'}</td>
-                                        <td style="vertical-align:middle;">${d.measure || '-'}</td>
-                                        <td style="vertical-align:middle; text-align:center; white-space:nowrap;">
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;"><strong>${d.dept}</strong></td>
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.location || '-'}</td>
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; color:${isNone ? '#888' : '#006064'}; font-weight:bold;">${displayTime}</td>
+                                        <!-- 작업 내용 칸 -->
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; text-align:left; line-height:1.5;">${d.task.replace(/\n/g, '<br>')}</td>
+                                        <!-- 💡 분리된 위험도 칸 -->
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; text-align:center;">${!isNone ? levelBadge : '-'}</td>
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.risk || '-'}</td>
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.measure || '-'}</td>
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; text-align:center; white-space:nowrap;">
                                             <button class="btn-sm" style="background:#f4f5f9; color:#555; border:1px solid #ccc; padding:5px 8px; font-size:12px; border-radius:4px;" onclick="moveDriOrder(${d.id}, 'up')">▲</button>
                                             <button class="btn-sm" style="background:#f4f5f9; color:#555; border:1px solid #ccc; padding:5px 8px; font-size:12px; border-radius:4px; margin-right:5px;" onclick="moveDriOrder(${d.id}, 'down')">▼</button>
                                             <button class="btn-sm" style="background:#ff9800; color:#fff;" onclick="openDriEditModal(${d.id})">✏️ 수정</button>
@@ -333,7 +348,7 @@ async function loadAdminDriList(page = 1) {
     paginationContainer.innerHTML = pageHtml;
 }
 
-/* DRI 수정 저장 */
+/* 💡 DRI 수정 저장 (위험도 추가) */
 async function saveDriEdit() {
     const id = parseInt(document.getElementById('editDriId').value);
     const db = await fetchAdminDB();
@@ -349,6 +364,7 @@ async function saveDriEdit() {
     list[idx].task = document.getElementById('editDriTask').value.trim();
     list[idx].risk = document.getElementById('editDriRisk').value.trim();
     list[idx].measure = document.getElementById('editDriMeasure').value.trim();
+    list[idx].level = document.getElementById('editDriLevel').value; // 💡 변경된 위험도 저장
 
     await saveAdminDB('esol_dri_data', list);
     document.getElementById('driEditModal').style.display = 'none';
@@ -369,7 +385,7 @@ async function deleteDri(id) {
     loadAdminDriList(adminDriCurrentPage);
 }
 
-/* DRI 수정 팝업 열기 */
+/* 💡 DRI 수정 팝업 열기 (위험도 연동) */
 async function openDriEditModal(id) {
     const db = await fetchAdminDB();
     const list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
@@ -391,6 +407,9 @@ async function openDriEditModal(id) {
     document.getElementById('editDriTask').value = item.task || '';
     document.getElementById('editDriRisk').value = item.risk || '';
     document.getElementById('editDriMeasure').value = item.measure || '';
+    
+    // 💡 저장된 위험도 불러오기 (과거 데이터는 '저위험'이 기본값)
+    document.getElementById('editDriLevel').value = item.level || '저위험';
 
     // 팝업창 띄우기
     document.getElementById('driEditModal').style.display = 'flex';
@@ -403,6 +422,7 @@ function fillNoWork() {
     document.getElementById('driTask').value = '없음';  // 메인화면에서 '없음'으로 인식하는 핵심 키워드!
     document.getElementById('driRisk').value = '해당없음';
     document.getElementById('driMeasure').value = '해당없음';
+    document.getElementById('driLevel').value = '저위험'; // 위험도 기본값 처리
     alert('작업 없음 상태로 자동 입력되었습니다. 날짜와 부서를 확인 후 등록해주세요!');
 }
 // 💡 관리자용 DRI 목록 접기/펴기 스위치
@@ -867,7 +887,6 @@ async function uploadMsds() {
         let guideUrl = '';
 
         if (editId) {
-            // 수정 모드인 경우 기존 데이터 찾기
             targetMsds = existingData.find(m => m.id == editId);
             if (targetMsds) {
                 msdsUrl = targetMsds.fileUrl;
@@ -875,7 +894,6 @@ async function uploadMsds() {
             }
         }
 
-        // 1. 새 MSDS 파일이 첨부되었으면 업로드
         if (msdsFileInput.files.length > 0) {
             const msdsFormData = new FormData();
             msdsFormData.append('file', msdsFileInput.files[0]);
@@ -885,7 +903,6 @@ async function uploadMsds() {
             msdsUrl = msdsData.fileUrl;
         }
 
-        // 2. 새 관리요령 파일이 첨부되었으면 업로드
         if (guideFileInput.files.length > 0) {
             const guideFormData = new FormData();
             guideFormData.append('file', guideFileInput.files[0]);
@@ -907,22 +924,21 @@ async function uploadMsds() {
             
             alert('MSDS 및 관리요령 정보가 수정되었습니다!');
         } else {
-            // 신규 등록 모드 (필수 체크 로직 삭제 완료!)
             const newMsds = { 
                 id: Date.now(), 
                 name: name, 
                 cas: cas, 
                 supplier: supplier, 
                 tags: tagsArray, 
-                fileUrl: msdsUrl || '',     // 파일이 없으면 빈 값으로 저장
-                guideUrl: guideUrl || ''   // 파일이 없으면 빈 값으로 저장
+                fileUrl: msdsUrl || '', 
+                guideUrl: guideUrl || '' 
             };
             existingData.push(newMsds);
             alert('물질이 등록되었습니다!');
         }
         
         await saveAdminDB('esol_msds_data', existingData);
-        cancelEditMsds(); // 입력창 초기화 및 등록모드로 복귀
+        cancelEditMsds(); 
         loadAdminMsdsList();
     } catch (err) {
         alert('처리 실패: ' + (err.message || '용량이 너무 크거나 네트워크 에러입니다.'));
@@ -960,37 +976,28 @@ async function loadAdminMsdsList() {
     `).join('');
 }
 
-// 💡 위로 이동 함수
 async function moveMsdsUp(index) {
     if (index === 0) return alert('이미 가장 첫 번째 항목입니다.');
     const db = await fetchAdminDB();
     let list = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
-    
-    // 위치 서로 바꾸기 (Swap)
     const temp = list[index];
     list[index] = list[index - 1];
     list[index - 1] = temp;
-    
     await saveAdminDB('esol_msds_data', list);
     loadAdminMsdsList();
 }
 
-// 💡 아래로 이동 함수
 async function moveMsdsDown(index) {
     const db = await fetchAdminDB();
     let list = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
     if (index === list.length - 1) return alert('이미 가장 마지막 항목입니다.');
-    
-    // 위치 서로 바꾸기 (Swap)
     const temp = list[index];
     list[index] = list[index + 1];
     list[index + 1] = temp;
-    
     await saveAdminDB('esol_msds_data', list);
     loadAdminMsdsList();
 }
 
-// 💡 특정 항목의 데이터를 위쪽 입력창으로 불러와 수정 모드로 전환
 async function editMsds(id) {
     const db = await fetchAdminDB();
     const list = db['esol_msds_data'] ? JSON.parse(db['esol_msds_data']) : [];
@@ -1010,7 +1017,6 @@ async function editMsds(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💡 수정 취소 및 입력창 초기화
 function cancelEditMsds() {
     document.getElementById('editMsdsId').value = '';
     document.getElementById('msdsName').value = '';
@@ -1056,6 +1062,7 @@ async function saveTextSettings() {
     await saveAdminDB('esol_site_texts', config);
     alert('저장되었습니다.');
 }
+
 // ============================================
 // ⚖️ 6. 산안법령 요지 관리 DB 연동
 // ============================================
@@ -1098,15 +1105,12 @@ async function deleteLawRevision(id) {
     let list = db['esol_law_history'] ? JSON.parse(db['esol_law_history']) : [];
     list = list.filter(m => m.id !== id); await saveAdminDB('esol_law_history', list); renderAdminLaw();
 }
-// ==========================================
-// ⚠️ 탭14: 위험성평가 관리 (부서 및 자료 연동)
-// ==========================================
 
-// 1. 위험성평가 화면 및 테이블 렌더링
+// ==========================================
+// ⚠️ 탭14: 위험성평가 관리
+// ==========================================
 async function renderAdminRisk() {
-    const db = await fetchAdminDB(); // 외부 JS용 통신 함수
-    
-    // 부서 목록 로드 및 태그 생성
+    const db = await fetchAdminDB(); 
     const savedDepts = db['esol_risk_depts']; 
     let depts = savedDepts ? JSON.parse(savedDepts) : [];
     
@@ -1119,7 +1123,6 @@ async function renderAdminRisk() {
         ).join('');
     }
     
-    // Select 박스 옵션 채우기
     const deptSelect = document.getElementById('riskRevDept');
     if (deptSelect) {
         let deptOptions = depts.map(d => `<option value="${d}">${d}</option>`).join('');
@@ -1127,7 +1130,6 @@ async function renderAdminRisk() {
         deptSelect.innerHTML = deptOptions;
     }
 
-    // 등록된 자료 목록 로드
     const list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : [];
     const tbody = document.getElementById('adminRiskHistoryBody');
     if (!tbody) return;
@@ -1158,34 +1160,27 @@ async function renderAdminRisk() {
     }).join('');
 }
 
-// 2. 신규 부서 추가
 async function addRiskDept() {
     const val = document.getElementById('newRiskDeptInput').value.trim(); 
     if (!val) return;
-
     const db = await fetchAdminDB(); 
     const depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : [];
     if(depts.includes(val)) return alert('이미 존재하는 부서입니다.');
-    
     depts.push(val); 
     await saveAdminDB('esol_risk_depts', depts); 
     document.getElementById('newRiskDeptInput').value = ''; 
     renderAdminRisk();
 }
 
-// 3. 부서 삭제
 async function deleteRiskDept(dept) {
     if (!confirm(`'${dept}' 부서를 삭제하시겠습니까? (기존에 업로드된 게시글은 삭제되지 않습니다)`)) return;
-    
     const db = await fetchAdminDB(); 
     let depts = db['esol_risk_depts'] ? JSON.parse(db['esol_risk_depts']) : [];
     depts = depts.filter(d => d !== dept); 
-    
     await saveAdminDB('esol_risk_depts', depts); 
     renderAdminRisk();
 }
 
-// 4. 신규 자료 업로드 (다중 파일 지원)
 async function uploadRiskRevision() {
     const dept = document.getElementById('riskRevDept').value; 
     const title = document.getElementById('riskRevTitle').value.trim(); 
@@ -1210,15 +1205,7 @@ async function uploadRiskRevision() {
         const db = await fetchAdminDB(); 
         const list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : []; 
         
-        list.unshift({ 
-            id: Date.now().toString(), 
-            dept, 
-            title, 
-            date, 
-            periodStart, 
-            periodEnd, 
-            files: filesData 
-        }); 
+        list.unshift({ id: Date.now().toString(), dept, title, date, periodStart, periodEnd, files: filesData }); 
         
         await saveAdminDB('esol_risk_history', list); 
         alert('✅ 위험성평가 자료가 성공적으로 등록되었습니다.'); 
@@ -1235,24 +1222,20 @@ async function uploadRiskRevision() {
     }
 }
 
-// 5. 등록된 자료 삭제
 async function deleteRiskRevision(id) {
     if (!confirm('해당 자료를 완전히 삭제하시겠습니까?')) return;
-    
     const db = await fetchAdminDB(); 
     let list = db['esol_risk_history'] ? JSON.parse(db['esol_risk_history']) : [];
     list = list.filter(m => m.id !== id); 
-    
     await saveAdminDB('esol_risk_history', list); 
     renderAdminRisk();
 }
+
 // ==========================================
 // 🪪 탭15: 안전인증서 관리 연동
 // ==========================================
 async function renderAdminCert() {
     const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB();
-    
-    // 1. 카테고리 렌더링
     const savedCats = db['esol_cert_categories']; 
     let cats = savedCats ? JSON.parse(savedCats) : ['보호구', '방호장치', '기타'];
     
@@ -1265,7 +1248,6 @@ async function renderAdminCert() {
         ).join('');
     }
     
-    // 2. Select 박스 렌더링
     const catSelect = document.getElementById('certRevCat');
     if (catSelect) {
         let catOptions = cats.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1273,7 +1255,6 @@ async function renderAdminCert() {
         catSelect.innerHTML = catOptions;
     }
 
-    // 3. 목록 렌더링
     const list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : [];
     const tbody = document.getElementById('adminCertHistoryBody');
     if (!tbody) return;
@@ -1291,7 +1272,7 @@ async function renderAdminCert() {
                 <td>${m.date}</td>
                 <td style="color:#1976d2; font-size:12px;">첨부 ${fileCount}건</td>
                 <td style="text-align:center;">
-                    <button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openHistoryEditModal('esol_cert_history', '${m.id}')">수정</button>
+                    <button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px;" onclick="openCertEditModal('${m.id}')">수정</button>
                     <button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deleteCertRevision('${m.id}')">삭제</button>
                 </td>
             </tr>
@@ -1327,9 +1308,10 @@ async function uploadCertRevision() {
     const title = document.getElementById('certRevTitle').value.trim(); 
     const date = document.getElementById('certRevDate').value; 
     const fileInput = document.getElementById('certRevFile');
+    const photoInput = document.getElementById('certRevPhoto'); // 💡 추가된 제품사진칸
     
     if (!category || !title || !date || !fileInput.files.length) {
-        return alert('분류, 제목, 일자 및 첨부파일을 모두 입력해주세요.');
+        return alert('분류, 제목, 일자 및 인증서 첨부파일을 모두 입력해주세요.');
     }
 
     const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { 
@@ -1340,27 +1322,38 @@ async function uploadCertRevision() {
     });
 
     try { 
+        // 1. 인증서 파일들 변환
         const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f))); 
+        
+        // 2. 💡 제품 사진이 있으면 변환
+        let photoUrl = '';
+        if (photoInput && photoInput.files.length > 0) {
+            const photoData = await readAsDataURL_multi(photoInput.files[0]);
+            photoUrl = photoData.fileUrl; // 이미지 URL 추출
+        }
+
         const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB(); 
         const list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : []; 
         
         list.unshift({ 
             id: Date.now().toString(), 
             category, title, date, 
-            files: filesData 
+            files: filesData,
+            photoUrl: photoUrl // 💡 DB에 사진 데이터 추가 저장
         }); 
         
         const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
         await saveFunc('esol_cert_history', list); 
-        alert('✅ 안전인증서가 성공적으로 등록되었습니다.'); 
+        alert('✅ 안전인증서 및 제품사진이 성공적으로 등록되었습니다.'); 
         
         document.getElementById('certRevTitle').value = ''; 
         document.getElementById('certRevDate').value = ''; 
         fileInput.value = ''; 
+        if(photoInput) photoInput.value = ''; // 💡 사진칸 초기화
         
         renderAdminCert(); 
     } catch (err) { 
-        alert('에러가 발생했습니다.'); 
+        alert('에러가 발생했습니다. (파일 용량이 너무 클 수 있습니다)'); 
     }
 }
 
@@ -1372,4 +1365,82 @@ async function deleteCertRevision(id) {
     const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
     await saveFunc('esol_cert_history', list); 
     renderAdminCert();
+}
+
+// ==========================================
+// 🪪 안전인증서 전용 수정 기능
+// ==========================================
+async function openCertEditModal(id) {
+    const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB();
+    const list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : [];
+    const item = list.find(m => m.id === id);
+    if (!item) return;
+
+    // 분류 Select 박스 세팅
+    const savedCats = db['esol_cert_categories'];
+    const cats = savedCats ? JSON.parse(savedCats) : ['보호구', '방호장치', '기타'];
+    
+    document.getElementById('editCertId').value = item.id;
+    document.getElementById('editCertTitle').value = item.title;
+    document.getElementById('editCertDate').value = item.date;
+    
+    const catSelect = document.getElementById('editCertCat');
+    catSelect.innerHTML = cats.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('');
+
+    // 파일 첨부 칸은 비워두기 (새로 선택하면 덮어쓰기 위함)
+    document.getElementById('editCertFile').value = '';
+    document.getElementById('editCertPhoto').value = '';
+
+    document.getElementById('certEditModal').style.display = 'flex';
+}
+
+async function saveCertEdit() {
+    const id = document.getElementById('editCertId').value;
+    const category = document.getElementById('editCertCat').value;
+    const title = document.getElementById('editCertTitle').value.trim();
+    const date = document.getElementById('editCertDate').value;
+    const fileInput = document.getElementById('editCertFile');
+    const photoInput = document.getElementById('editCertPhoto');
+
+    if (!title || !date) return alert('제목과 날짜를 입력해주세요.');
+
+    const db = typeof fetchAdminDB === 'function' ? await fetchAdminDB() : await fetchDB();
+    let list = db['esol_cert_history'] ? JSON.parse(db['esol_cert_history']) : [];
+    const idx = list.findIndex(m => m.id === id);
+    if (idx === -1) return;
+
+    const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { 
+        const reader = new FileReader(); 
+        reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); 
+        reader.onerror = (e) => reject(e); 
+        reader.readAsDataURL(file); 
+    });
+
+    try {
+        // 1. 기본 텍스트 정보 업데이트
+        list[idx].category = category;
+        list[idx].title = title;
+        list[idx].date = date;
+
+        // 2. 💡 새로운 인증서를 첨부했다면 기존 인증서 덮어쓰기
+        if (fileInput.files.length > 0) {
+            const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f)));
+            list[idx].files = filesData;
+        }
+
+        // 3. 💡 새로운 제품 사진을 첨부했다면 기존 사진 덮어쓰기
+        if (photoInput.files.length > 0) {
+            const photoData = await readAsDataURL_multi(photoInput.files[0]);
+            list[idx].photoUrl = photoData.fileUrl;
+        }
+
+        const saveFunc = typeof saveAdminDB === 'function' ? saveAdminDB : saveDB;
+        await saveFunc('esol_cert_history', list);
+        
+        alert('안전인증서 내용이 성공적으로 수정되었습니다.');
+        document.getElementById('certEditModal').style.display = 'none';
+        renderAdminCert();
+    } catch(err) {
+        alert('에러가 발생했습니다. (파일 용량이 너무 클 수 있습니다)');
+    }
 }
