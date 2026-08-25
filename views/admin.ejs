@@ -660,14 +660,14 @@
                 <div style="background:#ede7f6; border:1px solid #7e57c2; padding:20px; border-radius:12px; margin-bottom:24px;">
                     <h3 style="color:#4a148c; font-size:16px; margin-bottom:12px;">+ 공정별 / 작업별 필수 착용 보호구 지침 등록</h3>
                     <div style="display:flex; gap:10px; margin-bottom:10px;">
-                        <input type="text" id="newPpeProcess" placeholder="공정 명칭" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="newPpeProcess" placeholder="부서/공정/작업 명칭" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <input type="text" id="newPpeItems" placeholder="필수 착용 보호구 목록" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
                         <button class="submit-btn" style="background:#512da8;" onclick="addPpeGuide()">+ 지침 등록</button>
                     </div>
                 </div>
                 <h3 style="font-size:15px; margin-bottom:10px;">📋 등록된 공정별 보호구 지침 목록</h3>
                 <table style="margin-bottom:30px;">
-                    <thead><tr><th style="width: 30%;">공정 명칭</th><th style="width: 50%;">필수 착용 보호구 목록</th><th style="width: 20%; text-align:center;">관리</th></tr></thead>
+                    <thead><tr><th style="width: 30%;">공정/부서/작업 명칭</th><th style="width: 50%;">필수 착용 보호구 목록</th><th style="width: 20%; text-align:center;">관리</th></tr></thead>
                     <tbody id="adminPpeGuideTableBody"></tbody>
                 </table>
                 <h3 style="font-size:16px; margin-bottom:10px; color:#333;">📦 임직원 보호구 신청 및 수령 서명 현황</h3>
@@ -1079,10 +1079,48 @@
             const db = await fetchDB(); const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [{ process: '용접 작업 공정', items: '용접면, 방진마스크, 가죽안전장갑' }, { process: '화학물질 취급 공정', items: '내화학안전장갑, 보안경, 방독마스크' }];
             const tbody = document.getElementById('adminPpeGuideTableBody'); if (!tbody) return;
             if (guides.length === 0) return tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:#888;">등록된 지침이 없습니다.</td></tr>`;
-            tbody.innerHTML = guides.map((g, idx) => `<tr><td style="font-weight:bold; color:#512da8;">${g.process}</td><td>${g.items}</td><td style="text-align:center;"><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePpeGuide(${idx})">삭제</button></td></tr>`).join('');
+            tbody.innerHTML = guides.map((g, idx) => `<tr><td style="font-weight:bold; color:#512da8;">${g.process}</td><td>${g.items}</td><td style="text-align:center;"><button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px; margin-right:4px;" onclick="openPpeGuideModal(${idx})">수정</button><button class="submit-btn" style="background:#d32f2f; padding:5px 10px; font-size:12px;" onclick="deletePpeGuide(${idx})">삭제</button></td></tr>`).join('');
         }
         async function addPpeGuide() { const process = document.getElementById('newPpeProcess').value.trim(); const items = document.getElementById('newPpeItems').value.trim(); if (!process || !items) return alert('모두 입력해주세요.'); const db = await fetchDB(); let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : []; guides.push({ process, items }); await saveDB('esol_ppe_guides', guides); document.getElementById('newPpeProcess').value = ''; document.getElementById('newPpeItems').value = ''; loadAdminPpeSection(); }
         async function deletePpeGuide(idx) { if (!confirm('삭제하시겠습니까?')) return; const db = await fetchDB(); let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : []; guides.splice(idx, 1); await saveDB('esol_ppe_guides', guides); loadAdminPpeSection(); }
+        // 💡 [보호구 지침 수정 기능] 팝업 열기, 닫기, 저장
+        async function openPpeGuideModal(idx) {
+            const db = await fetchDB();
+            const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [];
+            const guide = guides[idx];
+            if (!guide) return;
+            
+            document.getElementById('editPpeGuideIndex').value = idx;
+            document.getElementById('editPpeProcessInput').value = guide.process;
+            document.getElementById('editPpeItemsInput').value = guide.items;
+            
+            document.getElementById('ppeGuideEditModal').style.display = 'flex';
+        }
+
+        function closePpeGuideModal() {
+            document.getElementById('ppeGuideEditModal').style.display = 'none';
+        }
+
+        async function savePpeGuideModal() {
+            const idx = parseInt(document.getElementById('editPpeGuideIndex').value, 10);
+            const process = document.getElementById('editPpeProcessInput').value.trim();
+            const items = document.getElementById('editPpeItemsInput').value.trim();
+            
+            if (!process || !items) return alert('공정 명칭과 보호구 목록을 모두 입력해주세요.');
+            
+            const db = await fetchDB();
+            let guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [];
+            
+            if (idx > -1 && guides[idx]) {
+                guides[idx].process = process;
+                guides[idx].items = items;
+            }
+            
+            await saveDB('esol_ppe_guides', guides);
+            closePpeGuideModal();
+            loadAdminPpeSection();
+            alert('보호구 지침이 성공적으로 수정되었습니다.');
+        }
         async function loadAdminPpeRequests() {
             const db = await fetchDB(); const requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : []; const tbody = document.getElementById('adminPpeRequestsTableBody'); if (!tbody) return;
             if (requests.length === 0) return tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#888;">접수된 보호구 신청 내역이 없습니다.</td></tr>`;
