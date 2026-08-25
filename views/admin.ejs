@@ -1324,9 +1324,9 @@
             
             tbody.innerHTML = list.map(t => {
                 let statusHtml = '';
-                if (t.status === '조치 완료') statusHtml = '<span style="color:#2e7d32; font-weight:bold; background:#e8f5e9; padding:4px 8px; border-radius:12px;">✅ 조치 완료</span>';
-                else if (t.status === '해당없음') statusHtml = '<span style="color:#616161; font-weight:bold; background:#f5f5f5; padding:4px 8px; border-radius:12px;">➖ 해당없음</span>';
-                else statusHtml = '<span style="color:#c62828; font-weight:bold; background:#ffebee; padding:4px 8px; border-radius:12px;">🚨 조치 전</span>';
+                if (t.status === '조치 완료') statusHtml = '<span style="font-size:12px; color:#2e7d32; font-weight:bold; background:#e8f5e9; padding:4px 8px; border-radius:12px;">✅ 조치 완료</span>';
+                else if (t.status === '해당없음') statusHtml = '<span style="font-size:12px; color:#616161; font-weight:bold; background:#f5f5f5; padding:4px 8px; border-radius:12px;">➖ 해당없음</span>';
+                else statusHtml = '<span style="font-size:12px; color:#c62828; font-weight:bold; background:#ffebee; padding:4px 8px; border-radius:12px;">🚨 조치 전</span>';
 
                 let shortContent = t.content.length > 25 ? t.content.substring(0, 25) + '...' : t.content;
                 let replyBtnText = t.adminComment ? '조치수정' : '조치달기';
