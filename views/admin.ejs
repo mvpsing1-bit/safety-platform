@@ -1203,9 +1203,38 @@
 
                 if(baseDate) {
                     dueDateStr = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
-                    const diffDays = (baseDate - new Date()) / (1000 * 60 * 60 * 24);
-                    if (diffDays <= 30) dueColor = '#d32f2f'; 
-                    dueDateStr += `<br><span style="font-size:11px; color:#888; background:#eee; padding:2px 6px; border-radius:4px; margin-top:4px; display:inline-block;">${checkupLabel}</span>`;
+                    
+                    // 💡 1. D-Day 정확한 일수 계산 (자정 기준)
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const targetDate = new Date(baseDate);
+                    targetDate.setHours(0, 0, 0, 0);
+                    
+                    const diffTime = targetDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    let dDayText = '';
+                    if (diffDays > 0) dDayText = `D-${diffDays}`;
+                    else if (diffDays === 0) dDayText = `D-Day`;
+                    else dDayText = `D+${Math.abs(diffDays)} (지연)`;
+
+                    // 💡 2. 30일 이하로 남았을 때 초강력 경고 뱃지 표시
+                    if (diffDays <= 30) {
+                        dueColor = '#c62828'; // 텍스트도 진한 빨간색
+                        dueDateStr += `<br>
+                            <span style="display:inline-block; margin-top:6px; background:#ffebee; color:#c62828; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:900; border:1px solid #ffcdd2;">
+                                🚨 ${dDayText}
+                            </span>`;
+                    } else {
+                        dueColor = '#333'; // 30일 이상 남았을 때는 일반 색상
+                        dueDateStr += `<br>
+                            <span style="display:inline-block; margin-top:6px; background:#e3f2fd; color:#1565c0; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:bold; border:1px solid #bbdefb;">
+                                ⏳ ${dDayText}
+                            </span>`;
+                    }
+
+                    // 기존 라벨(정기/배치후)을 옆에 붙여줌
+                    dueDateStr += ` <span style="font-size:11px; color:#888; background:#eee; padding:3px 6px; border-radius:4px; margin-left:4px; display:inline-block;">${checkupLabel}</span>`;
                 }
 
                 let counselBadge = '<span style="color:#888;">-</span>';
