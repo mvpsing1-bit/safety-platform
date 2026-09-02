@@ -88,7 +88,7 @@ const defaultPpeGuides = [
 const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
 
 function getAdminPassword() {
-    return localStorage.getItem('esol_admin_password') || '1234';
+    return localStorage.getItem('esol_admin_password') || '0000';
 }
 
 function checkPassword() {
@@ -195,6 +195,79 @@ async function submitDri() {
     
     alert('위험작업(DRI)이 등록되었습니다!');
     loadAdminDriList(1);
+}
+
+// ==========================================
+// 🖱️ DRI 마우스 드래그 앤 드롭(순서 변경) 로직
+// ==========================================
+let dragDriId = null;
+let dragDriDate = null;
+
+function handleDriDragStart(e, id, date) {
+    dragDriId = id;
+    dragDriDate = date;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => e.target.style.opacity = '0.4', 0); // 드래그 시 반투명 효과
+}
+
+function handleDriDragEnd(e) {
+    e.target.style.opacity = '1';
+}
+
+function handleDriDragOver(e) {
+    e.preventDefault(); 
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDriDragEnter(e) {
+    e.preventDefault();
+    const tr = e.target.closest('tr');
+    if (tr && tr.getAttribute('draggable') === 'true') {
+        tr.style.borderTop = '3px solid #b0268d'; // 들어갈 자리에 보라색 선 표시
+    }
+}
+
+function handleDriDragLeave(e) {
+    const tr = e.target.closest('tr');
+    if (tr && tr.getAttribute('draggable') === 'true') {
+        tr.style.borderTop = '1px solid #eee'; 
+    }
+}
+
+async function handleDriDrop(e, targetId, targetDate) {
+    e.preventDefault();
+    const tr = e.target.closest('tr');
+    if (tr) tr.style.borderTop = '1px solid #eee'; 
+    
+    // 다른 날짜로 옮기거나 제자리에 놓는 것은 차단
+    if (dragDriId === targetId || dragDriDate !== targetDate) return;
+
+    const db = await fetchAdminDB(); // 💡 admin.js 전용 DB 함수 사용!
+    let list = db['esol_dri_data'] ? JSON.parse(db['esol_dri_data']) : [];
+
+    let dateItems = list.filter(d => d.date === targetDate);
+    const dragIdx = dateItems.findIndex(d => d.id === dragDriId);
+    const dropIdx = dateItems.findIndex(d => d.id === targetId);
+
+    if (dragIdx === -1 || dropIdx === -1) return;
+
+    // 순서 교체 로직
+    const [draggedItem] = dateItems.splice(dragIdx, 1);
+    dateItems.splice(dropIdx, 0, draggedItem);
+
+    const grouped = {};
+    list.forEach(d => {
+        if(!grouped[d.date]) grouped[d.date] = [];
+        if(d.date !== targetDate) grouped[d.date].push(d); 
+    });
+    grouped[targetDate] = dateItems; 
+
+    const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
+    let newList = [];
+    sortedDates.forEach(date => { newList = newList.concat(grouped[date]); });
+
+    await saveAdminDB('esol_dri_data', newList); // 💡 admin.js 전용 DB 함수 사용!
+    loadAdminDriList(adminDriCurrentPage); 
 }
 
 /* 💡 위/아래 순서 변경 기능 */
@@ -315,7 +388,17 @@ async function loadAdminDriList(page = 1) {
                                 else if (d.level === '저위험') levelBadge = '<span style="display:inline-block; background:#e8f5e9; color:#2e7d32; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; border:1px solid #a5d6a7;">🟢 저위험</span>';
 
                                 return `
-                                    <tr style="background-color: ${isNone ? '#fafafa' : '#fff'}; border-bottom: 1px solid #eee; color:${isNone ? '#888' : '#333'};">
+                                    <!-- 💡 드래그 기능(draggable) 및 이벤트 연결 추가! -->
+                                    <tr draggable="true" 
+                                        ondragstart="handleDriDragStart(event, ${d.id}, '${date}')" 
+                                        ondragend="handleDriDragEnd(event)"
+                                        ondragover="handleDriDragOver(event)" 
+                                        ondragenter="handleDriDragEnter(event)" 
+                                        ondragleave="handleDriDragLeave(event)" 
+                                        ondrop="handleDriDrop(event, ${d.id}, '${date}')"
+                                        style="background-color: ${isNone ? '#fafafa' : '#fff'}; border-bottom: 1px solid #eee; color:${isNone ? '#888' : '#333'}; cursor: grab;"
+                                        title="마우스로 끌어서 순서를 변경할 수 있습니다.">
+                                        
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;"><strong>${d.dept}</strong></td>
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.location || '-'}</td>
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; color:${isNone ? '#888' : '#006064'}; font-weight:bold;">${displayTime}</td>
