@@ -151,7 +151,8 @@
             if (guides.length === 0) {
                 container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; color:#888;">등록된 공정별 보호구 지침이 없습니다.</div>';
             } else {
-                container.innerHTML = guides.map(g => `<div class="ppe-card"><h4>${g.process}</h4><p><strong>필수 착용 지정 항목:</strong><br>${g.items}</p></div>`).join('');
+                // 💡 ${g.items} 부분에 .replace(/\n/g, '<br>') 추가 완료!
+                container.innerHTML = guides.map(g => `<div class="ppe-card"><h4>${g.process}</h4><p><strong>필수 착용 지정 항목:</strong><br>${g.items.replace(/\n/g, '<br>')}</p></div>`).join('');
             }
         }
 
