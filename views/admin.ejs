@@ -40,8 +40,12 @@
         <div class="login-box">
             <h2>⚙️ 관리자 인증</h2>
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">관리자 전용 비밀번호를 입력하세요.</p>
-            <input type="password" id="adminPw" placeholder="비밀번호 입력" onkeypress="if(event.key==='Enter') checkPassword()">
-            <button onclick="checkPassword()">로그인</button>
+            <input type="password" id="adminPw" placeholder="비밀번호 입력" style="margin-bottom: 15px;" onkeypress="if(event.key==='Enter') checkPassword()">
+            <!-- 💡 돌아가기 버튼과 로그인 버튼을 나란히 배치했습니다 -->
+            <div style="display:flex; gap:10px;">
+                <button style="flex:1; background:#888; color:#fff; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="location.href='/'">🏠 돌아가기</button>
+                <button style="flex:1; background:#4a0082; color:#fff; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="checkPassword()">🔓 로그인</button>
+            </div>
         </div>
     </div>
 
@@ -240,6 +244,102 @@
                         <div style="display:flex; gap:10px;">
                             <button class="submit-btn" style="flex:1; background:#888;" onclick="document.getElementById('talkReplyModal').style.display='none'">취소</button>
                             <button class="submit-btn" style="flex:1; background:#009688;" onclick="saveTalkReply()">💾 결과 등록</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✨ 탭18: 작업환경측정 관리 -->
+            <div id="tab18" class="panel">
+                <h2 style="color:#283593; border-bottom: 2px solid #e8eaf6; margin-bottom: 20px;">📊 작업환경측정 대상 및 결과표 관리</h2>
+               
+                <!-- 섹션 1: 대상 물질 현황 관리 -->
+                <div style="background:#e8eaf6; border:1px solid #c5cae9; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#1a237e; font-size:16px; margin-bottom:12px;">➕ 신규 측정 대상 등록</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="weTargetType" placeholder="측정 대상 (예: 동탄사업장)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="weDept" placeholder="부서 (예: 제조팀)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="weLocation" placeholder="장소 (예: 가공실)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="weProduct" placeholder="제품명" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="weSubstance" placeholder="대상 물질 (예: 톨루엔)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="weCas" placeholder="CAS No." style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="text" id="weAmount" placeholder="월 취급량 (예: 100kg)" style="padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <button class="submit-btn" style="background:#283593; width:100%; height:45px; font-size:15px;" onclick="addWorkEnvTarget()">+ 대상 등록하기</button>
+                </div>
+               
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 측정 대상 목록</h3>
+                <table style="margin-bottom:40px;">
+                    <thead><tr><th>측정 대상</th><th>부서</th><th>장소</th><th>제품명</th><th>대상 물질</th><th>CAS No.</th><th>월 취급량</th><th style="width:12%;">관리</th></tr></thead>
+                    <tbody id="adminWeTargetBody"></tbody>
+                </table>
+
+                <!-- 섹션 2: 결과표 아코디언 관리 -->
+                <div style="background:#faf8fc; border:1px solid #eae2f0; padding:20px; border-radius:12px; margin-bottom:24px;">
+                    <h3 style="color:#333; font-size:16px; margin-bottom:12px;">📂 신규 결과표 업로드</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="weReportTitle" placeholder="보고서 제목 (예: 2026년 상반기 작업환경측정 결과)" style="flex:2; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        <input type="date" id="weReportDate" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                    </div>
+                    <textarea id="weReportContent" rows="3" placeholder="결과 요약 및 안내사항 (엔터로 줄바꿈 가능)" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; margin-bottom:10px; resize:vertical;"></textarea>
+                    <div style="margin-bottom:15px;">
+                        <label style="font-size:12px; font-weight:bold; color:#666;">결과표 파일 첨부 (다중 선택 가능)</label>
+                        <input type="file" id="weReportFile" multiple style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; background:#fff; margin-top:5px;">
+                    </div>
+                    <button class="submit-btn" style="background:#333; width:100%; height:45px; font-size:15px;" onclick="uploadWorkEnvReport()">🚀 결과표 등록하기</button>
+                </div>
+
+                <h3 style="font-size:16px; margin-bottom:10px;">📋 등록된 결과표 목록</h3>
+                <table>
+                    <thead><tr><th style="width:40%;">제목</th><th style="width:15%;">등록 일자</th><th style="width:30%;">첨부 파일</th><th style="width:15%; text-align:center;">관리</th></tr></thead>
+                    <tbody id="adminWeReportBody"></tbody>
+                </table>
+
+                <!-- 💡 1. 작업환경측정 대상 수정 팝업 -->
+                <div class="custom-modal-overlay" id="weTargetEditModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+                    <div class="custom-modal" style="background:#fff; padding:30px; border-radius:12px; width:600px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+                        <h3 style="color:#283593; border-bottom:2px solid #e8eaf6; padding-bottom:10px; margin-bottom:20px;">✏️ 측정 대상 수정</h3>
+                        <input type="hidden" id="editWeTargetId">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div><label style="font-size:12px; font-weight:bold;">측정 대상</label><input type="text" id="editWeTargetType" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div><label style="font-size:12px; font-weight:bold;">부서</label><input type="text" id="editWeDept" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div><label style="font-size:12px; font-weight:bold;">장소</label><input type="text" id="editWeLocation" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
+                            <div><label style="font-size:12px; font-weight:bold;">제품명</label><input type="text" id="editWeProduct" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div><label style="font-size:12px; font-weight:bold;">대상 물질</label><input type="text" id="editWeSubstance" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div><label style="font-size:12px; font-weight:bold;">카스번호</label><input type="text" id="editWeCas" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div><label style="font-size:12px; font-weight:bold;">월 취급량</label><input type="text" id="editWeAmount" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="submit-btn" style="flex:1; background:#888; padding:12px; border:none; border-radius:6px; color:#fff; cursor:pointer;" onclick="document.getElementById('weTargetEditModal').style.display='none'">취소</button>
+                            <button class="submit-btn" style="flex:1; background:#283593; padding:12px; border:none; border-radius:6px; color:#fff; cursor:pointer; font-weight:bold;" onclick="saveEditWorkEnvTarget()">💾 수정 사항 저장</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 💡 2. 작업환경측정 결과표 수정 팝업 -->
+                <div class="custom-modal-overlay" id="weReportEditModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+                    <div class="custom-modal" style="background:#fff; padding:30px; border-radius:12px; width:600px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+                        <h3 style="color:#283593; border-bottom:2px solid #e8eaf6; padding-bottom:10px; margin-bottom:20px;">✏️ 결과표 수정</h3>
+                        <input type="hidden" id="editWeReportId">
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div style="flex:2;"><label style="font-size:12px; font-weight:bold;">보고서 제목</label><input type="text" id="editWeReportTitle" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                            <div style="flex:1;"><label style="font-size:12px; font-weight:bold;">등록 일자</label><input type="date" id="editWeReportDate" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;"></div>
+                        </div>
+                        <div style="margin-bottom:15px;">
+                            <label style="font-size:12px; font-weight:bold;">결과 요약 및 안내사항</label>
+                            <textarea id="editWeReportContent" rows="3" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; resize:vertical;"></textarea>
+                        </div>
+                        <div style="margin-bottom:20px;">
+                            <label style="font-size:12px; font-weight:bold; color:#d32f2f;">※ 새 파일을 첨부하면 기존 파일이 지워지고 덮어씌워집니다. (선택 안 하면 기존 파일 유지)</label>
+                            <input type="file" id="editWeReportFile" multiple style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; background:#fff; margin-top:5px;">
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="submit-btn" style="flex:1; background:#888; padding:12px; border:none; border-radius:6px; color:#fff; cursor:pointer;" onclick="document.getElementById('weReportEditModal').style.display='none'">취소</button>
+                            <button class="submit-btn" style="flex:1; background:#283593; padding:12px; border:none; border-radius:6px; color:#fff; cursor:pointer; font-weight:bold;" onclick="saveEditWorkEnvReport()">💾 수정 사항 저장</button>
                         </div>
                     </div>
                 </div>
@@ -843,7 +943,8 @@
                 '안전인증서': "switchPanel('tab15', this); renderAdminCert();",
                 '위험성평가 관리': "switchPanel('tab14', this); renderAdminRisk();",
                 '근로자 건강관리 (건강검진)': "switchPanel('tab16', this); loadAdminHealthData();" ,
-                '안전 TalkTalk': "switchPanel('tab17', this); loadAdminTalkTalk();"
+                '안전 TalkTalk': "switchPanel('tab17', this); loadAdminTalkTalk();" ,
+                '작업환경측정': "switchPanel('tab18', this); renderAdminWorkEnv();"
             };
 
             let html = '';

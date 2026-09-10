@@ -212,7 +212,9 @@
             '보건': [
                 { title: 'MSDS 및 관리요령 즉시조회', desc: 'MSDS 및 공정별 관리요령 검색 열람', icon: '🧪' },
                 { title: '근로자 건강관리 (건강검진)', desc: '건강검진 대상 여부 확인', icon: '🏥' },
-                { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' }
+                { title: '보호구 관리', desc: '개인 보호구 지급 현황 및 수칙', icon: '🥽' },
+                // 💡 새롭게 추가된 한 줄!
+                { title: '작업환경측정', desc: '유해인자 노출 현황 및 결과표', icon: '📊' }
             ],
             '환경': [
                 { title: '환경경영방침', desc: '사내 환경 방침 및 목표', icon: '🌿' },
@@ -258,6 +260,7 @@
             else if (catTitle.includes('인증서')) { location.href = '/cert'; }
             else if (catTitle.includes('건강관리') || catTitle.includes('건강검진')) { openHealthLogin(); }
             else if (catTitle.includes('TalkTalk') || catTitle.includes('톡톡')) { location.href = '/talktalk'; }
+            else if (catTitle.includes('작업환경측정')) { location.href = '/workenv'; }
             else { location.href = '/view?cat=' + encodeURIComponent(catTitle); }
         }
 

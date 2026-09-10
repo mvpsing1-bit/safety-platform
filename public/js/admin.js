@@ -211,8 +211,9 @@ function handleDriDragStart(e, id, date) {
 }
 
 function handleDriDragEnd(e) {
-    e.target.style.opacity = '1';
-}
+            e.target.style.opacity = '1';
+            e.target.removeAttribute('draggable'); // 💡 드래그가 끝나면 드래그 모드를 해제하여 글자 복사 허용!
+        }
 
 function handleDriDragOver(e) {
     e.preventDefault(); 
@@ -388,23 +389,28 @@ async function loadAdminDriList(page = 1) {
                                 else if (d.level === '저위험') levelBadge = '<span style="display:inline-block; background:#e8f5e9; color:#2e7d32; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; border:1px solid #a5d6a7;">🟢 저위험</span>';
 
                                 return `
-                                    <!-- 💡 드래그 기능(draggable) 및 이벤트 연결 추가! -->
-                                    <tr draggable="true" 
-                                        ondragstart="handleDriDragStart(event, ${d.id}, '${date}')" 
+                                    <!-- 💡 줄(tr)에서 기본 draggable 속성을 제거하여 텍스트 복사 허용 -->
+                                    <tr ondragstart="handleDriDragStart(event, ${d.id}, '${date}')" 
                                         ondragend="handleDriDragEnd(event)"
                                         ondragover="handleDriDragOver(event)" 
                                         ondragenter="handleDriDragEnter(event)" 
                                         ondragleave="handleDriDragLeave(event)" 
                                         ondrop="handleDriDrop(event, ${d.id}, '${date}')"
-                                        style="background-color: ${isNone ? '#fafafa' : '#fff'}; border-bottom: 1px solid #eee; color:${isNone ? '#888' : '#333'}; cursor: grab;"
-                                        title="마우스로 끌어서 순서를 변경할 수 있습니다.">
+                                        style="background-color: ${isNone ? '#fafafa' : '#fff'}; border-bottom: 1px solid #eee; color:${isNone ? '#888' : '#333'};">
                                         
-                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;"><strong>${d.dept}</strong></td>
+                                        <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; white-space:nowrap;">
+                                            <!-- 💡 드래그 전용 손잡이(☰) 추가 -->
+                                            <span title="끌어서 순서 변경" 
+                                                  onmousedown="this.closest('tr').setAttribute('draggable', true)" 
+                                                  onmouseup="this.closest('tr').removeAttribute('draggable')"
+                                                  ontouchstart="this.closest('tr').setAttribute('draggable', true)"
+                                                  ontouchend="this.closest('tr').removeAttribute('draggable')"
+                                                  style="cursor: grab; color: #b0268d; font-size: 18px; margin-right: 8px; user-select: none;">☰</span>
+                                            <strong>${d.dept}</strong>
+                                        </td>
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.location || '-'}</td>
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; color:${isNone ? '#888' : '#006064'}; font-weight:bold;">${displayTime}</td>
-                                        <!-- 작업 내용 칸 -->
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; text-align:left; line-height:1.5;">${d.task.replace(/\n/g, '<br>')}</td>
-                                        <!-- 💡 분리된 위험도 칸 -->
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0; text-align:center;">${!isNone ? levelBadge : '-'}</td>
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.risk || '-'}</td>
                                         <td style="vertical-align:middle; padding:10px; border:1px solid #eae2f0;">${d.measure || '-'}</td>
@@ -1526,4 +1532,227 @@ async function saveCertEdit() {
     } catch(err) {
         alert('에러가 발생했습니다. (파일 용량이 너무 클 수 있습니다)');
     }
+}
+
+// ==========================================
+// 📊 탭18: 작업환경측정 관리 로직
+// ==========================================
+async function renderAdminWorkEnv() {
+    const db = await fetchAdminDB();
+    
+    // 1. 대상 물질 렌더링
+    const targets = db['esol_workenv_targets'] ? JSON.parse(db['esol_workenv_targets']) : [];
+    const targetBody = document.getElementById('adminWeTargetBody');
+    if (targetBody) {
+        if (targets.length === 0) {
+            targetBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px; color:#888;">등록된 대상이 없습니다.</td></tr>';
+        } else {
+            targetBody.innerHTML = targets.map(t => `
+                <tr>
+                    <td>${t.targetType}</td><td><strong>${t.dept}</strong></td><td>${t.location}</td>
+                    <td>${t.product}</td><td style="color:#d32f2f; font-weight:bold;">${t.substance}</td><td>${t.cas}</td><td>${t.amount}</td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <!-- 💡 수정 버튼 추가! -->
+                        <button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px; border:none; border-radius:4px; color:#fff; cursor:pointer; margin-right:4px;" onclick="openEditWorkEnvTarget(${t.id})">수정</button>
+                        <button class="btn-sm btn-del" style="padding:5px 10px; font-size:12px;" onclick="deleteWorkEnvTarget(${t.id})">삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    // 2. 결과표 렌더링
+    const reports = db['esol_workenv_reports'] ? JSON.parse(db['esol_workenv_reports']) : [];
+    const reportBody = document.getElementById('adminWeReportBody');
+    if (reportBody) {
+        if (reports.length === 0) {
+            reportBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">등록된 결과표가 없습니다.</td></tr>';
+        } else {
+            reportBody.innerHTML = reports.map(r => `
+                <tr>
+                    <td><strong>${r.title}</strong></td><td>${r.date}</td>
+                    <td style="color:#1976d2; font-size:12px;">첨부 ${r.files ? r.files.length : 0}건</td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <!-- 💡 수정 버튼 추가! -->
+                        <button class="submit-btn" style="background:#ff9800; padding:5px 10px; font-size:12px; border:none; border-radius:4px; color:#fff; cursor:pointer; margin-right:4px;" onclick="openEditWorkEnvReport(${r.id})">수정</button>
+                        <button class="btn-sm btn-del" style="padding:5px 10px; font-size:12px;" onclick="deleteWorkEnvReport(${r.id})">삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+}
+
+async function addWorkEnvTarget() {
+    const targetType = document.getElementById('weTargetType').value.trim();
+    const dept = document.getElementById('weDept').value.trim();
+    const location = document.getElementById('weLocation').value.trim();
+    const product = document.getElementById('weProduct').value.trim();
+    const substance = document.getElementById('weSubstance').value.trim();
+    const cas = document.getElementById('weCas').value.trim();
+    const amount = document.getElementById('weAmount').value.trim();
+
+    if (!dept || !substance) return alert('부서와 대상 물질은 필수 입력사항입니다.');
+
+    const db = await fetchAdminDB();
+    const targets = db['esol_workenv_targets'] ? JSON.parse(db['esol_workenv_targets']) : [];
+    targets.push({ id: Date.now(), targetType, dept, location, product, substance, cas, amount });
+    
+    await saveAdminDB('esol_workenv_targets', targets);
+    alert('대상이 정상적으로 등록되었습니다.');
+    
+    // 폼 초기화
+    document.getElementById('weTargetType').value = ''; document.getElementById('weDept').value = '';
+    document.getElementById('weLocation').value = ''; document.getElementById('weProduct').value = '';
+    document.getElementById('weSubstance').value = ''; document.getElementById('weCas').value = '';
+    document.getElementById('weAmount').value = '';
+    
+    renderAdminWorkEnv();
+}
+
+async function deleteWorkEnvTarget(id) {
+    if (!confirm('해당 대상을 삭제하시겠습니까?')) return;
+    const db = await fetchAdminDB();
+    let targets = db['esol_workenv_targets'] ? JSON.parse(db['esol_workenv_targets']) : [];
+    targets = targets.filter(t => t.id !== id);
+    await saveAdminDB('esol_workenv_targets', targets);
+    renderAdminWorkEnv();
+}
+
+async function uploadWorkEnvReport() {
+    const title = document.getElementById('weReportTitle').value.trim();
+    const date = document.getElementById('weReportDate').value;
+    const content = document.getElementById('weReportContent').value.trim();
+    const fileInput = document.getElementById('weReportFile');
+
+    if (!title || !date) return alert('제목과 등록 일자를 모두 입력해 주세요.');
+
+    const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { 
+        const reader = new FileReader(); 
+        reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); 
+        reader.onerror = (e) => reject(e); 
+        reader.readAsDataURL(file); 
+    });
+
+    try {
+        let filesData = [];
+        if (fileInput.files.length > 0) {
+            filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f)));
+        }
+
+        const db = await fetchAdminDB();
+        const reports = db['esol_workenv_reports'] ? JSON.parse(db['esol_workenv_reports']) : [];
+        reports.unshift({ id: Date.now(), title, date, content, files: filesData });
+
+        await saveAdminDB('esol_workenv_reports', reports);
+        alert('작업환경측정 결과표가 성공적으로 등록되었습니다.');
+
+        document.getElementById('weReportTitle').value = '';
+        document.getElementById('weReportDate').value = '';
+        document.getElementById('weReportContent').value = '';
+        fileInput.value = '';
+        
+        renderAdminWorkEnv();
+    } catch (err) { alert('파일 업로드 중 오류가 발생했습니다.'); }
+}
+
+async function deleteWorkEnvReport(id) {
+    if (!confirm('이 결과표를 완전히 삭제하시겠습니까?')) return;
+    const db = await fetchAdminDB();
+    let reports = db['esol_workenv_reports'] ? JSON.parse(db['esol_workenv_reports']) : [];
+    reports = reports.filter(r => r.id !== id);
+    await saveAdminDB('esol_workenv_reports', reports);
+    renderAdminWorkEnv();
+}
+
+// ==========================================
+// ✏️ 작업환경측정 "수정" 기능 로직
+// ==========================================
+
+// 1. 대상 물질 수정창 열기
+async function openEditWorkEnvTarget(id) {
+    const db = await fetchAdminDB();
+    const targets = db['esol_workenv_targets'] ? JSON.parse(db['esol_workenv_targets']) : [];
+    const t = targets.find(item => item.id === id);
+    if (!t) return;
+    
+    document.getElementById('editWeTargetId').value = t.id;
+    document.getElementById('editWeTargetType').value = t.targetType || '';
+    document.getElementById('editWeDept').value = t.dept || '';
+    document.getElementById('editWeLocation').value = t.location || '';
+    document.getElementById('editWeProduct').value = t.product || '';
+    document.getElementById('editWeSubstance').value = t.substance || '';
+    document.getElementById('editWeCas').value = t.cas || '';
+    document.getElementById('editWeAmount').value = t.amount || '';
+    
+    document.getElementById('weTargetEditModal').style.display = 'flex';
+}
+
+// 2. 대상 물질 수정 사항 저장하기
+async function saveEditWorkEnvTarget() {
+    const id = parseInt(document.getElementById('editWeTargetId').value);
+    const db = await fetchAdminDB();
+    let targets = db['esol_workenv_targets'] ? JSON.parse(db['esol_workenv_targets']) : [];
+    const idx = targets.findIndex(t => t.id === id);
+    if (idx === -1) return;
+
+    targets[idx].targetType = document.getElementById('editWeTargetType').value.trim();
+    targets[idx].dept = document.getElementById('editWeDept').value.trim();
+    targets[idx].location = document.getElementById('editWeLocation').value.trim();
+    targets[idx].product = document.getElementById('editWeProduct').value.trim();
+    targets[idx].substance = document.getElementById('editWeSubstance').value.trim();
+    targets[idx].cas = document.getElementById('editWeCas').value.trim();
+    targets[idx].amount = document.getElementById('editWeAmount').value.trim();
+
+    await saveAdminDB('esol_workenv_targets', targets);
+    document.getElementById('weTargetEditModal').style.display = 'none';
+    alert('측정 대상이 성공적으로 수정되었습니다.');
+    renderAdminWorkEnv();
+}
+
+// 3. 결과표 보고서 수정창 열기
+async function openEditWorkEnvReport(id) {
+    const db = await fetchAdminDB();
+    const reports = db['esol_workenv_reports'] ? JSON.parse(db['esol_workenv_reports']) : [];
+    const r = reports.find(item => item.id === id);
+    if (!r) return;
+    
+    document.getElementById('editWeReportId').value = r.id;
+    document.getElementById('editWeReportTitle').value = r.title || '';
+    document.getElementById('editWeReportDate').value = r.date || '';
+    document.getElementById('editWeReportContent').value = r.content || '';
+    document.getElementById('editWeReportFile').value = ''; // 💡 파일 선택칸은 비워둠 (새로 넣을 때만 덮어씌움)
+    
+    document.getElementById('weReportEditModal').style.display = 'flex';
+}
+
+// 4. 결과표 보고서 수정 사항 저장하기
+async function saveEditWorkEnvReport() {
+    const id = parseInt(document.getElementById('editWeReportId').value);
+    const db = await fetchAdminDB();
+    let reports = db['esol_workenv_reports'] ? JSON.parse(db['esol_workenv_reports']) : [];
+    const idx = reports.findIndex(r => r.id === id);
+    if (idx === -1) return;
+
+    reports[idx].title = document.getElementById('editWeReportTitle').value.trim();
+    reports[idx].date = document.getElementById('editWeReportDate').value;
+    reports[idx].content = document.getElementById('editWeReportContent').value.trim();
+
+    const fileInput = document.getElementById('editWeReportFile');
+    // 💡 새로운 파일을 첨부한 경우에만 덮어쓰기! (아니면 기존 파일 유지)
+    if (fileInput.files.length > 0) {
+        const readAsDataURL_multi = (file) => new Promise((resolve, reject) => { 
+            const reader = new FileReader(); 
+            reader.onload = (e) => resolve({ fileName: file.name, fileUrl: e.target.result }); 
+            reader.onerror = (e) => reject(e); 
+            reader.readAsDataURL(file); 
+        });
+        const filesData = await Promise.all(Array.from(fileInput.files).map(f => readAsDataURL_multi(f)));
+        reports[idx].files = filesData;
+    }
+
+    await saveAdminDB('esol_workenv_reports', reports);
+    document.getElementById('weReportEditModal').style.display = 'none';
+    alert('결과표가 성공적으로 수정되었습니다.');
+    renderAdminWorkEnv();
 }

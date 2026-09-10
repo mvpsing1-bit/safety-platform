@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>작업환경측정 - ESOL 환경안전보건 플랫폼</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f5f9; color: #333; padding: 24px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 20px 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-left: 8px solid #4a0082; margin-bottom: 24px; }
+        .brand-title { font-size: 26px; font-weight: 900; color: #4a0082; display: flex; align-items: center; gap: 12px; }
+        .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* 1. 상단 대상물질 현황 테이블 */
+        .target-box { background: #fff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px; border: 1px solid #eae2f0; }
+        .section-title { font-size: 20px; color: #4a0082; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .target-table { width: 100%; border-collapse: collapse; text-align: center; }
+        .target-table th { background: #f8f5fc; color: #4a0082; padding: 12px; border: 1px solid #eae2f0; font-size: 14px; }
+        .target-table td { padding: 12px; border: 1px solid #eae2f0; font-size: 14px; vertical-align: middle; }
+
+        /* 2. 하단 아코디언 게시판 */
+        .report-box { background: #fff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #eae2f0; }
+        .accordion-item { border: 1px solid #eae2f0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        .accordion-header { background: #faf8fc; padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #333; transition: background 0.2s; }
+        .accordion-header:hover { background: #f0e6f6; }
+        .accordion-body { padding: 20px; display: none; background: #fff; border-top: 1px solid #eae2f0; }
+        
+        .file-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: #f0e6f6; color: #4a0082; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold; border: 1px solid #e1bee7; margin-right: 8px; margin-bottom: 8px; transition: 0.2s; }
+        .file-link:hover { background: #e1bee7; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand-title">
+            <img src="/esol_logo.png" alt="ESOL Logo" style="height:38px;">
+            <span>환경안전보건 플랫폼</span>
+        </div>
+        <a href="/" class="back-btn">🏠 메인 화면으로 돌아가기</a>
+    </header>
+
+    <div class="container">
+        <!-- 1. 상단: 작업환경측정 대상 현황 (고정) -->
+        <div class="target-box">
+            <h2 class="section-title">📊 작업환경측정 대상 유해인자 현황</h2>
+            <table class="target-table">
+                <thead>
+                    <tr>
+                        <th style="width:12%;">측정 대상</th>
+                        <th style="width:14%;">부서</th>
+                        <th style="width:14%;">장소</th>
+                        <th style="width:15%;">제품명</th>
+                        <th style="width:15%;">대상 물질</th>
+                        <th style="width:15%;">CAS No.</th>
+                        <th style="width:15%;">취급량/월</th>
+                    </tr>
+                </thead>
+                <tbody id="userTargetBody">
+                    <tr><td colspan="7" style="padding:20px; color:#888;">데이터를 불러오는 중입니다...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. 하단: 작업환경측정 결과표 (아코디언 게시판) -->
+        <div class="report-box">
+            <h2 class="section-title">📂 작업환경측정 결과표</h2>
+            <div id="userReportAccordion"></div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchDB() { const res = await fetch('/api/db'); return await res.json(); }
+
+        async function loadWorkEnvData() {
+            const db = await fetchDB();
+            
+            // 1. 대상 물질 현황 렌더링
+            const targets = db['esol_workenv_targets'] ? JSON.parse(db['esol_workenv_targets']) : [];
+            const targetBody = document.getElementById('userTargetBody');
+            
+            if (targets.length === 0) {
+                targetBody.innerHTML = '<tr><td colspan="7" style="padding:20px; color:#888;">등록된 작업환경측정 대상이 없습니다.</td></tr>';
+            } else {
+                targetBody.innerHTML = targets.map(t => `
+                    <tr>
+                        <td style="font-weight:bold; color:#4a0082;">${t.targetType}</td>
+                        <td><strong>${t.dept}</strong></td>
+                        <td>${t.location}</td>
+                        <td>${t.product}</td>
+                        <td style="color:#d32f2f; font-weight:bold;">${t.substance}</td>
+                        <td>${t.cas}</td>
+                        <td>${t.amount}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // 2. 결과표 아코디언 렌더링
+            const reports = db['esol_workenv_reports'] ? JSON.parse(db['esol_workenv_reports']) : [];
+            const reportContainer = document.getElementById('userReportAccordion');
+            
+            if (reports.length === 0) {
+                reportContainer.innerHTML = '<div style="text-align:center; padding:30px; color:#888; border:1px solid #eee; border-radius:8px;">등록된 결과표가 없습니다.</div>';
+            } else {
+                reportContainer.innerHTML = reports.map((r, idx) => {
+                    let filesHtml = '';
+                    if (r.files && r.files.length > 0) {
+                        // 💡 다운로드 <a> 태그 대신, "즉시열기" 버튼과 PDF가 보일 빈 상자(div)를 만듭니다.
+                        filesHtml = r.files.map((f, fIdx) => {
+                            const safeName = f.fileName.replace(/['"]/g, ''); // 이름 오류 방지
+                            return `
+                                <div style="margin-top: 10px;">
+                                    <button class="file-link" onclick="togglePdf('pdf-viewer-${idx}-${fIdx}', '${f.fileUrl}', this, '${safeName}')" style="cursor:pointer; border:1px solid #e1bee7; font-family:inherit;">
+                                        📄 ${safeName} 즉시열기
+                                    </button>
+                                    <div id="pdf-viewer-${idx}-${fIdx}" style="display:none; margin-top:10px; border:2px solid #4a0082; border-radius:8px; overflow:hidden;"></div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+
+                    return `
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleReport(${idx})">
+                                <div><span style="background:#4a0082; color:#fff; padding:4px 10px; border-radius:12px; font-size:12px; margin-right:8px;">${r.date}</span> ${r.title}</div>
+                                <span id="icon-${idx}" style="color:#888;">▼</span>
+                            </div>
+                            <div class="accordion-body" id="body-${idx}">
+                                <div style="margin-bottom:15px; line-height:1.6; color:#444; font-size:14px;">${r.content.replace(/\n/g, '<br>')}</div>
+                                <div>${filesHtml}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // 아코디언 열고 닫기 함수 (기존 유지)
+        window.toggleReport = function(idx) {
+            const body = document.getElementById(`body-${idx}`);
+            const icon = document.getElementById(`icon-${idx}`);
+            if (body.style.display === 'block') {
+                body.style.display = 'none';
+                icon.innerText = '▼';
+            } else {
+                body.style.display = 'block';
+                icon.innerText = '▲';
+            }
+        }
+
+        // 💡 새롭게 추가된 PDF 즉시열기/접기 함수
+        window.togglePdf = function(viewerId, fileUrl, btnEl, fileName) {
+            const viewer = document.getElementById(viewerId);
+            if (viewer.style.display === 'block') {
+                // 접기 상태로 변경
+                viewer.style.display = 'none';
+                viewer.innerHTML = ''; // 💡 닫을 때는 메모리 절약을 위해 iframe 삭제
+                btnEl.innerHTML = `📄 ${fileName} 즉시열기`;
+                btnEl.style.background = '#f0e6f6';
+            } else {
+                // 열기 상태로 변경
+                viewer.style.display = 'block';
+                // 💡 iframe을 통해 PDF를 브라우저 안에서 렌더링
+                viewer.innerHTML = `<iframe src="${fileUrl}" width="100%" height="1000px" style="border:none; display:block;"></iframe>`;
+                btnEl.innerHTML = `📄  접기`;
+                btnEl.style.background = '#e1bee7';
+            }
+        }
+
+        window.onload = loadWorkEnvData;
+    </script>
+</body>
+</html>
