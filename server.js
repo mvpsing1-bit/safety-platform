@@ -102,7 +102,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     res.json({ fileUrl: '/uploads/' + req.file.filename, fileName: req.file.originalname });
 });
 
-// AI 챗봇 백엔드 API
+// AI 챗봇 백엔드 API (구버전 SDK 완벽 호환 및 성능 향상 버전)
 app.post('/api/chat', async (req, res) => {
     try {
         const { question, contextData } = req.body;
@@ -111,35 +111,53 @@ app.post('/api/chat', async (req, res) => {
             return res.status(400).json({ error: '질문 내용을 입력해 주세요.' });
         }
 
+        // 💡 1. 모델 및 온도 설정 (systemInstruction 옵션 제거하여 버전 충돌 방지!)
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-3.5-flash-lite',
+            generationConfig: {
+                temperature: 0.2, // 사실 기반 답변을 위해 낮게 유지
+                topP: 0.8,
+                topK: 40
+            }
+        });
+
+        // 💡 2. 프롬프트 안에 시스템 지시사항, 사내 데이터, 사용자 질문을 한 번에 합쳐서 전달
         const promptText = `
-너는 'ESOL 환경안전보건 플랫폼'의 전문 AI 지식 비서야.
+너는 'ESOL 환경안전보건 플랫폼'의 친절하고 전문적인 AI 지식 비서야.
+근로자의 안전과 생명이 달린 전문적인 답변부터, 가벼운 일상 대화까지 모두 자연스럽게 응대할 수 있어.
 
-[응답 규칙 - 매우 중요]
-1. 마크다운 기호(*, **, #, - 등)는 절대 사용 금지. 기호를 쓰면 시스템 에러가 발생하니 무조건 일반 텍스트로만 대답해.
-2. 문단을 나눌 때는 기호 대신 🧪, ⚠️, 🛡️, 📌, 💡, 👉 등의 이모티콘만 사용하여 가독성 좋고 예쁘게 답변해.
-3. 아래 [사업장 데이터]에 기반한 질문은 해당 정보를 바탕으로 답변해.
+[절대 규칙 - 시스템 에러 방지용]
+1. 마크다운 기호(*, **, #, - 등)는 절대 사용하지 마. 무조건 일반 텍스트로 대답해.
+2. 문단을 나눌 때는 기호 대신 🧪, ⚠️, 🛡️, 📌, 💡, 👉, ✅, 👋 등의 이모티콘을 활용해 가독성 좋게 꾸며줘.
 
-[사업장 데이터]:
+[대화 및 답변 가이드라인]
+1. 사내 규정, 공지사항, MSDS, 보호구 등 '회사와 관련된 질문'은 반드시 제공된 [사업장 데이터]를 최우선으로 검색해서 정확하게 답변해.
+2. 사내 업무 관련 질문인데 [사업장 데이터]에 내용이 없다면, "해당 내용은 현재 등록된 사내 데이터에서 찾을 수 없습니다."라고 안내한 뒤 너의 일반적인 안전보건 지식을 활용해 일반론적인 조언을 덧붙여줘.
+3. "안녕", "오늘 힘드네", "점심 뭐 먹을까?" 같은 일상적인 대화나 사내 업무와 무관한 일반적인 질문에는 친절하고 센스 있게, 진짜 사람과 대화하듯 자연스럽게 대답해 줘.
+4. 항상 사용자(임직원)를 존중하고 따뜻한 톤앤매너를 유지해.
+
+[사업장 데이터]
 ${JSON.stringify(contextData || {})}
 
-[사용자 질문]:
+[사용자 질문]
 ${question}
-        `;
+`;
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash-lite' });
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
 
+        // 스트림 방식으로 답변 생성
         const result = await model.generateContentStream(promptText);
         for await (const chunk of result.stream) {
             let chunkText = chunk.text();
+            // 프론트엔드 에러 방지를 위해 혹시라도 튀어나온 마크다운 강제 제거
             chunkText = chunkText.replace(/[\*\#\`\~]/g, '').replace(/-{2,}/g, '\n\n');
             res.write(chunkText);
         }
         res.end();
     } catch (err) {
         console.error('Gemini API 통신 에러 상세:', err);
-        res.write('⚠️ AI 답변 생성 중 오류가 발생했습니다.');
+        res.write('⚠️ AI 답변 생성 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
         res.end();
     }
 });
