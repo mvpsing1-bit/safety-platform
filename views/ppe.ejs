@@ -12,32 +12,46 @@
         .back-btn { background: #4a0082; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
         .container { max-width: 1500px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
         .page-title { font-size: 24px; color: #4a0082; margin-bottom: 20px; border-bottom: 2px solid #4a0082; padding-bottom: 12px; }
+        
         .doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px; }
         .doc-table th, .doc-table td { padding: 14px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; vertical-align: middle; }
         .doc-table th { background: #f8f5fc; color: #4a0082; font-weight: bold; }
+        
         .btn-action { padding: 8px 14px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-right: 6px; transition: 0.2s; }
         .btn-action:hover { opacity: 0.9; }
         .btn-view { background: #4a0082; color: white; }
         .btn-edit { background: #ff9800; color: white; }
         .btn-delete { background: #e53935; color: white; }
+        .btn-newhire { background: #2e7d32; color: white; border: 2px dashed #4caf50; transition: 0.2s; border-radius:6px; }
+        .btn-newhire:hover { background: #1b5e20; }
+
         .ppe-guide-btn-box { background: linear-gradient(135deg, #f0e6f6, #ffffff); border: 2px solid #4a0082; border-radius: 12px; padding: 18px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(74,0,130,0.1); }
         .ppe-guide-btn-box:hover { background: #f0e6f6; }
+        
         .ppe-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 3000; }
         .ppe-modal-box { background: #fff; padding: 32px; border-radius: 16px; width: 800px; max-width: 90%; max-height: 85vh; overflow-y: auto; }
         .ppe-guide-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
         .ppe-card { background: #faf8fc; border-radius: 12px; padding: 18px; border-left: 5px solid #b0268d; border: 1px solid #eae2f0; }
         .ppe-card h4 { color: #4a0082; font-size: 16px; margin-bottom: 8px; }
         .ppe-card p { font-size: 14px; color: #444; line-height: 1.5; }
+        
         .user-auth-box { background: #f0e6f6; border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 2px solid #b0268d; }
         .user-auth-inputs { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
         .user-auth-inputs input { padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        
         .ppe-form-box { background: #faf8fc; border-radius: 12px; padding: 24px; margin-bottom: 30px; border: 1px solid #eae2f0; }
-        /* 💡 4칸 -> 5칸으로 비율 조정 */
-        .ppe-form-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr 2fr 1.5fr; gap: 10px; margin-bottom: 14px; }
-        .ppe-form-grid input, .ppe-form-grid select { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .ppe-form-grid { display: grid; grid-template-columns: 1fr 1fr 3fr; gap: 12px; margin-bottom: 14px; }
+        .ppe-form-grid input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; width: 100%; }
+        
+        .ppe-checkbox-container { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .ppe-item-box { display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 8px 12px; border-radius: 6px; border: 1px solid #eee; }
+        .ppe-item-box label { font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold; color: #444; }
+        .ppe-item-box select { padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; display: none; }
+        
         .signature-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 3000; }
         .signature-box { background: #fff; padding: 24px; border-radius: 16px; text-align: center; width: 420px; }
         canvas { border: 2px dashed #b0268d; border-radius: 8px; cursor: crosshair; background: #fff; margin: 15px 0; touch-action: none; }
+        
         @media print {
             header, .back-btn, .ppe-guide-btn-box, .user-auth-box, .ppe-form-box, .btn-action, .no-print { display: none !important; }
             body { background: #fff; padding: 0; margin: 0; font-size: 12pt; }
@@ -61,7 +75,7 @@
         <div class="ppe-guide-btn-box no-print" onclick="openPpeGuideModal()">
             <div style="display:flex; align-items:center; gap:12px;">
                 <span style="font-size:24px;">📌</span>
-                <div><h4 style="color:#4a0082; font-size:16px;">1. 공정별 / 작업별 필수 착용 보호구 지침 확인하기</h4><p style="font-size:13px; color:#666; margin-top:2px;">클릭하시면 부서/공정/작업별/신규입사자 필수 착용 보호구 지침 안내 팝업이 떠오릅니다.</p></div>
+                <div><h4 style="color:#4a0082; font-size:16px;">1. 공정별 / 작업별 필수 착용 보호구 지침 확인하기</h4><p style="font-size:13px; color:#666; margin-top:2px;">클릭하시면 필수 착용 보호구 지침 안내 팝업이 떠오릅니다.</p></div>
             </div>
             <button class="btn-action btn-view" style="padding:10px 18px; margin:0;">🔍 지침 열람하기 ➔</button>
         </div>
@@ -77,16 +91,27 @@
         </div>
 
         <div class="ppe-form-box no-print">
-            <h3 style="color:#4a0082; margin-bottom:12px;">📝 2. 보호구 신청서 작성</h3>
+            <h3 style="color:#4a0082; margin-bottom:12px;">📝 2. 보호구 다중 신청 및 사이즈 입력</h3>
+            
             <div class="ppe-form-grid">
                 <input type="text" id="ppeDept" placeholder="부서명 (자동)" readonly style="background:#eee;">
                 <input type="text" id="ppeName" placeholder="성명 (자동)" readonly style="background:#eee;">
-                <select id="ppeType"></select>
-                <input type="text" id="ppePurpose" placeholder="신청 목적 (예: 노후 교체 / 신규 입사)">
-                <!-- 💡 사이즈 등 비고 입력란 추가 -->
-                <input type="text" id="ppeRemark" placeholder="비고 (사이즈 등 기입)">
+                <input type="text" id="ppePurpose" placeholder="신청 목적 (예: 노후 교체 / 신규 입사 / 부서 이동)">
             </div>
-            <button class="btn-action btn-view" style="width:100%; height:45px; font-size:15px; background:#b0268d;" onclick="submitPpeRequest()">+ 보호구 신청서 제출하기</button>
+            
+            <!-- 💡 이 부분이 프리셋 버튼들이 들어갈 정확한 위치입니다 -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px;">
+                <h4 style="color:#555; font-size:14px; margin:0;">✅ 필요한 보호구를 모두 체크하고 사이즈를 선택해 주세요.</h4>
+                <div id="ppePresetButtonsArea" style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <!-- JS가 여기에 프리셋 버튼을 그려줍니다 -->
+                </div>
+            </div>
+            
+            <div class="ppe-checkbox-container" id="ppeCheckboxArea">
+                <!-- JS가 여기에 체크박스들을 그려줍니다 -->
+            </div>
+
+            <button class="btn-action btn-view" style="width:100%; height:45px; font-size:15px; background:#b0268d; margin-top:20px;" onclick="submitPpeRequest()">+ 다중 보호구 신청서 제출하기</button>
             <p style="text-align:center; font-size:13px; color:#d32f2f; margin-top:10px; font-weight:bold;">
                 💡 개인정보 보호를 위해 보호구 신청 완료 후 꼭 로그아웃 해주세요.
             </p>
@@ -100,12 +125,12 @@
             </div>
         </div>
         <table class="doc-table">
-            <!-- 💡 비고(사이즈) 열 추가 -->
-            <thead><tr><th style="width:12%;">신청일시</th><th style="width:10%;">부서명</th><th style="width:12%;">신청자(사번)</th><th style="width:14%;">보호구 종류</th><th style="width:16%;">신청 목적</th><th style="width:12%;">비고(사이즈)</th><th style="width:10%;">지급 상태</th><th style="width:14%;">수령 확인 서명</th></tr></thead>
+            <thead><tr><th style="width:12%;">신청일시</th><th style="width:10%;">부서명</th><th style="width:12%;">신청자(사번)</th><th style="width:14%;">신청 목적</th><th style="width:28%;">신청 내역 (품목 및 사이즈)</th><th style="width:10%;">지급 상태</th><th style="width:14%;">수령 확인 서명</th></tr></thead>
             <tbody id="ppeListBody"></tbody>
         </table>
     </div>
 
+    <!-- 팝업 모달창들 (지침, 서명) -->
     <div class="ppe-modal" id="ppeGuideModal">
         <div class="ppe-modal-box">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #4a0082; padding-bottom:12px;">
@@ -124,7 +149,7 @@
             <canvas id="signCanvas" width="360" height="180"></canvas>
             <div style="display:flex; gap:10px; justify-content:center;">
                 <button class="btn-action btn-delete" onclick="clearCanvas()">🔄 지우기</button>
-                <button class="btn-action btn-view" onclick="saveSignature()">💾 서명 완료 및 수령 확정</button>
+                <button class="btn-action btn-view" onclick="saveSignature()">💾 서명 완료</button>
                 <button class="btn-action" style="background:#aaa; color:#fff;" onclick="closeSignModal()">취소</button>
             </div>
         </div>
@@ -136,38 +161,87 @@
             await fetch('/api/db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value: value ? JSON.stringify(value) : null }) });
         }
 
-        const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
+        const defaultPpeOptions = ['안전모', '안전화', '방진화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑', '방진복'];
 
-        async function openPpeGuideModal() { 
-            await renderPpeGuides(); 
-            document.getElementById('ppeGuideModal').style.display = 'flex'; 
-        }
-        function closePpeGuideModal() { document.getElementById('ppeGuideModal').style.display = 'none'; }
-
-        async function renderPpeGuides() {
-            const db = await fetchDB();
-            const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [];
-            const container = document.getElementById('ppeGuideContainer');
-            if (guides.length === 0) {
-                container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; color:#888;">등록된 공정별 보호구 지침이 없습니다.</div>';
-            } else {
-                // 💡 ${g.items} 부분에 .replace(/\n/g, '<br>') 추가 완료!
-                container.innerHTML = guides.map(g => `<div class="ppe-card"><h4>${g.process}</h4><p><strong>필수 착용 지정 항목:</strong><br>${g.items.replace(/\n/g, '<br>')}</p></div>`).join('');
+        // 사이즈 옵션 생성 (신발 vs 의류)
+        function generateSizeOptions(ppeName) {
+            let html = '<option value="">사이즈 선택</option>';
+            if (ppeName.includes('화')) { 
+                for(let size = 220; size <= 300; size += 5) html += `<option value="${size}">${size}</option>`;
+            } else { 
+                ['프리사이즈', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].forEach(size => { html += `<option value="${size}">${size}</option>`; });
             }
+            return html;
         }
 
+        // 체크박스 생성
         async function renderPpeSelectOptions() {
             const db = await fetchDB();
             const options = db['esol_ppe_types'] ? JSON.parse(db['esol_ppe_types']) : defaultPpeOptions;
-            let html = '<option value="">보호구 종류 선택</option>';
-            options.forEach(opt => { html += `<option value="${opt}">${opt}</option>`; });
-            document.getElementById('ppeType').innerHTML = html;
+            const container = document.getElementById('ppeCheckboxArea');
+            let html = '';
+            options.forEach((opt, index) => {
+                html += `
+                    <div class="ppe-item-box">
+                        <label>
+                            <input type="checkbox" name="ppeItem" value="${opt}" onchange="toggleSizeDisplay(this, '${index}')"> ${opt}
+                        </label>
+                        <select id="ppeSize_${index}">
+                            ${generateSizeOptions(opt)}
+                        </select>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
-        function getUserSession() {
-            return JSON.parse(localStorage.getItem('esol_user_session') || 'null'); 
+        function toggleSizeDisplay(checkbox, index) {
+            const sizeSelect = document.getElementById(`ppeSize_${index}`);
+            if (checkbox.checked) sizeSelect.style.display = 'block';
+            else { sizeSelect.style.display = 'none'; sizeSelect.value = ''; }
         }
 
+        // 프리셋 로드 및 렌더링
+        async function loadPpePresets() {
+            try {
+                const db = await fetchDB();
+                const presets = db['esol_ppe_presets'] ? JSON.parse(db['esol_ppe_presets']) : [];
+                const container = document.getElementById('ppePresetButtonsArea');
+                
+                if (presets.length === 0) {
+                    container.innerHTML = ''; 
+                    return;
+                }
+
+                container.innerHTML = presets.map(p => {
+                    const itemsStr = encodeURIComponent(JSON.stringify(p.items));
+                    return `<button class="btn-newhire" style="width:auto; margin:0; padding:6px 12px; font-size:13px; cursor:pointer;" onclick="applyPreset('${p.name}', '${itemsStr}')">✨ ${p.name} 일괄선택</button>`;
+                }).join('');
+            } catch (err) {
+                console.error('프리셋 로드 에러:', err);
+            }
+        }
+
+        // 프리셋 적용
+        function applyPreset(presetName, itemsStr) {
+            document.getElementById('ppePurpose').value = presetName + ' 지급';
+            const presetItems = JSON.parse(decodeURIComponent(itemsStr));
+            const checkboxes = document.getElementsByName('ppeItem');
+            
+            checkboxes.forEach((cb, index) => {
+                if (presetItems.includes(cb.value)) {
+                    cb.checked = true;
+                    toggleSizeDisplay(cb, index);
+                } else {
+                    cb.checked = false;
+                    toggleSizeDisplay(cb, index);
+                }
+            });
+            alert(`'${presetName}' 보호구 항목이 자동 선택되었습니다.\n사이즈를 확인해 주세요!`);
+        }
+
+        // 유저 세션 관리
+        function getUserSession() { return JSON.parse(localStorage.getItem('esol_user_session') || 'null'); }
         function checkUserAuth() {
             const user = getUserSession();
             const statusText = document.getElementById('authStatusText');
@@ -175,7 +249,7 @@
             const logoutArea = document.getElementById('logoutBtnArea');
 
             if (user) {
-                statusText.innerHTML = `<h4 style="color:green; font-size:16px;">✅ 인증 완료: ${user.dept} ${user.name} (${user.empNo})님 접속 중</h4>`;
+                statusText.innerHTML = `<h4 style="color:green; font-size:16px;">✅ 인증 완료: ${user.dept} ${user.name} (${user.empNo})님</h4>`;
                 authGroup.style.display = 'none'; logoutArea.style.display = 'block';
                 document.getElementById('ppeDept').value = user.dept; document.getElementById('ppeName').value = user.name;
             } else {
@@ -184,27 +258,21 @@
                 document.getElementById('ppeDept').value = ''; document.getElementById('ppeName').value = '';
             }
         }
-
         async function userLogin() {
             const idInput = document.getElementById('loginId').value.trim();
             const pwInput = document.getElementById('loginPw').value.trim();
             if (!idInput || !pwInput) return alert('입력해 주세요.');
-
             const db = await fetchDB();
             const users = db['esol_users_data'] ? JSON.parse(db['esol_users_data']) : [];
             const matchedUser = users.find(u => u.empNo === idInput && u.pw === pwInput);
-            
             if (!matchedUser) return alert('등록되지 않은 사번이거나 비밀번호가 불일치합니다.');
-
             localStorage.setItem('esol_user_session', JSON.stringify({ dept: matchedUser.dept, name: matchedUser.name, empNo: matchedUser.empNo }));
             document.getElementById('loginId').value = ''; document.getElementById('loginPw').value = '';
             alert(`${matchedUser.name}님 로그인 성공!`); checkUserAuth();
         }
+        function userLogout() { localStorage.removeItem('esol_user_session'); alert('로그아웃 되었습니다.'); checkUserAuth(); }
 
-        function userLogout() {
-            localStorage.removeItem('esol_user_session'); alert('로그아웃 되었습니다.'); checkUserAuth();
-        }
-
+        // 필터 및 렌더링
         function initPpeMonthFilter() {
             const filterEl = document.getElementById('ppeMonthFilter');
             const now = new Date(); let options = '';
@@ -216,31 +284,49 @@
             filterEl.innerHTML = options;
         }
 
+        // 신청서 제출
         async function submitPpeRequest() {
             const user = getUserSession();
             if (!user) return alert('보호구 신청을 하려면 먼저 로그인하세요.');
 
-            const type = document.getElementById('ppeType').value;
             const purpose = document.getElementById('ppePurpose').value.trim();
-            const remark = document.getElementById('ppeRemark').value.trim(); // 💡 비고(사이즈) 값 가져오기
+            if (!purpose) return alert('신청 목적을 입력하세요.');
 
-            if (!type || !purpose) return alert('보호구 종류와 신청 목적을 입력하세요.');
+            const checkboxes = document.getElementsByName('ppeItem');
+            const selectedItems = [];
+            
+            checkboxes.forEach((cb, index) => {
+                if (cb.checked) {
+                    const size = document.getElementById(`ppeSize_${index}`).value;
+                    selectedItems.push(`${cb.value}(${size || '사이즈 미입력'})`);
+                }
+            });
+
+            if (selectedItems.length === 0) return alert('신청할 보호구를 한 개 이상 체크해 주세요.');
+
+            const combinedDetails = selectedItems.join('<br>');
 
             const db = await fetchDB();
             const requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : [];
             const now = new Date();
             const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-            // 💡 DB에 저장할 때 remark(비고) 항목 추가
-            requests.unshift({ id: Date.now(), date: dateStr, month: dateStr.substring(0, 7), dept: user.dept, name: user.name, empNo: user.empNo, type: type, purpose: purpose, remark: remark, status: '지급 대기', signature: null });
+            requests.unshift({ 
+                id: Date.now(), date: dateStr, month: dateStr.substring(0, 7), 
+                dept: user.dept, name: user.name, empNo: user.empNo, 
+                purpose: purpose, 
+                details: combinedDetails, 
+                status: '지급 대기', signature: null 
+            });
             await saveDB('esol_ppe_requests', requests);
             
-            document.getElementById('ppeType').value = ''; 
+            alert('다중 보호구 신청이 완료되었습니다.'); 
             document.getElementById('ppePurpose').value = '';
-            document.getElementById('ppeRemark').value = ''; // 작성칸 비우기
-            alert('보호구 신청이 완료되었습니다.'); renderPpeList();
+            checkboxes.forEach((cb, index) => { cb.checked = false; toggleSizeDisplay(cb, index); });
+            renderPpeList();
         }
 
+        // 하단 테이블 출력
         async function renderPpeList() {
             const db = await fetchDB();
             const requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : [];
@@ -249,35 +335,46 @@
             const filtered = requests.filter(r => r.month === selectedMonth);
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#999; padding:25px;">해당 월에 신청/지급된 내역이 없습니다.</td></tr>`; return;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999; padding:25px;">해당 월에 신청/지급된 내역이 없습니다.</td></tr>`; return;
             }
 
-            // 💡 테이블에 비고(사이즈) 데이터 출력 추가
-            tbody.innerHTML = filtered.map(r => `
+            tbody.innerHTML = filtered.map(r => {
+                // 구버전(details 없는 경우)과 신버전(details 있는 경우) 모두 완벽 호환
+                let detailsDisplay = r.details ? r.details : `${r.type} (${r.remark || '-'})`;
+                return `
                 <tr>
-                    <td>${r.date}</td><td><strong>${r.dept}</strong></td><td>${r.name} (${r.empNo || '사번없음'})</td><td><span style="color:#b0268d; font-weight:bold;">${r.type}</span></td><td>${r.purpose}</td>
-                    <td style="color:#555; font-weight:bold;">${r.remark || '-'}</td>
-                    <td>${r.status === '지급 완료' ? '<span style="color:green; font-weight:bold;">✅ 지급 완료</span>' : '<span style="color:#ff9800; font-weight:bold;">⏳ 지급 대기중</span>'}</td>
+                    <td>${r.date}</td><td><strong>${r.dept}</strong></td><td>${r.name} (${r.empNo || '사번없음'})</td>
+                    <td>${r.purpose}</td>
+                    <td style="color:#b0268d; font-weight:bold; line-height:1.6;">${detailsDisplay}</td>
+                    <td>${r.status === '지급 완료' ? '<span style="color:green; font-weight:bold;">✅ 완료</span>' : '<span style="color:#ff9800; font-weight:bold;">⏳ 대기</span>'}</td>
                     <td>${r.signature ? `<img src="${r.signature}" class="sign-img-print" style="height:35px; border:1px solid #ccc; border-radius:4px;">` : `<button class="btn-action btn-edit no-print" onclick="openSignModal(${r.id})">✍️ 수령 서명하기</button>`}</td>
-                </tr>`).join('');
+                </tr>`
+            }).join('');
+        }
+
+        // 가이드 및 서명 기능
+        async function openPpeGuideModal() { await renderPpeGuides(); document.getElementById('ppeGuideModal').style.display = 'flex'; }
+        function closePpeGuideModal() { document.getElementById('ppeGuideModal').style.display = 'none'; }
+        async function renderPpeGuides() {
+            const db = await fetchDB();
+            const guides = db['esol_ppe_guides'] ? JSON.parse(db['esol_ppe_guides']) : [];
+            const container = document.getElementById('ppeGuideContainer');
+            if (guides.length === 0) {
+                container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; color:#888;">등록된 지침이 없습니다.</div>';
+            } else {
+                container.innerHTML = guides.map(g => `<div class="ppe-card"><h4>${g.process}</h4><p><strong>필수 항목:</strong><br>${g.items.replace(/\n/g, '<br>')}</p></div>`).join('');
+            }
         }
 
         let currentSignId = null;
         const canvas = document.getElementById('signCanvas');
         const ctx = canvas.getContext('2d');
         let isSigning = false;
-
         function openSignModal(id) { currentSignId = id; document.getElementById('signModal').style.display = 'flex'; clearCanvas(); }
         function closeSignModal() { document.getElementById('signModal').style.display = 'none'; }
         function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        }
-
+        function getPos(e) { const rect = canvas.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; return { x: clientX - rect.left, y: clientY - rect.top }; }
+        
         canvas.addEventListener('mousedown', (e) => { isSigning = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
         canvas.addEventListener('mousemove', (e) => { if (!isSigning) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.stroke(); });
         canvas.addEventListener('mouseup', () => isSigning = false);
@@ -290,22 +387,25 @@
             const db = await fetchDB();
             const requests = db['esol_ppe_requests'] ? JSON.parse(db['esol_ppe_requests']) : [];
             const target = requests.find(r => r.id === currentSignId);
-            
             if (target) {
-                target.signature = dataUrl;
-                target.status = '지급 완료';
+                target.signature = dataUrl; target.status = '지급 완료';
                 await saveDB('esol_ppe_requests', requests);
                 alert('수령 서명이 확정되었습니다!');
                 closeSignModal(); renderPpeList();
             }
         }
 
+        // 💡 모든 순서가 꼬이지 않도록 완벽하게 초기화
         window.onload = async () => {
-            await renderPpeGuides();
-            await renderPpeSelectOptions();
-            checkUserAuth();
-            initPpeMonthFilter();
-            await renderPpeList();
+            try {
+                await renderPpeSelectOptions();
+                await loadPpePresets();
+                checkUserAuth();
+                initPpeMonthFilter();
+                await renderPpeList();
+            } catch (error) {
+                console.error("초기화 과정 중 에러 발생:", error);
+            }
         };
     </script>
 </body>
