@@ -1,7 +1,6 @@
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
-// 💡 호환성 최강 pdf-parse로 복귀!
 const pdfParse = require('pdf-parse'); 
 
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
@@ -31,8 +30,9 @@ function scheduleSave() {
     }, 500);
 }
 
+// 💡 실패한 파일 무한 재시도 버그 해결 (원상 복구)
 function isFresh(entry, stat) {
-    return !!entry && !entry.error && entry.size === stat.size && entry.mtimeMs === stat.mtimeMs;
+    return !!entry && entry.size === stat.size && entry.mtimeMs === stat.mtimeMs;
 }
 
 async function runLimited(items, worker, limit = CONCURRENCY) {
@@ -71,12 +71,8 @@ async function parseFile(fileName) {
                 try {
                     stat = await fsp.stat(filePath);
                     const buf = await fsp.readFile(filePath);
-                    
-                    const parseFunc = typeof pdfParse === 'function' ? pdfParse : (pdfParse.default || pdfParse.pdfParse);
-                    if (!parseFunc) throw new Error("pdf-parse 모듈 에러");
-
-                    // 💡 [클로드의 천재적인 트릭!] 에러가 나지 않도록 순수 배열로 감싸서 넘깁니다.
-                    data = await parseFunc(new Uint8Array(buf));
+                    // 💡 클로드의 버퍼 우회 기법 적용 + 1.1.1 버전 고정
+                    data = await pdfParse(new Uint8Array(buf));
                     break;
                 } catch (err) {
                     if (attempt >= PARSE_ATTEMPTS) throw err;
@@ -132,7 +128,6 @@ async function syncAll() {
     if (removed) scheduleSave();
 
     await runLimited(files, parseFile);
-    console.log(`📚 [PDF 캐시] ESOL 사내 문서 동기화가 모두 완료되었습니다!`);
 }
 
 async function waitUntilStable(filePath) {
@@ -175,15 +170,95 @@ function extractPdfNames(contextString) {
     return [...names];
 }
 
-async function getPromptText(fileNames) {
-    if (!fileNames.length) return '';
-    const entries = await runLimited(fileNames, parseFile, 5);
-    let out = '';
-    entries.forEach((entry, i) => {
-        if (entry && !entry.error && entry.text) {
-            out += `\n\n[첨부문서 내용: ${fileNames[i]}]\n${entry.text}\n`;
+// 💡 contextData 객체를 훑어서 PDF 파일명 + 사람이 읽는 제목을 짝지어 반환
+//    예) { name: 'He(헬륨)', fileUrl: '/uploads/xxx.pdf', guideUrl: '/uploads/yyy.pdf' }
+//        → [{ name: 'xxx.pdf', title: 'He(헬륨)' }, { name: 'yyy.pdf', title: 'He(헬륨) (guide)' }]
+function extractPdfRefs(contextData) {
+    const refs = new Map();
+    const visit = (node, parentTitle) => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) { node.forEach(n => visit(n, parentTitle)); return; }
+        const title = node.title || node.name || parentTitle || '';
+        for (const [key, val] of Object.entries(node)) {
+            if (typeof val === 'string' && /\/uploads\/[^"'\s\\]+\.pdf$/i.test(val)) {
+                let fileName;
+                try { fileName = path.basename(decodeURIComponent(val.split('/').pop())); }
+                catch { fileName = path.basename(val.split('/').pop()); }
+                const suffix = /^fileUrl$/i.test(key) ? '' : (/^guideUrl$/i.test(key) ? ' 공정별 관리요령' : ` (${key.replace(/Url$/i, '')})`);
+                const label = title + suffix;
+                if (!refs.has(fileName)) refs.set(fileName, { name: fileName, title: label.trim() || fileName });
+            } else if (val && typeof val === 'object') {
+                visit(val, title);
+            }
         }
+    };
+    visit(contextData, '');
+    if (!refs.size) {
+        for (const n of extractPdfNames(JSON.stringify(contextData || {}))) refs.set(n, { name: n, title: n });
+    }
+    return [...refs.values()];
+}
+
+// 💡 한국어 검색용 정규화: 소문자 + 공백/기호 제거 (PDF에서 띄어쓰기가 사라져도 매칭되게)
+function normalize(s) {
+    return String(s || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+}
+
+// 💡 두 글자씩 잘라서 집합으로 (조사 붙은 '질소의'도 '질소'로 매칭됨)
+function bigrams(s) {
+    const set = new Set();
+    for (let i = 0; i + 2 <= s.length; i++) set.add(s.slice(i, i + 2));
+    return set;
+}
+
+function countHits(queryGrams, text) {
+    let hits = 0;
+    for (const g of queryGrams) if (text.includes(g)) hits++;
+    return hits;
+}
+
+// 💡 문단 경계를 살려서 약 size자 조각으로 자르기
+function splitChunks(text, size = 1200) {
+    const chunks = [];
+    let cur = '';
+    for (const para of text.split(/\n{2,}|\n(?=\d+\.\s)/)) {
+        if (cur.length + para.length + 1 > size && cur) { chunks.push(cur); cur = ''; }
+        if (para.length > size) {
+            for (let i = 0; i < para.length; i += size) chunks.push(para.slice(i, i + size));
+        } else {
+            cur += (cur ? '\n' : '') + para;
+        }
+    }
+    if (cur) chunks.push(cur);
+    return chunks;
+}
+
+// refs: [{ name, title }] 또는 파일명 문자열 배열 모두 허용
+async function getPromptText(refs, question = '', budget = 60000, maxChunks = 40) {
+    if (!refs || !refs.length) return '';
+    refs = refs.map(r => (typeof r === 'string' ? { name: r, title: r } : r));
+    const entries = await runLimited(refs.map(r => r.name), parseFile, 5);
+    const queryGrams = bigrams(normalize(question));
+    if (!queryGrams.size) return '';
+
+    const scored = [];
+    entries.forEach((entry, i) => {
+        if (!entry || entry.error || !entry.text) return;
+        const titleScore = countHits(queryGrams, normalize(refs[i].title));
+        splitChunks(entry.text).forEach((chunk, idx) => {
+            const score = countHits(queryGrams, normalize(chunk)) + titleScore * 3;
+            if (score > 0) scored.push({ ref: refs[i], chunk, idx, score });
+        });
     });
+    scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+
+    let out = '', used = 0, n = 0;
+    for (const s of scored) {
+        if (n >= maxChunks || used + s.chunk.length > budget) break;
+        out += `\n\n[첨부문서: ${s.ref.title} | 파일: ${s.ref.name} | ${s.idx + 1}번째 조각]\n${s.chunk}\n`;
+        used += s.chunk.length;
+        n++;
+    }
     return out;
 }
 
@@ -206,4 +281,4 @@ async function init() {
     watchUploads();
 }
 
-module.exports = { init, parseFile, extractPdfNames, getPromptText, status, rebuild };
+module.exports = { init, parseFile, extractPdfNames, extractPdfRefs, getPromptText, status, rebuild };

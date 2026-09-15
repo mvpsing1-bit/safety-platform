@@ -3,12 +3,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const pdfCache = require('./pdf-cache'); // 💡 다시 캐시 모듈을 완벽하게 연결!
+const pdfCache = require('./pdf-cache'); 
 
 const app = express();
 const PORT = 3000;
 
-// API Key 
 const genAI = new GoogleGenerativeAI('AQ.Ab8RN6IXmEI-fFwRr61G9RjicODxochJmu-JFYC8k3OvcxuUdw');
 
 const dbPath = path.join(__dirname, 'db.json');
@@ -70,7 +69,6 @@ app.post('/api/db', (req, res) => {
     res.json({ success: true });
 });
 
-// 💡 업로드 시 자동으로 텍스트 캐싱
 app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: '파일이 업로드되지 않았습니다.' });
     res.json({ fileUrl: '/uploads/' + req.file.filename, fileName: req.file.originalname });
@@ -82,28 +80,24 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     }
 });
 
-// 🤖 AI 챗봇 백엔드 API (초고속 캐시 읽기)
+// 💡 관리용 라우트 복구
+app.get('/api/pdf-cache/status', (req, res) => res.json(pdfCache.status()));
+app.post('/api/pdf-cache/rebuild', async (req, res) => {
+    try { res.json(await pdfCache.rebuild()); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { question, contextData } = req.body;
         if (!question) return res.status(400).json({ error: '질문 내용을 입력해 주세요.' });
 
         const contextString = JSON.stringify(contextData || {});
+        // 💡 대용량 Base64 이미지 걷어내기 (속도 대폭 향상)
+        const contextForPrompt = contextString.replace(/data:[a-z\/+.-]+;base64,[A-Za-z0-9+\/=]+/gi, '[이미지]');
 
-        console.log("\n====================================");
-        console.log(`🤖 사용자 질문: ${question}`);
-
-        const t0 = Date.now();
-        const pdfNames = pdfCache.extractPdfNames(contextString);
-        const pdfContents = await pdfCache.getPromptText(pdfNames);
+        const pdfRefs = pdfCache.extractPdfRefs(contextData);
+        const pdfContents = await pdfCache.getPromptText(pdfRefs, question);
         
-        if (pdfNames.length) {
-            console.log(`🔍 [PDF 캐시] ${pdfNames.length}개 문서 초고속 조회 완료 (${Date.now() - t0}ms)`);
-        } else {
-            console.log("⚠️ [PDF 캐시] 데이터 안에 PDF 링크가 없습니다.");
-        }
-        console.log("====================================\n");
-
         const model = genAI.getGenerativeModel({
             model: 'gemini-3.5-flash-lite',
             generationConfig: { temperature: 0.2, topP: 0.8, topK: 40 }
@@ -111,7 +105,7 @@ app.post('/api/chat', async (req, res) => {
 
         const promptText = `
 [사내 등록 데이터]
-${contextString}
+${contextForPrompt}
 
 [업로드된 문서(PDF) 내용]
 ${pdfContents}
@@ -126,7 +120,11 @@ ${question}
 
 1. 마크다운 기호(*, **, #, - 등)는 절대 사용하지 마. 무조건 일반 텍스트로 대답해.
 2. 문단을 나눌 때는 기호 대신 🧪, ⚠️, 🛡️, 📌, 💡, 👉, ✅, 👋 등의 이모티콘을 활용해 가독성 좋게 꾸며줘.
-3. 사내 규정, 공지사항 등 '회사와 관련된 질문'은 위 데이터들을 최우선으로 분석해. 내용이 없으면 "해당 내용은 현재 등록된 사내 데이터에서 찾을 수 없습니다."라고 안내해.
+3. 답변 우선순위를 반드시 지켜.
+   1순위: [사내 등록 데이터]와 [업로드된 문서(PDF) 내용]. 여기서 찾은 내용은 어느 문서에서 나왔는지 문서 이름을 함께 알려줘.
+   [업로드된 문서(PDF) 내용]에 질문과 관련된 본문이 있으면, 문서 목록만 나열하지 말고 그 본문의 실제 내용을 구체적으로 정리해서 답해. PDF 본문은 띄어쓰기가 뭉개져 있을 수 있으니 의미 단위로 읽어.
+   2순위: 사내 자료에 없거나 부족한 부분만, "📌 사내 자료에는 없는 내용이라 일반적인 정보로 보충드립니다"라고 먼저 밝힌 뒤 네가 아는 일반 지식으로 답해.
+   두 내용을 섞지 말고, 사내 자료 답변을 먼저 쓰고 일반 지식은 뒤에 따로 써.
 4. "안녕", "고마워" 등 가벼운 대화나 인사는 자연스럽고 친절하게 대답해줘.
 =========================================
 `;
@@ -148,10 +146,9 @@ ${question}
     }
 });
 
-pdfCache.init()
-    .catch(err => console.error('⚠️ [PDF 캐시] 초기 동기화 중 오류:', err.message))
-    .finally(() => {
-        app.listen(PORT, () => {
-            console.log(`ESOL 플랫폼 서버가 정상 실행되었습니다: http://localhost:${PORT}`);
-        });
-    });
+// 💡 서버를 즉시 먼저 실행하고 백그라운드에서 캐시 초기화
+app.listen(PORT, () => {
+    console.log(`ESOL 플랫폼 서버가 정상 실행되었습니다: http://localhost:${PORT}`);
+});
+
+pdfCache.init().catch(err => console.error('⚠️ [PDF 캐시] 초기 동기화 중 오류:', err.message));
