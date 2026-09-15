@@ -87,14 +87,15 @@ const defaultPpeGuides = [
 
 const defaultPpeOptions = ['안전모', '안전화', '보안경', '방진/방독마스크', '귀마개/귀덮개', '내화학장갑'];
 
-function getAdminPassword() {
-    return localStorage.getItem('esol_admin_password') || '0000';
-}
-
-function checkPassword() {
-    const currentPass = getAdminPassword();
+async function checkPassword() {
+    // 1. 서버(db.json)에서 비밀번호 가져오기
+    const db = await fetchDB();
+    const currentPass = db['esol_admin_password'] ? JSON.parse(db['esol_admin_password']) : '0000';
+    
+    // 2. 사용자가 입력한 비밀번호 가져오기
     const inputPass = document.getElementById('adminPw').value.trim();
 
+    // 3. 비교 후 로그인 처리
     if (inputPass === currentPass) {
         document.getElementById('loginModal').style.display = 'none';
         loadAdminMenuList();
@@ -109,12 +110,15 @@ function checkPassword() {
     }
 }
 
-function changeAdminPassword() {
+async function changeAdminPassword() {
     const newPw = document.getElementById('newAdminPwInput').value.trim();
     if (!newPw) return alert('새로운 비밀번호를 입력하세요.');
-    localStorage.setItem('esol_admin_password', newPw);
+    
+    // 💡 localStorage 대신 서버(db.json)에 새 비밀번호를 영구 저장합니다.
+    await saveDB('esol_admin_password', newPw);
+    
     document.getElementById('newAdminPwInput').value = '';
-    alert('비밀번호가 변경되었습니다.');
+    alert('비밀번호가 성공적으로 변경되었습니다. (모든 PC 공통 적용)');
 }
 
 // ============================================

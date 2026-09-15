@@ -3,36 +3,29 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const pdfCache = require('./pdf-cache'); // 💡 다시 캐시 모듈을 완벽하게 연결!
 
 const app = express();
 const PORT = 3000;
 
-// 사용자님의 API Key 적용
+// API Key 
 const genAI = new GoogleGenerativeAI('AQ.Ab8RN6IXmEI-fFwRr61G9RjicODxochJmu-JFYC8k3OvcxuUdw');
 
-// 💡 [추가됨] 1. db.json 파일이 없으면 자동 생성 (미니 데이터베이스 역할)
 const dbPath = path.join(__dirname, 'db.json');
-if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify({}));
-}
+if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify({}));
 
-// 💡 [수정됨] 2. 파일 용량 제한 해제 (PDF, 이미지 등 대용량 Base64 저장을 위함)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// 파일 업로드 설정
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dir = './uploads';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir);
-        }
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
         cb(null, dir);
     },
     filename: (req, file, cb) => {
@@ -42,7 +35,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 라우터 설정
 app.get('/', (req, res) => res.render('index'));
 app.get('/admin', (req, res) => res.render('admin'));
 app.get('/view', (req, res) => res.render('detail'));
@@ -56,101 +48,95 @@ app.get('/cert', (req, res) => res.render('cert'));
 app.get('/health', (req, res) => res.render('health'));
 app.get('/talktalk', (req, res) => res.render('talktalk'));
 app.get('/workenv', (req, res) => res.render('workenv'));
-app.get('/org', (req, res) => res.render('org')); // 안전보건 조직도 전용 페이지
-app.get('/committee', (req, res) => {
-    res.render('committee'); 
-});
-app.get('/contact', (req, res) => {
-    res.render('contact'); 
-});
-app.get('/emergency', (req, res) => {
-    res.render('emergency'); 
-});
-app.get('/risk', (req, res) => {
-    res.render('risk'); // views/risk.ejs 파일을 화면에 렌더링
-});
+app.get('/org', (req, res) => res.render('org'));
+app.get('/committee', (req, res) => res.render('committee'));
+app.get('/contact', (req, res) => res.render('contact'));
+app.get('/emergency', (req, res) => res.render('emergency'));
+app.get('/risk', (req, res) => res.render('risk'));
 
-// 💡 [수정됨] 3. 데이터 통신 API (데이터 불러오기) - 캐시 방지 적용
 app.get('/api/db', (req, res) => {
-    // 브라우저가 과거 데이터를 기억(캐시)하지 못하도록 강력하게 막는 주문입니다.
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-
-    const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    res.json(data);
+    res.json(JSON.parse(fs.readFileSync(dbPath, 'utf8')));
 });
 
-// 💡 [추가됨] 4. 데이터 통신 API (데이터 저장 및 삭제)
 app.post('/api/db', (req, res) => {
     const { key, value } = req.body;
     const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    
-    if (value === null) {
-        delete data[key]; // 삭제
-    } else {
-        data[key] = value; // 저장
-    }
-    
+    if (value === null) delete data[key];
+    else data[key] = value;
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
     res.json({ success: true });
 });
 
-// 파일 업로드 API
+// 💡 업로드 시 자동으로 텍스트 캐싱
 app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: '파일이 업로드되지 않았습니다.' });
     res.json({ fileUrl: '/uploads/' + req.file.filename, fileName: req.file.originalname });
+
+    if (/\.pdf$/i.test(req.file.filename)) {
+        pdfCache.parseFile(req.file.filename).catch(err =>
+            console.error('❌ [PDF 캐시] 업로드 직후 파싱 실패:', err.message)
+        );
+    }
 });
 
-// AI 챗봇 백엔드 API (구버전 SDK 완벽 호환 및 성능 향상 버전)
+// 🤖 AI 챗봇 백엔드 API (초고속 캐시 읽기)
 app.post('/api/chat', async (req, res) => {
     try {
         const { question, contextData } = req.body;
+        if (!question) return res.status(400).json({ error: '질문 내용을 입력해 주세요.' });
 
-        if (!question) {
-            return res.status(400).json({ error: '질문 내용을 입력해 주세요.' });
+        const contextString = JSON.stringify(contextData || {});
+
+        console.log("\n====================================");
+        console.log(`🤖 사용자 질문: ${question}`);
+
+        const t0 = Date.now();
+        const pdfNames = pdfCache.extractPdfNames(contextString);
+        const pdfContents = await pdfCache.getPromptText(pdfNames);
+        
+        if (pdfNames.length) {
+            console.log(`🔍 [PDF 캐시] ${pdfNames.length}개 문서 초고속 조회 완료 (${Date.now() - t0}ms)`);
+        } else {
+            console.log("⚠️ [PDF 캐시] 데이터 안에 PDF 링크가 없습니다.");
         }
+        console.log("====================================\n");
 
-        // 💡 1. 모델 및 온도 설정 (systemInstruction 옵션 제거하여 버전 충돌 방지!)
-        const model = genAI.getGenerativeModel({ 
+        const model = genAI.getGenerativeModel({
             model: 'gemini-3.5-flash-lite',
-            generationConfig: {
-                temperature: 0.2, // 사실 기반 답변을 위해 낮게 유지
-                topP: 0.8,
-                topK: 40
-            }
+            generationConfig: { temperature: 0.2, topP: 0.8, topK: 40 }
         });
 
-        // 💡 2. 프롬프트 안에 시스템 지시사항, 사내 데이터, 사용자 질문을 한 번에 합쳐서 전달
         const promptText = `
-너는 'ESOL 환경안전보건 플랫폼'의 친절하고 전문적인 AI 지식 비서야.
-근로자의 안전과 생명이 달린 전문적인 답변부터, 가벼운 일상 대화까지 모두 자연스럽게 응대할 수 있어.
+[사내 등록 데이터]
+${contextString}
 
-[절대 규칙 - 시스템 에러 방지용]
-1. 마크다운 기호(*, **, #, - 등)는 절대 사용하지 마. 무조건 일반 텍스트로 대답해.
-2. 문단을 나눌 때는 기호 대신 🧪, ⚠️, 🛡️, 📌, 💡, 👉, ✅, 👋 등의 이모티콘을 활용해 가독성 좋게 꾸며줘.
-
-[대화 및 답변 가이드라인]
-1. 사내 규정, 공지사항, MSDS, 보호구 등 '회사와 관련된 질문'은 반드시 제공된 [사업장 데이터]를 최우선으로 검색해서 정확하게 답변해.
-2. 사내 업무 관련 질문인데 [사업장 데이터]에 내용이 없다면, "해당 내용은 현재 등록된 사내 데이터에서 찾을 수 없습니다."라고 안내한 뒤 너의 일반적인 안전보건 지식을 활용해 일반론적인 조언을 덧붙여줘.
-3. "안녕", "오늘 힘드네", "점심 뭐 먹을까?" 같은 일상적인 대화나 사내 업무와 무관한 일반적인 질문에는 친절하고 센스 있게, 진짜 사람과 대화하듯 자연스럽게 대답해 줘.
-4. 항상 사용자(임직원)를 존중하고 따뜻한 톤앤매너를 유지해.
-
-[사업장 데이터]
-${JSON.stringify(contextData || {})}
+[업로드된 문서(PDF) 내용]
+${pdfContents}
 
 [사용자 질문]
 ${question}
+
+=========================================
+[AI 지식 비서 절대 규칙 - 반드시 지킬 것!]
+너는 이솔(ESOL) 환경안전보건 플랫폼의 친절하고 전문적인 AI 지식 비서야.
+위 제공된 데이터와 문서 내용, 질문을 바탕으로 아래 규칙을 엄격하게 지켜서 대답해.
+
+1. 마크다운 기호(*, **, #, - 등)는 절대 사용하지 마. 무조건 일반 텍스트로 대답해.
+2. 문단을 나눌 때는 기호 대신 🧪, ⚠️, 🛡️, 📌, 💡, 👉, ✅, 👋 등의 이모티콘을 활용해 가독성 좋게 꾸며줘.
+3. 사내 규정, 공지사항 등 '회사와 관련된 질문'은 위 데이터들을 최우선으로 분석해. 내용이 없으면 "해당 내용은 현재 등록된 사내 데이터에서 찾을 수 없습니다."라고 안내해.
+4. "안녕", "고마워" 등 가벼운 대화나 인사는 자연스럽고 친절하게 대답해줘.
+=========================================
 `;
 
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
 
-        // 스트림 방식으로 답변 생성
         const result = await model.generateContentStream(promptText);
         for await (const chunk of result.stream) {
             let chunkText = chunk.text();
-            // 프론트엔드 에러 방지를 위해 혹시라도 튀어나온 마크다운 강제 제거
             chunkText = chunkText.replace(/[\*\#\`\~]/g, '').replace(/-{2,}/g, '\n\n');
             res.write(chunkText);
         }
@@ -162,6 +148,10 @@ ${question}
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`ESOL 플랫폼 서버가 정상 실행되었습니다: http://localhost:${PORT}`);
-});
+pdfCache.init()
+    .catch(err => console.error('⚠️ [PDF 캐시] 초기 동기화 중 오류:', err.message))
+    .finally(() => {
+        app.listen(PORT, () => {
+            console.log(`ESOL 플랫폼 서버가 정상 실행되었습니다: http://localhost:${PORT}`);
+        });
+    });
